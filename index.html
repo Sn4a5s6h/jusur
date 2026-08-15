@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>جسور | للخدمات والاستشارات والتنمية</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+:root{
+    --navy:#062b4d;
+    --navy2:#0b426c;
+    --gold:#d7aa42;
+    --gold-light:#f1d37b;
+    --bg:#f5f7fa;
+    --white:#fff;
+    --text:#17324b;
+    --muted:#687887;
+    --green:#25d366;
+}
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:"Cairo",Tahoma,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.8;
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+.container{
+    width:92%;
+    max-width:1150px;
+    margin:auto;
+}
+
+/* NAVBAR */
+
+header{
+    position:sticky;
+    top:0;
+    z-index:1000;
+    background:rgba(6,43,77,.98);
+    box-shadow:0 5px 25px rgba(0,0,0,.15);
+}
+
+.navbar{
+    min-height:75px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:white;
+}
+
+.logo-icon{
+    font-size:35px;
+}
+
+.logo strong{
+    color:var(--gold-light);
+    font-size:24px;
+    display:block;
+}
+
+.logo small{
+    display:block;
+    font-size:10px;
+    color:#dbe5ec;
+}
+
+nav{
+    display:flex;
+    gap:22px;
+}
+
+nav a{
+    color:white;
+    font-size:14px;
+    transition:.3s;
+}
+
+nav a:hover{
+    color:var(--gold-light);
+}
+
+.whatsapp-top{
+    background:var(--green);
+    color:white;
+    padding:8px 17px;
+    border-radius:30px;
+    font-weight:bold;
+    font-size:13px;
+}
+
+/* HERO */
+
+.hero{
+    background:
+    radial-gradient(circle at 80% 20%,rgba(215,170,66,.18),transparent 30%),
+    linear-gradient(135deg,var(--navy),var(--navy2));
+    color:white;
+    padding:100px 20px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+}
+
+.hero:after{
+    content:"🌉";
+    position:absolute;
+    font-size:250px;
+    opacity:.035;
+    left:-30px;
+    bottom:-80px;
+}
+
+.badge{
+    color:var(--gold-light);
+    font-weight:bold;
+}
+
+.hero h1{
+    font-size:clamp(42px,7vw,75px);
+    line-height:1.25;
+    margin:15px 0;
+}
+
+.hero h1 span{
+    color:var(--gold-light);
+}
+
+.hero p{
+    max-width:750px;
+    margin:auto;
+    color:#dce7ef;
+    font-size:17px;
+}
+
+.buttons{
+    margin-top:30px;
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:12px;
+}
+
+.btn{
+    display:inline-block;
+    padding:13px 25px;
+    border-radius:50px;
+    font-weight:bold;
+    transition:.3s;
+}
+
+.btn:hover{
+    transform:translateY(-3px);
+}
+
+.btn-gold{
+    background:linear-gradient(135deg,var(--gold),var(--gold-light));
+    color:#062b4d;
+}
+
+.btn-green{
+    background:var(--green);
+    color:white;
+}
+
+/* STATS */
+
+.stats{
+    width:90%;
+    max-width:1000px;
+    margin:-35px auto 0;
+    position:relative;
+    z-index:5;
+    background:white;
+    border-radius:20px;
+    box-shadow:0 15px 40px rgba(0,0,0,.1);
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    text-align:center;
+}
+
+.stat{
+    padding:22px;
+    border-left:1px solid #eee;
+}
+
+.stat:last-child{
+    border-left:0;
+}
+
+.stat strong{
+    display:block;
+    font-size:25px;
+    color:var(--navy);
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:13px;
+}
+
+/* SECTION */
+
+section{
+    padding:80px 0;
+}
+
+.section-title{
+    text-align:center;
+    margin-bottom:40px;
+}
+
+.section-title span{
+    color:#a67b20;
+    font-weight:bold;
+}
+
+.section-title h2{
+    color:var(--navy);
+    font-size:34px;
+    margin:5px 0;
+}
+
+.section-title p{
+    color:var(--muted);
+}
+
+/* SERVICES */
+
+.services{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+}
+
+.card{
+    background:white;
+    border-radius:20px;
+    padding:25px;
+    border:1px solid #e5e9ed;
+    box-shadow:0 8px 25px rgba(0,0,0,.05);
+    transition:.3s;
+    position:relative;
+    overflow:hidden;
+}
+
+.card:before{
+    content:"";
+    position:absolute;
+    top:0;
+    right:0;
+    left:0;
+    height:4px;
+    background:linear-gradient(90deg,var(--gold),var(--gold-light));
+}
+
+.card:hover{
+    transform:translateY(-7px);
+    box-shadow:0 18px 35px rgba(0,0,0,.1);
+}
+
+.icon{
+    width:65px;
+    height:65px;
+    border-radius:18px;
+    background:#edf3f7;
+    display:grid;
+    place-items:center;
+    font-size:32px;
+    margin-bottom:15px;
+}
+
+.card h3{
+    color:var(--navy);
+    font-size:18px;
+}
+
+.card p{
+    color:var(--muted);
+    font-size:13px;
+    margin:8px 0 15px;
+}
+
+.card a{
+    color:#a2761c;
+    font-weight:bold;
+    font-size:13px;
+}
+
+/* MARKETING */
+
+.marketing{
+    background:var(--navy);
+    color:white;
+}
+
+.marketing-box{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    align-items:center;
+    gap:50px;
+}
+
+.marketing h2{
+    font-size:38px;
+    margin:8px 0;
+}
+
+.marketing p{
+    color:#d7e2e9;
+}
+
+.tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:9px;
+    margin:25px 0;
+}
+
+.tags span{
+    padding:7px 14px;
+    border-radius:30px;
+    background:#ffffff10;
+    border:1px solid #ffffff22;
+    font-size:12px;
+}
+
+.marketing-visual{
+    min-height:300px;
+    border-radius:30px;
+    background:linear-gradient(145deg,var(--gold),#092e50);
+    display:grid;
+    place-items:center;
+    text-align:center;
+    font-size:100px;
+}
+
+/* PROPERTY */
+
+.properties{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+}
+
+.property{
+    background:white;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 8px 25px rgba(0,0,0,.07);
+}
+
+.property-image{
+    height:190px;
+    background:linear-gradient(135deg,#dce6ec,#c8d7df);
+    display:grid;
+    place-items:center;
+    font-size:75px;
+}
+
+.property-body{
+    padding:20px;
+}
+
+.tag{
+    background:#fff3cf;
+    color:#92701d;
+    padding:3px 10px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:bold;
+}
+
+.property h3{
+    margin:8px 0;
+}
+
+.property p{
+    color:var(--muted);
+    font-size:13px;
+}
+
+.property-button{
+    display:block;
+    text-align:center;
+    background:var(--navy);
+    color:white;
+    padding:10px;
+    border-radius:10px;
+    margin-top:15px;
+}
+
+/* ABOUT */
+
+.about{
+    background:#edf2f5;
+}
+
+.about-box{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:50px;
+    align-items:center;
+}
+
+.about h2{
+    color:var(--navy);
+    font-size:37px;
+}
+
+.about p{
+    color:var(--muted);
+}
+
+.values{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:20px;
+}
+
+.values span{
+    background:white;
+    padding:8px 14px;
+    border-radius:12px;
+    color:#795d1d;
+    font-weight:bold;
+}
+
+.vision{
+    background:white;
+    padding:30px;
+    border-radius:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,.06);
+}
+
+.vision strong{
+    color:#a77d20;
+    font-size:20px;
+}
+
+/* FORM */
+
+.form{
+    background:white;
+    padding:30px;
+    border-radius:25px;
+    box-shadow:0 10px 35px rgba(0,0,0,.07);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.form-group label{
+    display:block;
+    font-weight:bold;
+    font-size:13px;
+    margin-bottom:5px;
+}
+
+.form input,
+.form select,
+.form textarea{
+    width:100%;
+    border:1px solid #dce3e8;
+    border-radius:12px;
+    padding:12px;
+    font-family:inherit;
+    font-size:14px;
+    outline:none;
+}
+
+.form input:focus,
+.form select:focus,
+.form textarea:focus{
+    border-color:var(--gold);
+}
+
+.full{
+    grid-column:1/-1;
+}
+
+/* FOOTER */
+
+footer{
+    background:#031b30;
+    color:#aebcc6;
+    padding-top:50px;
+}
+
+.footer-grid{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr;
+    gap:30px;
+    padding-bottom:35px;
+}
+
+.footer-grid h3{
+    color:var(--gold-light);
+}
+
+.footer-grid p{
+    font-size:13px;
+}
+
+.copyright{
+    border-top:1px solid #ffffff12;
+    text-align:center;
+    padding:15px;
+    font-size:12px;
+}
+
+/* FLOAT WHATSAPP */
+
+.float-whatsapp{
+    position:fixed;
+    bottom:20px;
+    left:20px;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:var(--green);
+    color:white;
+    display:grid;
+    place-items:center;
+    font-size:29px;
+    z-index:999;
+    box-shadow:0 8px 25px rgba(0,0,0,.3);
+}
+
+/* MOBILE */
+
+@media(max-width:900px){
+
+    nav{
+        display:none;
+    }
+
+    .services{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .properties{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .marketing-box,
+    .about-box{
+        grid-template-columns:1fr;
+    }
+
+}
+
+@media(max-width:600px){
+
+    .hero{
+        padding:75px 15px;
+    }
+
+    .hero h1{
+        font-size:42px;
+    }
+
+    .stats{
+        grid-template-columns:1fr;
+    }
+
+    .stat{
+        border-left:0;
+        border-bottom:1px solid #eee;
+    }
+
+    .services,
+    .properties,
+    .form,
+    .footer-grid{
+        grid-template-columns:1fr;
+    }
+
+    .full{
+        grid-column:auto;
+    }
+
+    section{
+        padding:60px 0;
+    }
+
+    .section-title h2{
+        font-size:28px;
+    }
+
+    .marketing h2,
+    .about h2{
+        font-size:29px;
+    }
+
+    .float-whatsapp{
+        left:15px;
+        bottom:15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="container navbar">
+
+<a href="#home" class="logo">
+<span class="logo-icon">🌉</span>
+<span>
+<strong>جسور</strong>
+<small>للخدمات والاستشارات والتنمية</small>
+</span>
+</a>
+
+<nav>
+<a href="#home">الرئيسية</a>
+<a href="#services">الخدمات</a>
+<a href="#properties">العقارات</a>
+<a href="#about">من نحن</a>
+<a href="#contact">اطلب خدمة</a>
+</nav>
+
+<a class="whatsapp-top"
+href="https://wa.me/967733393303"
+target="_blank">
+واتساب
+</a>
+
+</div>
+</header>
+
+
+<!-- HERO -->
+
+<section class="hero" id="home">
+
+<div class="container">
+
+<span class="badge">
+منصة خدمات وفرص متكاملة
+</span>
+
+<h1>
+نربطك بالفرص..<br>
+<span>لنصنع مستقبلاً أفضل</span>
+</h1>
+
+<p>
+جسور للخدمات والاستشارات والتنمية تقدم حلولاً متكاملة
+للأفراد وأصحاب المشاريع والشركات في العقارات والتسويق
+والمحاسبة والتوظيف وخدمات الأعمال.
+</p>
+
+<div class="buttons">
+
+<a href="#contact" class="btn btn-gold">
+📋 اطلب خدمة الآن
+</a>
+
+<a href="https://wa.me/967733393303"
+target="_blank"
+class="btn btn-green">
+💬 تواصل عبر واتساب
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- STATS -->
+
+<div class="stats">
+
+<div class="stat">
+<strong>8</strong>
+<span>أقسام رئيسية</span>
+</div>
+
+<div class="stat">
+<strong>متكاملة</strong>
+<span>حلول للأفراد والأعمال</span>
+</div>
+
+<div class="stat">
+<strong>24/7</strong>
+<span>استقبال الطلبات</span>
+</div>
+
+</div>
+
+
+<!-- SERVICES -->
+
+<section id="services">
+
+<div class="container">
+
+<div class="section-title">
+<span>خدمات جسور</span>
+<h2>كل ما تحتاجه.. في مكان واحد</h2>
+<p>اختر القسم المناسب وسنساعدك في الوصول إلى الخدمة أو الفرصة المناسبة.</p>
+</div>
+
+
+<div class="services">
+
+<div class="card">
+<div class="icon">🏠</div>
+<h3>الوساطة والتسويق العقاري</h3>
+<p>شقق وأراضي ومحلات ومكاتب، بيع وشراء وإيجار وتسويق العقارات.</p>
+<a href="#contact" onclick="selectService('الوساطة والتسويق العقاري')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">📣</div>
+<h3>التسويق الرقمي والترويج</h3>
+<p>إدارة المحتوى وتصميم الإعلانات والتغذية البصرية والحملات الرقمية.</p>
+<a href="#contact" onclick="selectService('التسويق الرقمي والترويج')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">📊</div>
+<h3>المحاسبة والمراجعة</h3>
+<p>تنظيم الحسابات والمراجعة والاستشارات المالية ودراسات الجدوى.</p>
+<a href="#contact" onclick="selectService('المحاسبة والمراجعة والاستشارات المالية')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">💼</div>
+<h3>التوظيف وفرص العمل</h3>
+<p>ربط الباحثين عن العمل بأصحاب الأعمال والفرص المناسبة.</p>
+<a href="#contact" onclick="selectService('التوظيف وفرص العمل')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">🏛️</div>
+<h3>الخدمات العامة</h3>
+<p>خدمات مساندة وتسهيل الإجراءات والمعاملات للأفراد والأعمال.</p>
+<a href="#contact" onclick="selectService('الخدمات العامة وتخليص المعاملات')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">🏢</div>
+<h3>خدمات الشركات</h3>
+<p>تأسيس الأنشطة والشركات والتراخيص والاستشارات الإدارية.</p>
+<a href="#contact" onclick="selectService('خدمات الشركات وتأسيس الأنشطة')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">💡</div>
+<h3>دراسات المشاريع</h3>
+<p>دراسات السوق والجدوى وتقييم الأفكار وخطط تطوير المشاريع.</p>
+<a href="#contact" onclick="selectService('دراسات المشاريع ودراسات الجدوى')">
+طلب الخدمة ←
+</a>
+</div>
+
+
+<div class="card">
+<div class="icon">🤝</div>
+<h3>الوساطة وخدمات الأعمال</h3>
+<p>ربط العملاء بمقدمي الخدمات وأصحاب الأعمال.</p>
+<a href="#contact" onclick="selectService('الوساطة وخدمات الأعمال')">
+طلب الخدمة ←
+</a>
+</div>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- MARKETING -->
+
+<section class="marketing">
+
+<div class="container marketing-box">
+
+<div>
+
+<span class="badge">قسم التسويق والترويج</span>
+
+<h2>
+اجعل مشروعك يُرى.. ويُتذكر
+</h2>
+
+<p>
+نساعد أصحاب المشاريع والعقارات والأنشطة التجارية
+على بناء حضور رقمي احترافي والوصول إلى العملاء.
+</p>
+
+<div class="tags">
+<span>🎨 تصميم</span>
+<span>📱 سوشيال ميديا</span>
+<span>🎥 محتوى مرئي</span>
+<span>🏠 تسويق عقاري</span>
+<span>📢 حملات إعلانية</span>
+<span>✨ تغذية بصرية</span>
+</div>
+
+<a href="#contact"
+onclick="selectService('التسويق الرقمي والترويج')"
+class="btn btn-gold">
+اطلب عرضاً تسويقياً
+</a>
+
+</div>
+
+<div class="marketing-visual">
+🎨
+</div>
+
+</div>
+
+</section>
+
+
+<!-- PROPERTIES -->
+
+<section id="properties">
+
+<div class="container">
+
+<div class="section-title">
+
+<span>الوساطة العقارية</span>
+
+<h2>عقارات وفرص متاحة</h2>
+
+<p>
+نساعد المالك والباحث على الوصول إلى الصفقة المناسبة.
+</p>
+
+</div>
+
+
+<div class="properties">
+
+
+<div class="property">
+
+<div class="property-image">
+🏠
+</div>
+
+<div class="property-body">
+
+<span class="tag">للإيجار</span>
+
+<h3>شقة – صنعاء / شملان</h3>
+
+<p>
+غرفتان • حمام • الدور الثاني • مواقف متوفرة • الماء متوفر
+</p>
+
+<a class="property-button"
+href="https://wa.me/967733393303?text=أرغب%20بالاستفسار%20عن%20شقة%20شملان"
+target="_blank">
+استفسر عبر واتساب
+</a>
+
+</div>
+
+</div>
+
+
+<div class="property">
+
+<div class="property-image">
+🌳
+</div>
+
+<div class="property-body">
+
+<span class="tag">عقارات</span>
+
+<h3>أراضٍ وشقق ومحلات</h3>
+
+<p>
+استقبال عروض الملاك والباحثين عن العقارات في صنعاء.
+</p>
+
+<a class="property-button"
+href="#contact"
+onclick="selectService('الوساطة والتسويق العقاري')">
+أعلن عن عقارك
+</a>
+
+</div>
+
+</div>
+
+
+<div class="property">
+
+<div class="property-image">
+🏢
+</div>
+
+<div class="property-body">
+
+<span class="tag">للأعمال</span>
+
+<h3>محلات ومكاتب</h3>
+
+<p>
+تسويق وربط أصحاب العقارات بالباحثين عن مواقع مناسبة.
+</p>
+
+<a class="property-button"
+href="#contact"
+onclick="selectService('الوساطة والتسويق العقاري')">
+أرسل عرضك
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ABOUT -->
+
+<section class="about" id="about">
+
+<div class="container about-box">
+
+<div>
+
+<span class="badge">من نحن</span>
+
+<h2>
+جسور للخدمات والاستشارات والتنمية
+</h2>
+
+<p>
+جهة خدمية واستشارية تسعى إلى تقديم حلول عملية
+ومهنية للأفراد وأصحاب المشاريع والشركات، وربط
+العملاء بالفرص والخدمات المناسبة.
+</p>
+
+<div class="values">
+
+<span>✓ المهنية</span>
+<span>✓ الشفافية</span>
+<span>✓ الثقة</span>
+<span>✓ الجودة</span>
+<span>✓ الالتزام</span>
+<span>✓ التنمية</span>
+
+</div>
+
+</div>
+
+
+<div class="vision">
+
+<strong>رؤيتنا</strong>
+
+<p>
+أن نكون منصة موثوقة تجمع بين الخدمة والفرصة
+والاستشارة وتدعم نمو الأعمال.
+</p>
+
+<strong>موقعنا</strong>
+
+<p>
+🇾🇪 اليمن – صنعاء
+</p>
+
+<strong>شعارنا</strong>
+
+<p>
+نربطك بالفرص.. لنصنع مستقبلاً أفضل
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- REQUEST -->
+
+<section id="contact">
+
+<div class="container">
+
+<div class="section-title">
+
+<span>تواصل معنا</span>
+
+<h2>اطلب خدمة</h2>
+
+<p>
+أرسل بياناتك وسيتم تجهيز رسالة واتساب لفريق جسور.
+</p>
+
+</div>
+
+
+<form class="form" onsubmit="sendWhatsApp(event)">
+
+<div class="form-group">
+
+<label>الاسم</label>
+
+<input id="name"
+required
+placeholder="الاسم الكامل">
+
+</div>
+
+
+<div class="form-group">
+
+<label>رقم الهاتف</label>
+
+<input id="phone"
+required
+placeholder="رقم التواصل">
+
+</div>
+
+
+<div class="form-group">
+
+<label>الخدمة</label>
+
+<select id="service" required>
+
+<option value="">اختر الخدمة</option>
+
+<option>الوساطة والتسويق العقاري</option>
+
+<option>التسويق الرقمي والترويج</option>
+
+<option>المحاسبة والمراجعة والاستشارات المالية</option>
+
+<option>التوظيف وفرص العمل</option>
+
+<option>الخدمات العامة وتخليص المعاملات</option>
+
+<option>خدمات الشركات وتأسيس الأنشطة</option>
+
+<option>دراسات المشاريع ودراسات الجدوى</option>
+
+<option>الوساطة وخدمات الأعمال</option>
+
+</select>
+
+</div>
+
+
+<div class="form-group">
+
+<label>الموقع</label>
+
+<input id="location"
+placeholder="المدينة / المنطقة">
+
+</div>
+
+
+<div class="form-group full">
+
+<label>تفاصيل الطلب</label>
+
+<textarea id="details"
+rows="5"
+placeholder="اكتب تفاصيل طلبك"></textarea>
+
+</div>
+
+
+<button class="btn btn-gold full"
+type="submit">
+
+💬 إرسال الطلب عبر واتساب
+
+</button>
+
+</form>
+
+</div>
+
+</section>
+
+
+<!-- FOOTER -->
+
+<footer>
+
+<div class="container footer-grid">
+
+<div>
+
+<h3>🌉 جسور</h3>
+
+<p>
+للخدمات والاستشارات والتنمية
+</p>
+
+<p>
+نربطك بالفرص.. لنصنع مستقبلاً أفضل
+</p>
+
+</div>
+
+
+<div>
+
+<h3>تواصل معنا</h3>
+
+<p>📞 +967 733 393 303</p>
+
+<p>📞 +967 783 538 009</p>
+
+<p>📍 اليمن – صنعاء</p>
+
+</div>
+
+
+<div>
+
+<h3>روابط سريعة</h3>
+
+<p><a href="#services">الخدمات</a></p>
+<p><a href="#properties">العقارات</a></p>
+<p><a href="#contact">اطلب خدمة</a></p>
+
+</div>
+
+</div>
+
+
+<div class="copyright">
+
+© 2026 جسور للخدمات والاستشارات والتنمية
+
+</div>
+
+</footer>
+
+
+<!-- FLOATING WHATSAPP -->
+
+<a
+class="float-whatsapp"
+href="https://wa.me/967733393303"
+target="_blank">
+💬
+</a>
+
+
+<script>
+
+function selectService(service){
+
+    document.getElementById("service").value = service;
+
+}
+
+
+function sendWhatsApp(event){
+
+    event.preventDefault();
+
+    let name =
+    document.getElementById("name").value;
+
+    let phone =
+    document.getElementById("phone").value;
+
+    let service =
+    document.getElementById("service").value;
+
+    let location =
+    document.getElementById("location").value;
+
+    let details =
+    document.getElementById("details").value;
+
+
+    let message =
+`🌉 طلب خدمة جديد - جسور
+
+👤 الاسم:
+${name}
+
+📞 الهاتف:
+${phone}
+
+📌 الخدمة المطلوبة:
+${service}
+
+📍 الموقع:
+${location || "غير محدد"}
+
+📝 التفاصيل:
+${details || "لا توجد تفاصيل إضافية"}
+
+نربطك بالفرص.. لنصنع مستقبلاً أفضل`;
+
+
+    let url =
+    "https://wa.me/967733393303?text="
+    + encodeURIComponent(message);
+
+
+    window.open(url,"_blank");
+
+}
+
+</script>
+
+</body>
+  </html>
