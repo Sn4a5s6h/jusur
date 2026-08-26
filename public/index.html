@@ -1,248 +1,570 @@
 <!DOCTYPE html>
-
-<html
-    lang="ar"
-    dir="rtl"
->
+<html lang="ar" dir="rtl">
 
 <head>
-
-<meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
-
-<title>
-    جسور المحاسبي
-</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-
-    margin: 0;
-
-    font-family:
-        Arial,
-        Tahoma,
-        sans-serif;
-
-    background: #f4f7fa;
-
-    color: #172033;
-
-}
-
-header {
-
-    background: #102a43;
-
-    color: white;
-
-    padding: 22px;
-
-}
-
-header h1 {
-
-    margin: 0;
-
-}
-
-.container {
-
-    max-width: 1150px;
-
-    margin: auto;
-
-    padding: 20px;
-
-}
-
-.card {
-
-    background: white;
-
-    border-radius: 15px;
-
-    padding: 20px;
-
-    margin-bottom: 20px;
-
-    box-shadow:
-        0 5px 20px
-        rgba(0,0,0,.06);
-
-}
-
-textarea {
-
-    width: 100%;
-
-    min-height: 130px;
-
-    border:
-        1px solid
-        #ccd6df;
-
-    border-radius: 12px;
-
-    padding: 15px;
-
-    font-size: 18px;
-
-    resize: vertical;
-
-}
-
-button {
-
-    border: 0;
-
-    border-radius: 9px;
-
-    padding: 12px 20px;
-
-    margin: 6px;
-
-    cursor: pointer;
-
-    font-size: 15px;
-
-}
-
-.primary {
-
-    background: #102a43;
-
-    color: white;
-
-}
-
-.success {
-
-    background: #198754;
-
-    color: white;
-
-}
-
-.warning {
-
-    background: #f0ad4e;
-
-    color: white;
-
-}
-
-.grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    gap: 15px;
-
-}
-
-.stat {
-
-    background: #eef3f7;
-
-    padding: 20px;
-
-    border-radius: 12px;
-
-}
-
-.stat strong {
-
-    font-size: 25px;
-
-}
-
-.preview {
-
-    background: #f7f9fb;
-
-    border-radius: 10px;
-
-    padding: 15px;
-
-    margin-top: 15px;
-
-}
-
-table {
-
-    width: 100%;
-
-    border-collapse:
-        collapse;
-
-}
-
-th,
-td {
-
-    padding: 10px;
-
-    border-bottom:
-        1px solid
-        #ddd;
-
-    text-align: right;
-
-}
-
-.badge {
-
-    padding: 5px 10px;
-
-    border-radius: 20px;
-
-    background: #e9eef3;
-
-}
-
-@media(max-width: 700px) {
-
-    .grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
-}
-
-</style>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>جسور المحاسبي | Jusoor Accounting</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #102a43;
+            --primary-light: #243b53;
+            --gold: #d4a72c;
+            --success: #198754;
+            --danger: #dc3545;
+            --warning: #f0ad4e;
+            --bg: #f4f7fa;
+            --card: #ffffff;
+            --text: #172033;
+            --muted: #6c7a89;
+            --border: #dce3ea;
+        }
+
+        body {
+            margin: 0;
+            font-family:
+                Arial,
+                Tahoma,
+                sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--primary-light)
+                );
+            color: white;
+            padding: 20px;
+            box-shadow:
+                0 4px 15px rgba(0,0,0,.12);
+        }
+
+        .header-inner {
+            max-width: 1250px;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 27px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 25px;
+        }
+
+        .brand p {
+            margin: 5px 0 0;
+            opacity: .8;
+            font-size: 13px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #45d483;
+            border-radius: 50%;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 12px;
+            height: fit-content;
+            box-shadow:
+                0 5px 20px rgba(0,0,0,.06);
+        }
+
+        .nav-btn {
+            width: 100%;
+            text-align: right;
+            background: transparent;
+            color: var(--text);
+            margin: 3px 0;
+            padding: 13px;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: #eef3f7;
+            color: var(--primary);
+        }
+
+        .content {
+            min-width: 0;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow:
+                0 5px 20px rgba(0,0,0,.06);
+        }
+
+        .card-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .ai-box {
+            border: 2px solid #e3eaf0;
+            border-radius: 15px;
+            padding: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 145px;
+            border:
+                1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 17px;
+            resize: vertical;
+            outline: none;
+            font-family: inherit;
+        }
+
+        textarea:focus,
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow:
+                0 0 0 3px rgba(16,42,67,.08);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px 12px;
+            border:
+                1px solid var(--border);
+            border-radius: 9px;
+            outline: none;
+            font-family: inherit;
+            background: white;
+        }
+
+        button {
+            border: 0;
+            border-radius: 9px;
+            padding: 11px 17px;
+            margin: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .success {
+            background: var(--success);
+            color: white;
+        }
+
+        .warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .secondary {
+            background: #eef3f7;
+            color: var(--text);
+        }
+
+        .voice-btn {
+            background: #f0f3f6;
+            color: var(--primary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns:
+                repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat {
+            background: white;
+            padding: 18px;
+            border-radius: 14px;
+            box-shadow:
+                0 5px 20px rgba(0,0,0,.05);
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-unit {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .preview {
+            background: #f7f9fb;
+            border-radius: 12px;
+            padding: 17px;
+            margin-top: 15px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .preview-header h3 {
+            margin: 0;
+        }
+
+        .confidence {
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #e8f5ed;
+            color: #176b3a;
+            font-size: 12px;
+        }
+
+        .warning-box {
+            background: #fff7e6;
+            border: 1px solid #f1d28a;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .info-box {
+            background: #eef5ff;
+            border: 1px solid #c8dcf5;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 11px;
+            border-bottom:
+                1px solid #e3e7eb;
+            text-align: right;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f7f9fb;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #e9eef3;
+            font-size: 12px;
+        }
+
+        .badge-success {
+            background: #e6f6ed;
+            color: #17733c;
+        }
+
+        .badge-warning {
+            background: #fff4dc;
+            color: #875e00;
+        }
+
+        .badge-danger {
+            background: #fdeaea;
+            color: #a12626;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #172033;
+            color: white;
+            padding: 13px 18px;
+            border-radius: 10px;
+            display: none;
+            z-index: 9999;
+            box-shadow:
+                0 5px 20px rgba(0,0,0,.2);
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .section-note {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .example {
+            display: inline-block;
+            background: #eef3f7;
+            padding: 6px 9px;
+            border-radius: 8px;
+            margin: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .example:hover {
+            background: #dfe8ef;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 12px;
+        }
+
+        .total-box {
+            display: flex;
+            justify-content: space-between;
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .mobile-menu {
+            display: none;
+        }
+
+        @media(max-width: 900px) {
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .mobile-menu {
+                display: block;
+                margin-bottom: 15px;
+            }
+
+            .grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+        @media(max-width: 600px) {
+
+            .container {
+                padding: 12px;
+            }
+
+            .header-inner {
+                align-items: flex-start;
+            }
+
+            .status {
+                display: none;
+            }
+
+            .grid,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .brand h1 {
+                font-size: 20px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            th,
+            td {
+                white-space: nowrap;
+            }
+
+        }
+
+    </style>
 
 </head>
+
 
 <body>
 
 
 <header>
 
-<div class="container">
+    <div class="header-inner">
 
-<h1>
-    🌉 جسور المحاسبي 2.0
-</h1>
+        <div class="brand">
 
-<p>
-    سجّل معاملاتك بالنص أو الصوت
-</p>
+            <div class="brand-icon">
+                🌉
+            </div>
 
-</div>
+            <div>
+
+                <h1>
+                    جسور المحاسبي
+                </h1>
+
+                <p>
+                    نظام محاسبي ذكي
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="status">
+
+            <span class="status-dot"></span>
+
+            النظام يعمل
+
+        </div>
+
+    </div>
 
 </header>
 
@@ -250,150 +572,751 @@ td {
 <div class="container">
 
 
-<div class="card">
+    <div class="mobile-menu">
 
-<h2>
-    🤖 تسجيل معاملة بالذكاء الاصطناعي
-</h2>
+        <button
+            class="primary"
+            onclick="toggleSidebar()"
+        >
+            ☰ القائمة
+        </button>
 
-<p>
-    اكتب العملية كما تتحدث بها مع المحاسب.
-</p>
-
-
-<textarea
-    id="transactionText"
-    placeholder="مثال:
-فاتورة مبيعات ٥٠ كرتون زيت شفاف سعر ٥٠٠ ريال للكرتون اجل على العميل علي أحمد لمدة 30 يوم"
-></textarea>
+    </div>
 
 
-<div>
-
-<button
-    class="primary"
-    onclick="analyzeTransaction()"
->
-    🔍 تحليل المعاملة
-</button>
+    <div class="layout">
 
 
-<button
-    onclick="startVoice()"
->
-    🎤 تحدث
-</button>
+        <!-- SIDEBAR -->
+
+        <aside
+            class="sidebar"
+            id="sidebar"
+        >
+
+            <button
+                class="nav-btn active"
+                onclick="showPage('dashboard', this)"
+            >
+                📊 لوحة التحكم
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('ai', this)"
+            >
+                🤖 المعاملة الذكية
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('invoices', this)"
+            >
+                🧾 الفواتير
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('customers', this)"
+            >
+                👥 العملاء
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('products', this)"
+            >
+                📦 المنتجات والمخزون
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('payments', this)"
+            >
+                💰 السداد
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('journal', this)"
+            >
+                📒 القيود اليومية
+            </button>
+
+
+            <button
+                class="nav-btn"
+                onclick="showPage('bank', this)"
+            >
+                🏦 كشف البنك
+            </button>
+
+        </aside>
+
+
+        <!-- CONTENT -->
+
+        <main class="content">
+
+
+            <!-- DASHBOARD -->
+
+            <section
+                id="page-dashboard"
+                class="page active"
+            >
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <div>
+
+                            <h2>
+                                📊 لوحة التحكم
+                            </h2>
+
+                            <div class="section-note">
+                                نظرة سريعة على النشاط المحاسبي
+                            </div>
+
+                        </div>
+
+                        <button
+                            class="secondary"
+                            onclick="loadAll()"
+                        >
+                            🔄 تحديث
+                        </button>
+
+                    </div>
+
+
+                    <div class="grid">
+
+
+                        <div class="stat">
+
+                            <div class="stat-label">
+                                إجمالي المبيعات
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="sales"
+                            >
+                                0
+                            </div>
+
+                            <span class="stat-unit">
+                                ريال
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat">
+
+                            <div class="stat-label">
+                                الذمم المدينة
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="receivables"
+                            >
+                                0
+                            </div>
+
+                            <span class="stat-unit">
+                                ريال
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat">
+
+                            <div class="stat-label">
+                                العملاء
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="customers"
+                            >
+                                0
+                            </div>
+
+                        </div>
+
+
+                        <div class="stat">
+
+                            <div class="stat-label">
+                                المنتجات
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="products"
+                            >
+                                0
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <h2>
+                            🧾 أحدث الفواتير
+                        </h2>
+
+                        <button
+                            class="secondary"
+                            onclick="showPageById('invoices')"
+                        >
+                            عرض الكل
+                        </button>
+
+                    </div>
+
+                    <div id="dashboardInvoices">
+                        جاري التحميل...
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- AI -->
+
+            <section
+                id="page-ai"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <div>
+
+                            <h2>
+                                🤖 المعاملة المحاسبية الذكية
+                            </h2>
+
+                            <div class="section-note">
+                                اكتب العملية كما تتحدث بها مع المحاسب.
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="ai-box">
+
+                        <textarea
+                            id="transactionText"
+                            placeholder="مثال:
+بعت لعلي أحمد 50 كرتون زيت شفاف بسعر 500 ريال للكرتون على الحساب لمدة 30 يوم"
+                        ></textarea>
+
+
+                        <div class="actions">
+
+                            <button
+                                class="primary"
+                                id="analyzeBtn"
+                                onclick="analyzeTransaction()"
+                            >
+                                🔍 تحليل المعاملة
+                            </button>
+
+
+                            <button
+                                class="voice-btn"
+                                onclick="startVoice()"
+                            >
+                                🎤 تحدث
+                            </button>
+
+
+                            <button
+                                class="secondary"
+                                onclick="clearTransaction()"
+                            >
+                                🗑️ مسح
+                            </button>
+
+                        </div>
+
+
+                        <div>
+
+                            <strong>
+                                أمثلة سريعة:
+                            </strong>
+
+                            <div>
+
+                                <span
+                                    class="example"
+                                    onclick="useExample('بعت لعلي أحمد 50 كرتون زيت شفاف بسعر 500 ريال للكرتون على الحساب لمدة 30 يوم')"
+                                >
+                                    بيع آجل
+                                </span>
+
+                                <span
+                                    class="example"
+                                    onclick="useExample('بعت لمحمد 10 كراتين ماء بسعر 1000 ريال للكرتون نقداً')"
+                                >
+                                    بيع نقدي
+                                </span>
+
+                                <span
+                                    class="example"
+                                    onclick="useExample('استلمت من علي أحمد 5000 ريال سداد من حسابه')"
+                                >
+                                    سداد عميل
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            id="analysisResult"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- INVOICES -->
+
+            <section
+                id="page-invoices"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <div>
+
+                            <h2>
+                                🧾 الفواتير
+                            </h2>
+
+                        </div>
+
+                        <button
+                            class="primary"
+                            onclick="showPageById('ai')"
+                        >
+                            + فاتورة ذكية
+                        </button>
+
+                    </div>
+
+
+                    <div id="invoiceList">
+                        جاري التحميل...
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- CUSTOMERS -->
+
+            <section
+                id="page-customers"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <h2>
+                            👥 العملاء
+                        </h2>
+
+                    </div>
+
+
+                    <div
+                        id="customerList"
+                    >
+                        جاري التحميل...
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="card"
+                    id="statementCard"
+                    style="display:none;"
+                >
+
+                    <div class="card-title">
+
+                        <h2>
+                            📄 كشف حساب العميل
+                        </h2>
+
+                        <button
+                            class="secondary"
+                            onclick="closeStatement()"
+                        >
+                            إغلاق
+                        </button>
+
+                    </div>
+
+
+                    <div id="statementResult"></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- PRODUCTS -->
+
+            <section
+                id="page-products"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <h2>
+                            📦 المنتجات والمخزون
+                        </h2>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label>
+                                اسم المنتج
+                            </label>
+
+                            <input
+                                id="productName"
+                                placeholder="مثال: زيت شفاف"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                الوحدة
+                            </label>
+
+                            <input
+                                id="productUnit"
+                                value="قطعة"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                سعر البيع
+                            </label>
+
+                            <input
+                                id="productSalePrice"
+                                type="number"
+                                value="0"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                سعر التكلفة
+                            </label>
+
+                            <input
+                                id="productCostPrice"
+                                type="number"
+                                value="0"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                الرصيد الافتتاحي
+                            </label>
+
+                            <input
+                                id="productStock"
+                                type="number"
+                                value="0"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="success"
+                        onclick="createProduct()"
+                    >
+                        + إضافة المنتج
+                    </button>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div id="productList">
+                        جاري التحميل...
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- PAYMENTS -->
+
+            <section
+                id="page-payments"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <h2>
+                        💰 تسجيل سداد
+                    </h2>
+
+                    <p class="section-note">
+                        أدخل رقم الفاتورة وقيمة السداد.
+                    </p>
+
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label>
+                                رقم الفاتورة
+                            </label>
+
+                            <input
+                                id="paymentInvoice"
+                                placeholder="مثال: INV-000001"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                المبلغ
+                            </label>
+
+                            <input
+                                id="paymentAmount"
+                                type="number"
+                                placeholder="0"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                طريقة السداد
+                            </label>
+
+                            <select
+                                id="paymentMethod"
+                            >
+
+                                <option value="cash">
+                                    نقدي
+                                </option>
+
+                                <option value="bank">
+                                    بنك
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                المرجع
+                            </label>
+
+                            <input
+                                id="paymentReference"
+                                placeholder="رقم التحويل مثلاً"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="success"
+                        onclick="recordPayment()"
+                    >
+                        💵 تسجيل السداد
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- JOURNAL -->
+
+            <section
+                id="page-journal"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <div class="card-title">
+
+                        <h2>
+                            📒 القيود اليومية
+                        </h2>
+
+                        <button
+                            class="secondary"
+                            onclick="loadJournal()"
+                        >
+                            🔄 تحديث
+                        </button>
+
+                    </div>
+
+
+                    <div id="journalList">
+                        جاري التحميل...
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- BANK -->
+
+            <section
+                id="page-bank"
+                class="page"
+            >
+
+                <div class="card">
+
+                    <h2>
+                        🏦 كشف البنك
+                    </h2>
+
+                    <p class="section-note">
+                        المرحلة الحالية تستقبل الملف تمهيدًا لمحرك المطابقة البنكية.
+                    </p>
+
+
+                    <form
+                        id="bankForm"
+                        onsubmit="uploadBank(event)"
+                    >
+
+                        <input
+                            type="file"
+                            id="bankFile"
+                            required
+                        >
+
+
+                        <button
+                            class="primary"
+                            type="submit"
+                        >
+                            📤 رفع كشف البنك
+                        </button>
+
+                    </form>
+
+
+                    <div
+                        id="bankResult"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+        </main>
+
+    </div>
 
 </div>
 
 
 <div
-    id="analysisResult"
+    class="toast"
+    id="toast"
 ></div>
-
-
-</div>
-
-
-
-<div class="card">
-
-<h2>
-    📊 لوحة التحكم
-</h2>
-
-
-<div class="grid">
-
-
-<div class="stat">
-
-<div>
-    إجمالي المبيعات
-</div>
-
-<strong
-    id="sales"
->
-    0
-</strong>
-
-<span>
-    ريال
-</span>
-
-</div>
-
-
-<div class="stat">
-
-<div>
-    الذمم المدينة
-</div>
-
-<strong
-    id="receivables"
->
-    0
-</strong>
-
-<span>
-    ريال
-</span>
-
-</div>
-
-
-<div class="stat">
-
-<div>
-    العملاء
-</div>
-
-<strong
-    id="customers"
->
-    0
-</strong>
-
-</div>
-
-
-<div class="stat">
-
-<div>
-    الأصناف
-</div>
-
-<strong
-    id="products"
->
-    0
-</strong>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-
-<div class="card">
-
-<h2>
-    🧾 آخر الفواتير
-</h2>
-
-<div id="invoiceList">
-    جاري التحميل...
-</div>
-
-</div>
-
-
-</div>
 
 
 <script>
@@ -401,83 +1324,298 @@ td {
 let parsedTransaction = null;
 
 
+/* =========================
+   HELPERS
+========================= */
+
 function formatNumber(value) {
 
     return Number(value || 0)
-        .toLocaleString(
-            "ar-YE"
+        .toLocaleString("ar-YE");
+
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+function toast(message) {
+
+    const element =
+        document.getElementById("toast");
+
+    element.textContent = message;
+
+    element.classList.add("show");
+
+    setTimeout(() => {
+
+        element.classList.remove("show");
+
+    }, 3000);
+
+}
+
+
+async function api(url, options = {}) {
+
+    try {
+
+        const response =
+            await fetch(url, options);
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "حدث خطأ في الخادم"
+            );
+
+        }
+
+        return data;
+
+    } catch (error) {
+
+        toast(error.message);
+
+        throw error;
+
+    }
+
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+function showPage(page, button) {
+
+    document
+        .querySelectorAll(".page")
+        .forEach(element => {
+
+            element.classList.remove("active");
+
+        });
+
+
+    const target =
+        document.getElementById(
+            "page-" + page
         );
+
+
+    if (target) {
+
+        target.classList.add("active");
+
+    }
+
+
+    document
+        .querySelectorAll(".nav-btn")
+        .forEach(element => {
+
+            element.classList.remove("active");
+
+        });
+
+
+    if (button) {
+
+        button.classList.add("active");
+
+    }
+
+
+    if (page === "dashboard") {
+
+        loadDashboard();
+
+    }
+
+
+    if (page === "invoices") {
+
+        loadInvoices();
+
+    }
+
+
+    if (page === "customers") {
+
+        loadCustomers();
+
+    }
+
+
+    if (page === "products") {
+
+        loadProducts();
+
+    }
+
+
+    if (page === "journal") {
+
+        loadJournal();
+
+    }
+
+
+    if (window.innerWidth <= 900) {
+
+        document
+            .getElementById("sidebar")
+            .style.display = "none";
+
+    }
+
+}
+
+
+function showPageById(page) {
+
+    const button =
+        [...document.querySelectorAll(".nav-btn")]
+            .find(btn =>
+                btn.getAttribute("onclick")
+                    ?.includes("'" + page + "'")
+            );
+
+    showPage(page, button);
+
+}
+
+
+function toggleSidebar() {
+
+    const sidebar =
+        document.getElementById("sidebar");
+
+    sidebar.style.display =
+        sidebar.style.display === "block"
+            ? "none"
+            : "block";
+
+}
+
+
+/* =========================
+   AI TRANSACTION
+========================= */
+
+function useExample(text) {
+
+    document
+        .getElementById("transactionText")
+        .value = text;
+
+}
+
+
+function clearTransaction() {
+
+    document
+        .getElementById("transactionText")
+        .value = "";
+
+    document
+        .getElementById("analysisResult")
+        .innerHTML = "";
+
+    parsedTransaction = null;
 
 }
 
 
 async function analyzeTransaction() {
 
+    const input =
+        document.getElementById(
+            "transactionText"
+        );
+
+    const button =
+        document.getElementById(
+            "analyzeBtn"
+        );
+
     const text =
-        document
-            .getElementById(
-                "transactionText"
-            )
-            .value
-            .trim();
+        input.value.trim();
 
 
     if (!text) {
 
-        alert(
-            "اكتب المعاملة أولاً"
-        );
+        toast("اكتب المعاملة أولاً");
+
+        input.focus();
 
         return;
 
     }
 
 
-    const response =
-        await fetch(
-            "/api/ai/parse",
-            {
+    button.disabled = true;
 
-                method: "POST",
+    button.textContent =
+        "⏳ جاري التحليل...";
 
-                headers: {
 
-                    "Content-Type":
-                        "application/json"
+    try {
 
-                },
+        const data =
+            await api(
+                "/api/ai/parse",
+                {
 
-                body:
-                    JSON.stringify({
-                        text
-                    })
+                    method: "POST",
 
-            }
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            text
+                        })
+
+                }
+            );
+
+
+        parsedTransaction =
+            data.parsed;
+
+
+        showPreview(
+            parsedTransaction
         );
 
 
-    const data =
-        await response.json();
+    } finally {
 
+        button.disabled = false;
 
-    if (!data.success) {
-
-        alert(
-            data.error
-        );
-
-        return;
+        button.textContent =
+            "🔍 تحليل المعاملة";
 
     }
-
-
-    parsedTransaction =
-        data.parsed;
-
-
-    showPreview(
-        parsedTransaction
-    );
 
 }
 
@@ -485,10 +1623,22 @@ async function analyzeTransaction() {
 function showPreview(data) {
 
     const container =
-        document
-            .getElementById(
-                "analysisResult"
-            );
+        document.getElementById(
+            "analysisResult"
+        );
+
+
+    if (!data) {
+
+        container.innerHTML = `
+            <div class="warning-box">
+                تعذر تحليل العملية.
+            </div>
+        `;
+
+        return;
+
+    }
 
 
     if (!data.ready) {
@@ -497,14 +1647,32 @@ function showPreview(data) {
 
             <div class="preview">
 
-                <h3>
-                    ⚠️ تحتاج العملية إلى بيانات إضافية
-                </h3>
+                <div class="preview-header">
 
-                <pre>${JSON.stringify(
-                    data,
-                    null,
-                    2
+                    <h3>
+                        ⚠️ المعاملة تحتاج إلى بيانات
+                    </h3>
+
+                </div>
+
+                <div class="warning-box">
+
+                    لم يتمكن المحرك الحالي من
+                    استكمال جميع البيانات المطلوبة.
+
+                </div>
+
+                <pre style="
+                    white-space:pre-wrap;
+                    direction:ltr;
+                    text-align:left;
+                    margin-top:15px;
+                ">${escapeHtml(
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    )
                 )}</pre>
 
             </div>
@@ -520,24 +1688,28 @@ function showPreview(data) {
 
 
     for (
-        const item
-        of data.items
+        const item of data.items || []
     ) {
+
+        const total =
+            Number(item.qty || 0) *
+            Number(item.price || 0);
+
 
         itemsHtml += `
 
             <tr>
 
                 <td>
-                    ${item.name}
+                    ${escapeHtml(item.name)}
                 </td>
 
                 <td>
-                    ${item.qty}
+                    ${formatNumber(item.qty)}
                 </td>
 
                 <td>
-                    ${item.unit}
+                    ${escapeHtml(item.unit || "قطعة")}
                 </td>
 
                 <td>
@@ -545,10 +1717,7 @@ function showPreview(data) {
                 </td>
 
                 <td>
-                    ${formatNumber(
-                        item.qty *
-                        item.price
-                    )}
+                    ${formatNumber(total)}
                 </td>
 
             </tr>
@@ -558,107 +1727,167 @@ function showPreview(data) {
     }
 
 
+    const type =
+        data.type === "credit"
+            ? "آجل"
+            : "نقدي";
+
+
     container.innerHTML = `
 
         <div class="preview">
 
-            <h3>
-                ✅ فهمت العملية
-            </h3>
+            <div class="preview-header">
+
+                <h3>
+                    ✅ مراجعة المعاملة
+                </h3>
+
+                <span class="confidence">
+                    قبل الاعتماد
+                </span>
+
+            </div>
 
 
-            <p>
+            <div class="form-grid">
 
-                <strong>
-                    العميل:
-                </strong>
+                <div>
 
-                ${data.customer}
+                    <strong>
+                        العميل
+                    </strong>
 
-            </p>
+                    <div>
+                        ${escapeHtml(
+                            data.customer ||
+                            "غير محدد"
+                        )}
+                    </div>
+
+                </div>
 
 
-            <p>
+                <div>
 
-                <strong>
-                    نوع البيع:
-                </strong>
+                    <strong>
+                        نوع البيع
+                    </strong>
+
+                    <div>
+                        ${type}
+                    </div>
+
+                </div>
+
 
                 ${
-                    data.type === "credit"
-                        ? "آجل"
-                        : "نقدي"
+                    data.due_days
+                        ? `
+                            <div>
+                                <strong>
+                                    مدة الأجل
+                                </strong>
+                                <div>
+                                    ${data.due_days} يوم
+                                </div>
+                            </div>
+                        `
+                        : ""
                 }
 
-            </p>
+            </div>
 
 
-            <table>
+            <div class="table-wrapper">
 
-                <thead>
+                <table>
 
-                    <tr>
+                    <thead>
 
-                        <th>
-                            الصنف
-                        </th>
+                        <tr>
 
-                        <th>
-                            الكمية
-                        </th>
+                            <th>
+                                الصنف
+                            </th>
 
-                        <th>
-                            الوحدة
-                        </th>
+                            <th>
+                                الكمية
+                            </th>
 
-                        <th>
-                            السعر
-                        </th>
+                            <th>
+                                الوحدة
+                            </th>
 
-                        <th>
-                            الإجمالي
-                        </th>
+                            <th>
+                                السعر
+                            </th>
 
-                    </tr>
+                            <th>
+                                الإجمالي
+                            </th>
 
-                </thead>
+                        </tr>
 
-                <tbody>
+                    </thead>
 
-                    ${itemsHtml}
+                    <tbody>
 
-                </tbody>
+                        ${itemsHtml}
 
-            </table>
+                    </tbody>
 
+                </table>
 
-            <h2>
-
-                الإجمالي:
-
-                ${formatNumber(
-                    data.total
-                )}
-
-                ريال
-
-            </h2>
+            </div>
 
 
-            <button
-                class="success"
-                onclick="commitTransaction()"
-            >
-                ✅ اعتماد وإنشاء الفاتورة
-            </button>
+            <div class="total-box">
+
+                <span>
+                    إجمالي المعاملة
+                </span>
+
+                <strong>
+                    ${formatNumber(data.total)}
+                    ريال
+                </strong>
+
+            </div>
 
 
-            <button
-                class="warning"
-                onclick="editTransaction()"
-            >
-                ✏️ تعديل
-            </button>
+            <div class="info-box">
+
+                <strong>
+                    ⚠️ مراجعة قبل التسجيل
+                </strong>
+
+                <div>
+                    لن يتم إنشاء الفاتورة أو القيد
+                    إلا بعد الضغط على اعتماد.
+                </div>
+
+            </div>
+
+
+            <div class="actions">
+
+                <button
+                    class="success"
+                    onclick="commitTransaction()"
+                >
+                    ✅ اعتماد وإنشاء الفاتورة
+                </button>
+
+
+                <button
+                    class="warning"
+                    onclick="editTransaction()"
+                >
+                    ✏️ تعديل النص
+                </button>
+
+            </div>
 
         </div>
 
@@ -667,112 +1896,159 @@ function showPreview(data) {
 }
 
 
-async function commitTransaction() {
-
-    if (!parsedTransaction) {
-
-        return;
-
-    }
-
-
-    const response =
-        await fetch(
-            "/api/transactions/commit",
-            {
-
-                method: "POST",
-
-                headers: {
-
-                    "Content-Type":
-                        "application/json"
-
-                },
-
-                body:
-                    JSON.stringify({
-
-                        parsed:
-                            parsedTransaction
-
-                    })
-
-            }
-        );
-
-
-    const data =
-        await response.json();
-
-
-    if (!data.success) {
-
-        alert(
-            data.error
-        );
-
-        return;
-
-    }
-
-
-    document
-        .getElementById(
-            "analysisResult"
-        )
-        .innerHTML = `
-
-            <div class="preview">
-
-                <h3>
-                    🎉 تم إنشاء الفاتورة
-                </h3>
-
-                <p>
-                    رقم الفاتورة:
-                    <strong>
-                        ${data.invoice.inv_no}
-                    </strong>
-                </p>
-
-                <p>
-                    الإجمالي:
-                    ${formatNumber(
-                        data.invoice.total
-                    )}
-                    ريال
-                </p>
-
-                <a
-                    href="${data.invoice.pdf_url}"
-                    target="_blank"
-                >
-                    📄 فتح الفاتورة PDF
-                </a>
-
-            </div>
-
-        `;
-
-
-    loadDashboard();
-
-    loadInvoices();
-
-}
-
-
 function editTransaction() {
 
     document
-        .getElementById(
-            "transactionText"
-        )
+        .getElementById("transactionText")
         .focus();
 
 }
 
+
+async function commitTransaction() {
+
+    if (!parsedTransaction) {
+
+        toast("لا توجد معاملة للتحويل");
+
+        return;
+
+    }
+
+
+    if (!parsedTransaction.ready) {
+
+        toast("المعاملة غير مكتملة");
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "هل تريد اعتماد المعاملة وإنشاء الفاتورة؟"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const data =
+            await api(
+                "/api/transactions/commit",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            parsed:
+                                parsedTransaction
+
+                        })
+
+                }
+            );
+
+
+        document
+            .getElementById(
+                "analysisResult"
+            )
+            .innerHTML = `
+
+                <div class="preview">
+
+                    <h3>
+                        🎉 تم إنشاء الفاتورة بنجاح
+                    </h3>
+
+                    <p>
+                        رقم الفاتورة:
+                        <strong>
+                            ${escapeHtml(
+                                data.invoice.inv_no
+                            )}
+                        </strong>
+                    </p>
+
+                    <p>
+                        الإجمالي:
+                        <strong>
+                            ${formatNumber(
+                                data.invoice.total
+                            )}
+                            ريال
+                        </strong>
+                    </p>
+
+                    <div class="actions">
+
+                        ${
+                            data.invoice.pdf_url
+                                ? `
+                                    <a
+                                        href="${data.invoice.pdf_url}"
+                                        target="_blank"
+                                        style="
+                                            text-decoration:none;
+                                        "
+                                    >
+                                        <button
+                                            class="primary"
+                                        >
+                                            📄 فتح PDF
+                                        </button>
+                                    </a>
+                                `
+                                : ""
+                        }
+
+                        <button
+                            class="secondary"
+                            onclick="clearTransaction()"
+                        >
+                            + معاملة جديدة
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+        parsedTransaction = null;
+
+        loadAll();
+
+        toast("تم تسجيل المعاملة");
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================
+   VOICE
+========================= */
 
 function startVoice() {
 
@@ -783,7 +2059,7 @@ function startVoice() {
 
     if (!SpeechRecognition) {
 
-        alert(
+        toast(
             "التعرف الصوتي غير متاح في هذا المتصفح"
         );
 
@@ -796,22 +2072,17 @@ function startVoice() {
         new SpeechRecognition();
 
 
-    recognition.lang =
-        "ar-SA";
+    recognition.lang = "ar-SA";
 
+    recognition.interimResults = false;
 
-    recognition.interimResults =
-        false;
-
-
-    recognition.continuous =
-        false;
+    recognition.continuous = false;
 
 
     recognition.onstart =
-        function () {
+        function() {
 
-            alert(
+            toast(
                 "🎤 تحدث الآن..."
             );
 
@@ -819,11 +2090,10 @@ function startVoice() {
 
 
     recognition.onresult =
-        function (event) {
+        function(event) {
 
             const text =
-                event
-                    .results[0][0]
+                event.results[0][0]
                     .transcript;
 
 
@@ -840,9 +2110,9 @@ function startVoice() {
 
 
     recognition.onerror =
-        function () {
+        function() {
 
-            alert(
+            toast(
                 "تعذر التقاط الصوت"
             );
 
@@ -854,89 +2124,140 @@ function startVoice() {
 }
 
 
+/* =========================
+   DASHBOARD
+========================= */
+
 async function loadDashboard() {
 
-    const response =
-        await fetch(
-            "/api/dashboard"
+    try {
+
+        const data =
+            await api(
+                "/api/dashboard"
+            );
+
+
+        document
+            .getElementById("sales")
+            .textContent =
+                formatNumber(data.sales);
+
+
+        document
+            .getElementById("receivables")
+            .textContent =
+                formatNumber(
+                    data.receivables
+                );
+
+
+        document
+            .getElementById("customers")
+            .textContent =
+                data.customers || 0;
+
+
+        document
+            .getElementById("products")
+            .textContent =
+                data.products || 0;
+
+
+        const invoices =
+            await api(
+                "/api/invoices"
+            );
+
+
+        renderInvoices(
+            invoices.invoices || [],
+            "dashboardInvoices",
+            5
         );
 
+    } catch (error) {
 
-    const data =
-        await response.json();
+        console.error(error);
 
-
-    document
-        .getElementById(
-            "sales"
-        )
-        .textContent =
-            formatNumber(
-                data.sales
-            );
-
-
-    document
-        .getElementById(
-            "receivables"
-        )
-        .textContent =
-            formatNumber(
-                data.receivables
-            );
-
-
-    document
-        .getElementById(
-            "customers"
-        )
-        .textContent =
-            data.customers;
-
-
-    document
-        .getElementById(
-            "products"
-        )
-        .textContent =
-            data.products;
+    }
 
 }
 
 
+/* =========================
+   INVOICES
+========================= */
+
 async function loadInvoices() {
 
-    const response =
-        await fetch(
-            "/api/invoices"
+    const container =
+        document.getElementById(
+            "invoiceList"
         );
 
 
-    const data =
-        await response.json();
+    container.innerHTML =
+        '<div class="loading">جاري التحميل...</div>';
 
 
-    const container =
-        document
-            .getElementById(
-                "invoiceList"
+    try {
+
+        const data =
+            await api(
+                "/api/invoices"
             );
 
 
-    if (
-        !data.invoices ||
-        !data.invoices.length
-    ) {
+        renderInvoices(
+            data.invoices || [],
+            "invoiceList"
+        );
+
+    } catch (error) {
 
         container.innerHTML =
-            "لا توجد فواتير.";
+            '<div class="empty">تعذر تحميل الفواتير</div>';
+
+    }
+
+}
+
+
+function renderInvoices(
+    invoices,
+    containerId,
+    limit = null
+) {
+
+    const container =
+        document.getElementById(
+            containerId
+        );
+
+
+    if (!container) return;
+
+
+    if (!invoices.length) {
+
+        container.innerHTML =
+            '<div class="empty">لا توجد فواتير.</div>';
 
         return;
 
     }
 
 
+    const list =
+        limit
+            ? invoices.slice(0, limit)
+            : invoices;
+
+
     let html = `
+
+        <div class="table-wrapper">
 
         <table>
 
@@ -944,29 +2265,19 @@ async function loadInvoices() {
 
                 <tr>
 
-                    <th>
-                        الرقم
-                    </th>
+                    <th>الرقم</th>
 
-                    <th>
-                        العميل
-                    </th>
+                    <th>العميل</th>
 
-                    <th>
-                        النوع
-                    </th>
+                    <th>النوع</th>
 
-                    <th>
-                        الإجمالي
-                    </th>
+                    <th>الإجمالي</th>
 
-                    <th>
-                        المتبقي
-                    </th>
+                    <th>المدفوع</th>
 
-                    <th>
-                        الحالة
-                    </th>
+                    <th>المتبقي</th>
+
+                    <th>الحالة</th>
 
                 </tr>
 
@@ -978,20 +2289,36 @@ async function loadInvoices() {
 
 
     for (
-        const invoice
-        of data.invoices
+        const invoice of list
     ) {
+
+        const remaining =
+            Number(invoice.total || 0) -
+            Number(invoice.paid || 0);
+
+
+        const statusClass =
+            invoice.status === "paid"
+                ? "badge-success"
+                : remaining > 0
+                    ? "badge-warning"
+                    : "";
+
 
         html += `
 
             <tr>
 
                 <td>
-                    ${invoice.inv_no}
+                    ${escapeHtml(
+                        invoice.inv_no
+                    )}
                 </td>
 
                 <td>
-                    ${invoice.customer_name}
+                    ${escapeHtml(
+                        invoice.customer_name
+                    )}
                 </td>
 
                 <td>
@@ -1010,18 +2337,23 @@ async function loadInvoices() {
 
                 <td>
                     ${formatNumber(
-                        invoice.total -
                         invoice.paid
                     )}
                 </td>
 
                 <td>
+                    ${formatNumber(
+                        remaining
+                    )}
+                </td>
 
-                    <span class="badge">
+                <td>
 
-                        ${
+                    <span class="badge ${statusClass}">
+
+                        ${escapeHtml(
                             invoice.status
-                        }
+                        )}
 
                     </span>
 
@@ -1040,14 +2372,989 @@ async function loadInvoices() {
 
         </table>
 
+        </div>
+
     `;
 
 
-    container.innerHTML =
-        html;
+    container.innerHTML = html;
 
 }
 
+
+/* =========================
+   CUSTOMERS
+========================= */
+
+async function loadCustomers() {
+
+    const container =
+        document.getElementById(
+            "customerList"
+        );
+
+
+    container.innerHTML =
+        '<div class="loading">جاري التحميل...</div>';
+
+
+    try {
+
+        const data =
+            await api(
+                "/api/customers"
+            );
+
+
+        const customers =
+            data.customers || [];
+
+
+        if (!customers.length) {
+
+            container.innerHTML =
+                '<div class="empty">لا يوجد عملاء.</div>';
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>الاسم</th>
+
+                        <th>الهاتف</th>
+
+                        <th>تاريخ التسجيل</th>
+
+                        <th>الإجراء</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        for (
+            const customer
+            of customers
+        ) {
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${escapeHtml(
+                            customer.name
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            customer.phone ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            customer.created_at ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="primary"
+                            onclick="loadStatement('${escapeJs(customer.name)}')"
+                        >
+                            📄 كشف الحساب
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+            </div>
+
+        `;
+
+
+        container.innerHTML = html;
+
+    } catch (error) {
+
+        container.innerHTML =
+            '<div class="empty">تعذر تحميل العملاء.</div>';
+
+    }
+
+}
+
+
+function escapeJs(value) {
+
+    return String(value ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
+
+}
+
+
+async function loadStatement(name) {
+
+    try {
+
+        const data =
+            await api(
+                "/api/customer/" +
+                encodeURIComponent(name)
+            );
+
+
+        const card =
+            document.getElementById(
+                "statementCard"
+            );
+
+
+        const result =
+            document.getElementById(
+                "statementResult"
+            );
+
+
+        card.style.display = "block";
+
+
+        if (!data.customer) {
+
+            result.innerHTML =
+                '<div class="empty">العميل غير موجود.</div>';
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <div class="info-box">
+
+                <strong>
+                    ${escapeHtml(
+                        data.customer.name
+                    )}
+                </strong>
+
+                <br>
+
+                الرصيد المستحق:
+                <strong>
+                    ${formatNumber(
+                        data.balance
+                    )}
+                    ريال
+                </strong>
+
+            </div>
+
+            <h3>
+                الفواتير
+            </h3>
+
+        `;
+
+
+        if (
+            !data.invoices ||
+            !data.invoices.length
+        ) {
+
+            html +=
+                '<div class="empty">لا توجد فواتير.</div>';
+
+        } else {
+
+            html += `
+
+                <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>الفاتورة</th>
+
+                            <th>الإجمالي</th>
+
+                            <th>المدفوع</th>
+
+                            <th>المتبقي</th>
+
+                            <th>الحالة</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+            `;
+
+
+            for (
+                const invoice
+                of data.invoices
+            ) {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${escapeHtml(
+                                invoice.inv_no
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatNumber(
+                                invoice.total
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatNumber(
+                                invoice.paid
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatNumber(
+                                invoice.remaining
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                invoice.status
+                            )}
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+
+
+            html += `
+
+                    </tbody>
+
+                </table>
+
+                </div>
+
+            `;
+
+        }
+
+
+        result.innerHTML = html;
+
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+function closeStatement() {
+
+    document
+        .getElementById(
+            "statementCard"
+        )
+        .style.display = "none";
+
+}
+
+
+/* =========================
+   PRODUCTS
+========================= */
+
+async function loadProducts() {
+
+    const container =
+        document.getElementById(
+            "productList"
+        );
+
+
+    container.innerHTML =
+        '<div class="loading">جاري التحميل...</div>';
+
+
+    try {
+
+        const data =
+            await api(
+                "/api/products"
+            );
+
+
+        const products =
+            data.products || [];
+
+
+        if (!products.length) {
+
+            container.innerHTML =
+                '<div class="empty">لا توجد منتجات.</div>';
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>المنتج</th>
+
+                        <th>الوحدة</th>
+
+                        <th>سعر البيع</th>
+
+                        <th>التكلفة</th>
+
+                        <th>المخزون</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        for (
+            const product
+            of products
+        ) {
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${escapeHtml(
+                            product.name
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            product.unit
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            product.sale_price
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            product.cost_price
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            product.stock
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+            </div>
+
+        `;
+
+
+        container.innerHTML = html;
+
+    } catch (error) {
+
+        container.innerHTML =
+            '<div class="empty">تعذر تحميل المنتجات.</div>';
+
+    }
+
+}
+
+
+async function createProduct() {
+
+    const name =
+        document
+            .getElementById("productName")
+            .value
+            .trim();
+
+
+    if (!name) {
+
+        toast("اسم المنتج مطلوب");
+
+        return;
+
+    }
+
+
+    const body = {
+
+        name,
+
+        unit:
+            document
+                .getElementById(
+                    "productUnit"
+                )
+                .value
+                .trim() ||
+            "قطعة",
+
+        sale_price:
+            Number(
+                document
+                    .getElementById(
+                        "productSalePrice"
+                    )
+                    .value
+            ) || 0,
+
+        cost_price:
+            Number(
+                document
+                    .getElementById(
+                        "productCostPrice"
+                    )
+                    .value
+            ) || 0,
+
+        stock:
+            Number(
+                document
+                    .getElementById(
+                        "productStock"
+                    )
+                    .value
+            ) || 0
+
+    };
+
+
+    try {
+
+        await api(
+            "/api/products",
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify(body)
+
+            }
+        );
+
+
+        toast("تمت إضافة المنتج");
+
+        document
+            .getElementById("productName")
+            .value = "";
+
+        loadProducts();
+
+        loadDashboard();
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================
+   PAYMENTS
+========================= */
+
+async function recordPayment() {
+
+    const invoiceNo =
+        document
+            .getElementById(
+                "paymentInvoice"
+            )
+            .value
+            .trim();
+
+
+    const amount =
+        Number(
+            document
+                .getElementById(
+                    "paymentAmount"
+                )
+                .value
+        );
+
+
+    const method =
+        document
+            .getElementById(
+                "paymentMethod"
+            )
+            .value;
+
+
+    const reference =
+        document
+            .getElementById(
+                "paymentReference"
+            )
+            .value
+            .trim();
+
+
+    if (!invoiceNo || amount <= 0) {
+
+        toast(
+            "رقم الفاتورة والمبلغ مطلوبان"
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const invoices =
+            await api(
+                "/api/invoices"
+            );
+
+
+        const invoice =
+            (invoices.invoices || [])
+                .find(
+                    item =>
+                        item.inv_no ===
+                        invoiceNo
+                );
+
+
+        if (!invoice) {
+
+            toast(
+                "الفاتورة غير موجودة"
+            );
+
+            return;
+
+        }
+
+
+        await api(
+            "/api/payments",
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify({
+
+                        invoiceId:
+                            invoice.id,
+
+                        amount,
+
+                        method,
+
+                        reference
+
+                    })
+
+                }
+            );
+
+
+        toast("تم تسجيل السداد");
+
+        document
+            .getElementById(
+                "paymentAmount"
+            )
+            .value = "";
+
+        document
+            .getElementById(
+                "paymentReference"
+            )
+            .value = "";
+
+        loadAll();
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================
+   JOURNAL
+========================= */
+
+async function loadJournal() {
+
+    const container =
+        document.getElementById(
+            "journalList"
+        );
+
+
+    container.innerHTML =
+        '<div class="loading">جاري التحميل...</div>';
+
+
+    try {
+
+        const data =
+            await api(
+                "/api/journal"
+            );
+
+
+        const entries =
+            data.entries || [];
+
+
+        if (!entries.length) {
+
+            container.innerHTML =
+                '<div class="empty">لا توجد قيود.</div>';
+
+            return;
+
+        }
+
+
+        let html = `
+
+            <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>التاريخ</th>
+
+                        <th>البيان</th>
+
+                        <th>الحساب</th>
+
+                        <th>مدين</th>
+
+                        <th>دائن</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+
+        for (
+            const entry
+            of entries
+        ) {
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${escapeHtml(
+                            entry.entry_date
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            entry.description
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            entry.account_name
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            entry.debit
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            entry.credit
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+            </div>
+
+        `;
+
+
+        container.innerHTML = html;
+
+    } catch (error) {
+
+        container.innerHTML =
+            '<div class="empty">تعذر تحميل القيود.</div>';
+
+    }
+
+}
+
+
+/* =========================
+   BANK
+========================= */
+
+async function uploadBank(event) {
+
+    event.preventDefault();
+
+
+    const file =
+        document
+            .getElementById(
+                "bankFile"
+            )
+            .files[0];
+
+
+    if (!file) {
+
+        toast(
+            "اختر ملف كشف البنك"
+        );
+
+        return;
+
+    }
+
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "file",
+        file
+    );
+
+
+    const result =
+        document.getElementById(
+            "bankResult"
+        );
+
+
+    result.innerHTML =
+        '<div class="loading">جاري رفع الملف...</div>';
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/upload-bank",
+                {
+
+                    method: "POST",
+
+                    body: formData
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "فشل رفع الملف"
+            );
+
+        }
+
+
+        result.innerHTML = `
+
+            <div class="info-box">
+
+                ✅
+                ${escapeHtml(
+                    data.message ||
+                    "تم استلام الملف"
+                )}
+
+            </div>
+
+        `;
+
+
+    } catch (error) {
+
+        result.innerHTML = `
+
+            <div class="warning-box">
+
+                ❌
+                ${escapeHtml(
+                    error.message
+                )}
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* =========================
+   LOAD ALL
+========================= */
+
+function loadAll() {
+
+    loadDashboard();
+
+    loadInvoices();
+
+    loadCustomers();
+
+    loadProducts();
+
+    loadJournal();
+
+}
+
+
+/* =========================
+   START
+========================= */
 
 loadDashboard();
 
@@ -1057,4 +3364,4 @@ loadInvoices();
 
 </body>
 
-  </html>
+</html>
