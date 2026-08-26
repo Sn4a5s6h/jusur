@@ -23,7 +23,7 @@ const db =
 const {
     parseTransaction
 } =
-    require("./ai");
+    require("./ai/engine");
 
 
 const {
