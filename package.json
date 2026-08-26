@@ -1,21 +1,22 @@
 {
   "name": "jusoor-accounting",
   "version": "2.0.0",
-  "description": "Jusoor AI Accounting System",
+  "description": "Jusoor AI Accounting System - نظام جسور المحاسبي المدعوم بالذكاء الاصطناعي",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x",
+    "npm": "10.x"
   },
   "dependencies": {
-    "better-sqlite3": "^11.10.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^5.1.0",
-    "multer": "^2.0.2",
-    "pdfkit": "^0.17.1"
+    "better-sqlite3": "11.10.0",
+    "cors": "2.8.5",
+    "dotenv": "16.6.1",
+    "express": "5.1.0",
+    "multer": "2.0.2",
+    "pdfkit": "0.17.1"
   }
 }
