@@ -2976,13 +2976,45 @@ app.use(
 |--------------------------------------------------------------------------
 */
 
-app.get(
-    "*",
+/* 404 API */
+
+app.use(
+    "/api",
     (req, res) => {
+
+        res
+            .status(404)
+            .json({
+
+                success: false,
+
+                error:
+                    "API endpoint not found"
+
+            });
+
+    }
+);
+
+
+/* FRONTEND FALLBACK */
+
+app.use(
+    (req, res, next) => {
+
+        // إذا كان الطلب لملف أو مسار API
+        // لا نعيد index.html
+        if (
+            req.path.startsWith("/api") ||
+            req.path.startsWith("/invoices")
+        ) {
+            return next();
+        }
 
         res.sendFile(
             path.join(
-                PUBLIC_DIR,
+                ROOT,
+                "public",
                 "index.html"
             )
         );
@@ -2990,6 +3022,23 @@ app.get(
     }
 );
 
+
+/* SERVER */
+
+app.listen(
+    PORT,
+    () => {
+
+        console.log(
+            `🌉 Jusoor Accounting running on port ${PORT}`
+        );
+
+        console.log(
+            `🚀 Server started on port ${PORT}`
+        );
+
+    }
+);
 
 /*
 |--------------------------------------------------------------------------
