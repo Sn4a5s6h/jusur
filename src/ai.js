@@ -1,7 +1,5 @@
 function arabicNumbersToEnglish(value) {
-
     const map = {
-
         "٠": "0",
         "١": "1",
         "٢": "2",
@@ -12,34 +10,122 @@ function arabicNumbersToEnglish(value) {
         "٧": "7",
         "٨": "8",
         "٩": "9"
-
     };
 
-    return String(value)
-        .replace(
-            /[٠-٩]/g,
-            character => map[character]
-        )
+    return String(value || "")
+        .replace(/[٠-٩]/g, c => map[c])
         .replace(/,/g, "")
-        .replace(/٬/g, "");
-
+        .replace(/٬/g, "")
+        .trim();
 }
-
 
 function number(value) {
-
-    return Number(
-        arabicNumbersToEnglish(value)
-    );
-
+    return Number(arabicNumbersToEnglish(value));
 }
 
+function normalizeText(text) {
+    return String(text || "")
+        .replace(/[إأآ]/g, "ا")
+        .replace(/ة/g, "ة")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+const units = [
+    "كرتون",
+    "كرتونة",
+    "قطمة",
+    "قطم",
+    "قطعة",
+    "حبة",
+    "وحدة",
+    "كيلو",
+    "كجم",
+    "كغ",
+    "جرام",
+    "لتر",
+    "كيس",
+    "علبة",
+    "باكت",
+    "صندوق"
+];
+
+const months = {
+    "يناير": 0,
+    "فبراير": 1,
+    "مارس": 2,
+    "ابريل": 3,
+    "أبريل": 3,
+    "مايو": 4,
+    "يونيو": 5,
+    "يوليو": 6,
+    "اغسطس": 7,
+    "أغسطس": 7,
+    "سبتمبر": 8,
+    "اكتوبر": 9,
+    "أكتوبر": 9,
+    "نوفمبر": 10,
+    "ديسمبر": 11
+};
+
+function parseDueDate(text) {
+
+    const match = text.match(
+        /(?:تستحق|استحقاق|الاستحقاق|موعد السداد|السداد)\s+(?:في|يوم)?\s*([٠-٩0-9]{1,2})\s+(يناير|فبراير|مارس|ابريل|أبريل|مايو|يونيو|يوليو|اغسطس|أغسطس|سبتمبر|اكتوبر|أكتوبر|نوفمبر|ديسمبر)/i
+    );
+
+    if (!match) {
+        return null;
+    }
+
+    const day = number(match[1]);
+    const monthName = match[2];
+    const month = months[monthName];
+
+    if (
+        month === undefined ||
+        day < 1 ||
+        day > 31
+    ) {
+        return null;
+    }
+
+    const now = new Date();
+
+    let year = now.getFullYear();
+
+    const candidate =
+        new Date(year, month, day);
+
+    if (candidate < now) {
+        year++;
+    }
+
+    const finalDate =
+        new Date(year, month, day);
+
+    return {
+        due_date:
+            finalDate.toISOString().slice(0, 10),
+
+        due_days:
+            Math.ceil(
+                (
+                    finalDate.getTime() -
+                    now.getTime()
+                ) /
+                (1000 * 60 * 60 * 24)
+            )
+    };
+}
 
 function parseTransaction(text) {
 
     const original =
         String(text || "").trim();
 
+    const normalized =
+        normalizeText(original);
 
     const result = {
 
@@ -71,73 +157,105 @@ function parseTransaction(text) {
 
     };
 
+    /*
+     * نوع العملية
+     */
 
     if (
-        /فاتورة|بيع|مبيعات/i
-        .test(original)
+        /فاتورة\s+مبيعات|فاتورة\s+بيع|مبيعات|بيع/i
+            .test(normalized)
     ) {
-
         result.intent =
             "sales_invoice";
-
     }
 
+    /*
+     * آجل / دين
+     */
 
     if (
-        /أجل|اجل|آجل|دين|على الحساب/i
-        .test(original)
+        /اجل|آجل|آجلة|دين|على الحساب|بالدين/i
+            .test(normalized)
     ) {
-
         result.type =
             "credit";
-
     }
 
+    /*
+     * العميل
+     *
+     * أمثلة:
+     * من العميل غيلان
+     * على العميل علي أحمد
+     * للعميل محمد
+     */
 
     const customerMatch =
-        original.match(
-            /(?:العميل|للعميل|على العميل)\s+(.+?)(?=\s+(?:بسعر|سعر|اجل|أجل|آجل|لمدة)|$)/i
+        normalized.match(
+            /(?:من|على|لدى|لل|الى|إلى)\s+العميل\s+(.+?)(?=\s+(?:تستحق|استحقاق|بسعر|سعر|من سعر|بسعر|اجل|آجل|لمدة|نقد|نقدا|نقدًا)|$)/i
         );
-
 
     if (customerMatch) {
 
         result.customer =
             customerMatch[1]
                 .trim()
-                .replace(/[،,]+$/, "");
+                .replace(/[،,.]+$/, "");
 
     }
 
+    /*
+     * صيغة الصنف الرئيسية:
+     *
+     * ٥٠ قطمة دال اصفر من سعر ٥٠٠
+     *
+     * أو:
+     *
+     * ٥٠ قطمة دال اصفر بسعر ٥٠٠
+     *
+     * أو:
+     *
+     * ٥٠ قطمة دال اصفر سعر ٥٠٠
+     */
 
-    const itemMatch =
-        original.match(
+    const unitPattern =
+        units.join("|");
 
-            /([٠-٩0-9]+)\s*(?:كرتون|كرتونة|قطعة|حبة|وحدة)\s+(.+?)\s+(?:بسعر|سعر)\s+([٠-٩0-9,٬]+)/i
-
+    const itemRegex =
+        new RegExp(
+            "(?:^|\\s)" +
+            "([٠-٩0-9]+)" +
+            "\\s+(" +
+            unitPattern +
+            ")" +
+            "\\s+" +
+            "(.+?)" +
+            "\\s+" +
+            "(?:من\\s+)?(?:سعر|بسعر)" +
+            "\\s+" +
+            "([٠-٩0-9,٬]+)" +
+            "(?=\\s+(?:من|على|لل|تستحق|استحقاق|اجل|آجل|لمدة)|$)",
+            "i"
         );
 
+    const itemMatch =
+        normalized.match(itemRegex);
 
     if (itemMatch) {
 
         const qty =
             number(itemMatch[1]);
 
-
         const unit =
-            /كرتون|كرتونة/i
-                .test(itemMatch[0])
-                ? "كرتون"
-                : "قطعة";
-
+            itemMatch[2];
 
         const name =
-            itemMatch[2].trim();
-
+            itemMatch[3]
+                .trim()
+                .replace(/[،,.]+$/, "");
 
         const price =
-            number(itemMatch[3]);
-
+            number(itemMatch[4]);
 
         result.items.push({
 
@@ -153,67 +271,162 @@ function parseTransaction(text) {
 
     }
 
+    /*
+     * محاولة ثانية إذا كانت صياغة الجملة مختلفة
+     */
 
-    const dueMatch =
-        original.match(
+    if (result.items.length === 0) {
 
-            /(?:أجل|اجل|آجل)\s*(?:لمدة)?\s*([٠-٩0-9]+)\s*(يوم|أيام|شهر|أشهر)?/i
+        const simpleItemRegex =
+            new RegExp(
+                "([٠-٩0-9]+)\\s+(" +
+                unitPattern +
+                ")\\s+(.+?)\\s+(?:من\\s+)?(?:سعر|بسعر)\\s+([٠-٩0-9,٬]+)",
+                "i"
+            );
 
-        );
+        const match =
+            normalized.match(
+                simpleItemRegex
+            );
 
+        if (match) {
 
-    if (dueMatch) {
+            result.items.push({
 
-        const n =
-            number(dueMatch[1]);
+                name:
+                    match[3]
+                        .trim(),
 
+                qty:
+                    number(match[1]),
 
-        if (
-            /شهر|أشهر/i
-                .test(dueMatch[2] || "")
-        ) {
+                price:
+                    number(match[4]),
 
-            result.due_days =
-                n * 30;
+                unit:
+                    match[2]
 
-        } else {
-
-            result.due_days = n;
+            });
 
         }
 
     }
 
+    /*
+     * تاريخ الاستحقاق
+     */
 
-    if (
-        result.customer &&
-        result.items.length
-    ) {
+    const due =
+        parseDueDate(normalized);
 
-        result.total =
-            result.items.reduce(
+    if (due) {
 
-                (sum, item) =>
-                    sum +
-                    item.qty *
-                    item.price,
+        result.due_date =
+            due.due_date;
 
-                0
+        result.due_days =
+            due.due_days;
 
-            );
+        /*
+         * وجود تاريخ استحقاق يعني
+         * أن العملية آجلة حتى لو
+         * لم يكتب المستخدم كلمة "أجل".
+         */
 
-        result.ready = true;
+        result.type =
+            "credit";
 
     }
 
+    /*
+     * مدة الأجل
+     *
+     * مثال:
+     * أجل 30 يوم
+     * لمدة 30 يوم
+     */
+
+    const dueDaysMatch =
+        normalized.match(
+            /(?:اجل|آجل|لمدة|استحقاق)\s*(?:لمدة)?\s*([٠-٩0-9]+)\s*(يوم|أيام|شهر|أشهر)?/i
+        );
+
+    if (
+        dueDaysMatch &&
+        !result.due_date
+    ) {
+
+        const value =
+            number(dueDaysMatch[1]);
+
+        const unit =
+            dueDaysMatch[2] || "يوم";
+
+        result.due_days =
+            /شهر|أشهر/i.test(unit)
+                ? value * 30
+                : value;
+
+        result.type =
+            "credit";
+
+        const date =
+            new Date();
+
+        date.setDate(
+            date.getDate() +
+            result.due_days
+        );
+
+        result.due_date =
+            date.toISOString()
+                .slice(0, 10);
+    }
+
+    /*
+     * الإجمالي
+     */
+
+    if (result.items.length > 0) {
+
+        result.total =
+            result.items.reduce(
+                (sum, item) =>
+                    sum +
+                    (
+                        item.qty *
+                        item.price
+                    ),
+                0
+            );
+
+    }
+
+    /*
+     * التحقق
+     */
+
+    result.ready =
+        result.intent ===
+            "sales_invoice" &&
+
+        Boolean(
+            result.customer
+        ) &&
+
+        result.items.length > 0 &&
+
+        result.items.every(
+            item =>
+                item.qty > 0 &&
+                item.price >= 0 &&
+                item.name
+        );
 
     return result;
-
 }
 
-
 module.exports = {
-
     parseTransaction
-
 };
