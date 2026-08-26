@@ -11,11 +11,11 @@
     "node": "20.x"
   },
   "dependencies": {
+    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "multer": "^2.0.2",
-    "pdfkit": "^0.17.1",
-    "pg": "^8.16.3"
+    "pdfkit": "^0.17.1"
   }
 }
