@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
-const API = 'https://jusoor-backend.onrender.com' // سيرفر Render
+const API = 'https://jusur.onrender.com' // سيرفر Render
 
 function App() {
   const [listening, setListening] = useState(false);
