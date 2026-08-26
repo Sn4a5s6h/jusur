@@ -1,284 +1,826 @@
+"use strict";
+
 const {
-    normalizeArabicNumbers,
-    normalizeNumber,
     normalizeText,
-    normalizeSaleType,
-    normalizeUnit
+    detectSignals,
+    extractNumbers
 } = require("./normalizer");
 
-const {
-    validateTransaction
-} = require("./validator");
+
+/*
+========================================
+JUSOOR ACCOUNTING AI ENGINE
+المرحلة الأولى من محرك الفهم المحاسبي
+========================================
+*/
 
 
-function extractCustomer(text) {
-    const patterns = [
-        /(?:العميل|للعميل|على العميل|من العميل)\s+(.+?)(?=\s+(?:بسعر|سعر|بـ|ب|آجل|اجل|أجل|لمدة|تستحق|استحقاق)|$)/i,
+/* ================================
+   Helpers
+================================ */
 
-        /(?:لـ|ل)\s*([ء-يA-Za-z0-9 ]+?)(?=\s+(?:عدد|كمية|سعر|بسعر|بـ|آجل|اجل|أجل)|$)/i
-    ];
+function cleanName(value) {
 
-    for (const pattern of patterns) {
-        const match = text.match(pattern);
+    if (!value) return null;
 
-        if (match && match[1]) {
-            return match[1]
-                .trim()
-                .replace(/[،,.]+$/, "");
-        }
-    }
+    return String(value)
+        .replace(
+            /^(العميل|عميل|للعميل|لدى العميل|المورد|مورد)\s+/i,
+            ""
+        )
+        .trim();
 
-    return null;
 }
 
 
-function extractDueDate(text) {
-    const normalized =
-        normalizeArabicNumbers(text);
+function toNumber(value) {
+
+    if (
+        value === null ||
+        value === undefined ||
+        value === ""
+    ) {
+        return null;
+    }
+
+    const n =
+        Number(
+            String(value)
+                .replace(/[,،]/g, "")
+                .trim()
+        );
+
+    return Number.isFinite(n)
+        ? n
+        : null;
+
+}
+
+
+/* ================================
+   Detect Intent
+================================ */
+
+function detectIntent(text) {
+
+    const t =
+        normalizeText(text);
+
 
     /*
-     * 30 أغسطس
+     * الاستعلامات
      */
-    const dateMatch =
-        normalized.match(
-            /(?:تستحق|استحقاق|حتى|إلى|الى|يوم)\s*(\d{1,2})\s*(يناير|فبراير|مارس|أبريل|ابريل|مايو|يونيو|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|اكتوبر|نوفمبر|ديسمبر)/i
-        );
 
-    if (dateMatch) {
-        const months = {
-            "يناير": "01",
-            "فبراير": "02",
-            "مارس": "03",
-            "أبريل": "04",
-            "ابريل": "04",
-            "مايو": "05",
-            "يونيو": "06",
-            "يوليو": "07",
-            "أغسطس": "08",
-            "اغسطس": "08",
-            "سبتمبر": "09",
-            "أكتوبر": "10",
-            "اكتوبر": "10",
-            "نوفمبر": "11",
-            "ديسمبر": "12"
-        };
+    if (
+        /كشف حساب|رصيد العميل|كم باقي|كم عليه|المتبقي|المستحق|ذمم/i
+            .test(t)
+    ) {
 
-        const day =
-            String(Number(dateMatch[1]))
-                .padStart(2, "0");
+        return "customer_statement";
 
-        const month =
-            months[dateMatch[2]];
-
-        const year =
-            new Date().getFullYear();
-
-        return `${year}-${month}-${day}`;
     }
+
+
+    if (
+        /كم مبيعات|مبيعات اليوم|اجمالي المبيعات|إجمالي المبيعات/i
+            .test(t)
+    ) {
+
+        return "sales_report";
+
+    }
+
+
+    if (
+        /من عليه|العملاء المتأخرين|ديون العملاء|الديون المستحقة/i
+            .test(t)
+    ) {
+
+        return "receivables_report";
+
+    }
+
+
+    /*
+     * سداد
+     */
+
+    if (
+        /سدد|سددت|دفع|دفعت|حول|حولت|استلمت|استلم/i
+            .test(t)
+    ) {
+
+        return "payment";
+
+    }
+
+
+    /*
+     * مشتريات
+     */
+
+    if (
+        /مشتريات|شراء|اشتريت|اشترينا|من المورد/i
+            .test(t)
+    ) {
+
+        return "purchase_invoice";
+
+    }
+
+
+    /*
+     * مبيعات
+     */
+
+    if (
+        /فاتورة|بيع|مبيعات|بعت|بعنا|للعميل/i
+            .test(t)
+    ) {
+
+        return "sales_invoice";
+
+    }
+
+
+    return "unknown";
+
+}
+
+
+/* ================================
+   Detect Customer
+================================ */
+
+function extractCustomer(text) {
+
+    const t =
+        normalizeText(text);
+
+
+    const patterns = [
+
+        /للعميل\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|اجل|آجل|نقدي|لمدة|بمبلغ|بقيمة)|$)/i,
+
+        /العميل\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|اجل|آجل|نقدي|لمدة|بمبلغ|بقيمة)|$)/i,
+
+        /على\s+(.+?)(?=\s+(?:لمدة|بمبلغ|بقيمة|اجل|آجل|نقدي)|$)/i,
+
+        /من\s+(.+?)(?=\s+(?:المورد|بمبلغ|بقيمة)|$)/i
+
+    ];
+
+
+    for (const pattern of patterns) {
+
+        const match =
+            t.match(pattern);
+
+        if (match && match[1]) {
+
+            return cleanName(
+                match[1]
+            );
+
+        }
+
+    }
+
 
     return null;
+
 }
 
 
-function extractDueDays(text) {
-    const normalized =
-        normalizeArabicNumbers(text);
+/* ================================
+   Detect Supplier
+================================ */
 
-    const match =
-        normalized.match(
-            /(?:لمدة|بعد)\s*(\d+)\s*(يوم|أيام|شهر|أشهر)/i
-        );
+function extractSupplier(text) {
 
-    if (!match) return null;
+    const t =
+        normalizeText(text);
 
-    const value =
-        Number(match[1]);
 
-    if (/شهر|أشهر/i.test(match[2])) {
-        return value * 30;
+    const patterns = [
+
+        /من المورد\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|بمبلغ|بقيمة)|$)/i,
+
+        /المورد\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|بمبلغ|بقيمة)|$)/i
+
+    ];
+
+
+    for (const pattern of patterns) {
+
+        const match =
+            t.match(pattern);
+
+        if (match && match[1]) {
+
+            return cleanName(
+                match[1]
+            );
+
+        }
+
     }
 
-    return value;
+
+    return null;
+
 }
 
 
+/* ================================
+   Detect Payment Type
+================================ */
+
+function detectPaymentType(text) {
+
+    const signals =
+        detectSignals(text);
+
+
+    if (signals.isFree) {
+
+        return "free";
+
+    }
+
+
+    if (signals.isCredit) {
+
+        return "credit";
+
+    }
+
+
+    if (signals.isCash) {
+
+        return "cash";
+
+    }
+
+
+    return "cash";
+
+}
+
+
+/* ================================
+   Detect Due Days
+================================ */
+
+function extractDueDays(text) {
+
+    const t =
+        normalizeText(text);
+
+
+    const match =
+        t.match(
+            /(?:لمدة|بعد|خلال)\s*(\d+)\s*(?:يوم|ايام|أيام)/i
+        );
+
+
+    if (match) {
+
+        return Number(
+            match[1]
+        );
+
+    }
+
+
+    if (
+        /30\s*يوم/i.test(t)
+    ) {
+
+        return 30;
+
+    }
+
+
+    if (
+        /60\s*يوم/i.test(t)
+    ) {
+
+        return 60;
+
+    }
+
+
+    if (
+        /90\s*يوم/i.test(t)
+    ) {
+
+        return 90;
+
+    }
+
+
+    return null;
+
+}
+
+
+/* ================================
+   Detect Amount
+================================ */
+
+function extractAmount(text) {
+
+    const t =
+        normalizeText(text);
+
+
+    const patterns = [
+
+        /(?:بمبلغ|بقيمة|مبلغ)\s*(\d+(?:\.\d+)?)/i,
+
+        /(?:سدد|دفع|دفعت|حول|حولت|استلمت)\s*(\d+(?:\.\d+)?)/i,
+
+        /(\d+(?:\.\d+)?)\s*(?:ريال|دولار)/i
+
+    ];
+
+
+    for (const pattern of patterns) {
+
+        const match =
+            t.match(pattern);
+
+        if (match) {
+
+            return toNumber(
+                match[1]
+            );
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+/* ================================
+   Detect Items
+================================ */
+
 function extractItems(text) {
-    const items = [];
+
+    const t =
+        normalizeText(text);
+
 
     /*
      * مثال:
-     * 50 قطمة دال أصفر بسعر 500
+     * 50 كرتون زيت سعر 500
      */
 
     const pattern =
-        /(\d+(?:\.\d+)?)\s*(كرتون|كرتونة|قطمة|قطمه|قطعة|قطعه|حبة|حبه|كيلو|كجم|كغ|علبة|علبه|لتر)\s+(.+?)\s+(?:بسعر|سعر|بـ|ب)\s*(\d+(?:\.\d+)?)/gi;
+        /(\d+(?:\.\d+)?)\s+([^\d]+?)\s+(?:سعر|بسعر)\s*(\d+(?:\.\d+)?)/i;
 
-    let match;
 
-    while ((match = pattern.exec(text)) !== null) {
-        items.push({
-            name: match[3]
-                .trim()
-                .replace(/[،,.]+$/, ""),
+    const match =
+        t.match(pattern);
 
-            qty: normalizeNumber(match[1]),
 
-            unit: normalizeUnit(match[2]),
+    if (match) {
 
-            price: normalizeNumber(match[4])
-        });
+        const qty =
+            Number(match[1]);
+
+        const name =
+            match[2]
+                .replace(
+                    /^(من|عدد)\s+/i,
+                    ""
+                )
+                .trim();
+
+
+        const price =
+            Number(match[3]);
+
+
+        return [
+
+            {
+
+                name,
+
+                qty,
+
+                unit: "قطعة",
+
+                price,
+
+                total:
+                    qty * price
+
+            }
+
+        ];
+
     }
 
-    return items;
-}
+
+    /*
+     * محاولة ثانية:
+     *
+     * 50 كرتون زيت
+     */
+
+    const simplePattern =
+        /(\d+(?:\.\d+)?)\s+([^\d]+?)(?=\s+(?:آجل|اجل|نقدي|مجاني|بمبلغ|بقيمة|$))/i;
 
 
-function calculateTotal(items) {
-    return items.reduce(
-        (sum, item) =>
-            sum +
-            Number(item.qty || 0) *
-            Number(item.price || 0),
-        0
-    );
-}
-
-
-function parseTransaction(text) {
-    const original =
-        String(text || "").trim();
-
-    const normalized =
-        normalizeText(
-            normalizeArabicNumbers(original)
+    const simple =
+        t.match(
+            simplePattern
         );
 
-    const result = {
-        intent: "unknown",
 
-        customer: extractCustomer(normalized),
+    if (simple) {
 
-        customer_phone: null,
+        return [
 
-        type: normalizeSaleType(normalized),
+            {
 
-        due_days:
-            extractDueDays(normalized),
+                name:
+                    simple[2].trim(),
 
-        due_date:
-            extractDueDate(normalized),
+                qty:
+                    Number(simple[1]),
 
-        items:
-            extractItems(normalized),
+                unit:
+                    "قطعة",
+
+                price:
+                    0,
+
+                total:
+                    0
+
+            }
+
+        ];
+
+    }
+
+
+    return [];
+
+}
+
+
+/* ================================
+   Calculate Totals
+================================ */
+
+function calculateTotals(items) {
+
+    const subtotal =
+        items.reduce(
+
+            (sum, item) => {
+
+                return sum +
+                    (
+                        Number(item.qty || 0) *
+                        Number(item.price || 0)
+                    );
+
+            },
+
+            0
+
+        );
+
+
+    return {
+
+        subtotal,
 
         discount: 0,
 
         tax: 0,
 
-        total: 0,
+        total: subtotal
 
-        ready: false,
-
-        needs_confirmation: true,
-
-        errors: [],
-
-        original_text: original
     };
 
+}
 
-    /*
-     * تحديد نوع العملية
-     */
+
+/* ================================
+   Validate Basic Transaction
+================================ */
+
+function validateTransaction(data) {
+
+    const errors = [];
+
 
     if (
-        /فاتورة مبيعات|فاتورة بيع|بعت|بعت له|بيع/i
-            .test(normalized)
+        data.intent ===
+        "sales_invoice"
     ) {
-        result.intent =
-            "sales_invoice";
+
+        if (!data.customer) {
+
+            errors.push(
+                "اسم العميل مطلوب"
+            );
+
+        }
+
+
+        if (
+            !data.items ||
+            !data.items.length
+        ) {
+
+            errors.push(
+                "لم يتم تحديد الأصناف"
+            );
+
+        }
+
+
+        const hasPrice =
+            data.items &&
+            data.items.some(
+                item =>
+                    Number(item.price) > 0
+            );
+
+
+        if (!hasPrice) {
+
+            errors.push(
+                "سعر البيع غير محدد"
+            );
+
+        }
+
     }
 
-    else if (
-        /فاتورة مشتريات|اشتريت|شراء/i
-            .test(normalized)
-    ) {
-        result.intent =
-            "purchase_invoice";
-    }
 
-    else if (
-        /قبضت|استلمت|تحصلت/i
-            .test(normalized)
+    if (
+        data.intent ===
+        "payment"
     ) {
-        result.intent =
-            "payment_received";
-    }
 
-    else if (
-        /دفعت|سددت/i
-            .test(normalized)
-    ) {
-        result.intent =
-            "payment_sent";
-    }
+        if (!data.customer) {
 
-    else if (
-        /مصروف|دفعت مصروف/i
-            .test(normalized)
-    ) {
-        result.intent =
-            "expense";
+            errors.push(
+                "اسم العميل مطلوب للسداد"
+            );
+
+        }
+
+
+        if (!data.amount) {
+
+            errors.push(
+                "مبلغ السداد مطلوب"
+            );
+
+        }
+
     }
 
 
-    result.total =
-        calculateTotal(
-            result.items
+    return {
+
+        valid:
+            errors.length === 0,
+
+        errors
+
+    };
+
+}
+
+
+/* ================================
+   Main Parser
+================================ */
+
+function parseTransaction(text) {
+
+    if (
+        typeof text !== "string" ||
+        !text.trim()
+    ) {
+
+        throw new Error(
+            "النص مطلوب"
+        );
+
+    }
+
+
+    const normalized =
+        normalizeText(text);
+
+
+    const signals =
+        detectSignals(
+            normalized
+        );
+
+
+    const intent =
+        detectIntent(
+            normalized
+        );
+
+
+    const customer =
+        extractCustomer(
+            normalized
+        );
+
+
+    const supplier =
+        extractSupplier(
+            normalized
+        );
+
+
+    const paymentType =
+        detectPaymentType(
+            normalized
+        );
+
+
+    const dueDays =
+        extractDueDays(
+            normalized
+        );
+
+
+    const amount =
+        extractAmount(
+            normalized
+        );
+
+
+    const items =
+        extractItems(
+            normalized
         );
 
 
     /*
-     * إذا كانت العملية آجل
-     * ولم يوجد تاريخ محدد ولكن توجد مدة
+     * المجاني = قيمة صفر
      */
 
     if (
-        result.type === "credit" &&
-        !result.due_date &&
-        result.due_days
+        paymentType === "free"
     ) {
-        const date =
-            new Date();
 
-        date.setDate(
-            date.getDate() +
-            Number(result.due_days)
+        for (
+            const item
+            of items
+        ) {
+
+            item.price = 0;
+
+            item.total = 0;
+
+        }
+
+    }
+
+
+    const totals =
+        calculateTotals(
+            items
         );
 
-        result.due_date =
-            date.toISOString()
-                .slice(0, 10);
-    }
+
+    const data = {
+
+        raw_text:
+            text,
+
+        normalized_text:
+            normalized,
+
+        intent,
+
+        customer,
+
+        supplier,
+
+        customer_phone:
+            null,
+
+        type:
+            paymentType === "credit"
+                ? "credit"
+                : "cash",
+
+        payment_type:
+            paymentType,
+
+        due_days:
+            dueDays,
+
+        due_date:
+            null,
+
+        amount,
+
+        items,
+
+        subtotal:
+            totals.subtotal,
+
+        discount:
+            totals.discount,
+
+        tax:
+            totals.tax,
+
+        total:
+            totals.total,
+
+        signals,
+
+        ready:
+            false,
+
+        errors: []
+
+    };
 
 
     const validation =
         validateTransaction(
-            result
+            data
         );
 
 
-    result.errors =
-        validation.errors;
-
-    result.ready =
+    data.ready =
         validation.valid;
 
 
-    return result;
+    data.errors =
+        validation.errors;
+
+
+    /*
+     * العمليات التي ليست فواتير
+     * لا تحتاج شرط الفاتورة.
+     */
+
+    if (
+        intent !== "sales_invoice" &&
+        intent !== "purchase_invoice"
+    ) {
+
+        data.ready =
+            validation.valid;
+
+    }
+
+
+    return data;
+
 }
 
 
+/* ================================
+   Export
+================================ */
+
 module.exports = {
-    parseTransaction
+
+    parseTransaction,
+
+    detectIntent,
+
+    extractCustomer,
+
+    extractSupplier,
+
+    extractAmount,
+
+    extractItems,
+
+    extractDueDays,
+
+    detectPaymentType,
+
+    validateTransaction
+
 };
