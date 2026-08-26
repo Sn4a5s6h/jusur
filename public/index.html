@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+
+<html
+    lang="ar"
+    dir="rtl"
+>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+    جسور المحاسبي
+</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    margin: 0;
+
+    font-family:
+        Arial,
+        Tahoma,
+        sans-serif;
+
+    background: #f4f7fa;
+
+    color: #172033;
+
+}
+
+header {
+
+    background: #102a43;
+
+    color: white;
+
+    padding: 22px;
+
+}
+
+header h1 {
+
+    margin: 0;
+
+}
+
+.container {
+
+    max-width: 1150px;
+
+    margin: auto;
+
+    padding: 20px;
+
+}
+
+.card {
+
+    background: white;
+
+    border-radius: 15px;
+
+    padding: 20px;
+
+    margin-bottom: 20px;
+
+    box-shadow:
+        0 5px 20px
+        rgba(0,0,0,.06);
+
+}
+
+textarea {
+
+    width: 100%;
+
+    min-height: 130px;
+
+    border:
+        1px solid
+        #ccd6df;
+
+    border-radius: 12px;
+
+    padding: 15px;
+
+    font-size: 18px;
+
+    resize: vertical;
+
+}
+
+button {
+
+    border: 0;
+
+    border-radius: 9px;
+
+    padding: 12px 20px;
+
+    margin: 6px;
+
+    cursor: pointer;
+
+    font-size: 15px;
+
+}
+
+.primary {
+
+    background: #102a43;
+
+    color: white;
+
+}
+
+.success {
+
+    background: #198754;
+
+    color: white;
+
+}
+
+.warning {
+
+    background: #f0ad4e;
+
+    color: white;
+
+}
+
+.grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 15px;
+
+}
+
+.stat {
+
+    background: #eef3f7;
+
+    padding: 20px;
+
+    border-radius: 12px;
+
+}
+
+.stat strong {
+
+    font-size: 25px;
+
+}
+
+.preview {
+
+    background: #f7f9fb;
+
+    border-radius: 10px;
+
+    padding: 15px;
+
+    margin-top: 15px;
+
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+}
+
+th,
+td {
+
+    padding: 10px;
+
+    border-bottom:
+        1px solid
+        #ddd;
+
+    text-align: right;
+
+}
+
+.badge {
+
+    padding: 5px 10px;
+
+    border-radius: 20px;
+
+    background: #e9eef3;
+
+}
+
+@media(max-width: 700px) {
+
+    .grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<header>
+
+<div class="container">
+
+<h1>
+    🌉 جسور المحاسبي 2.0
+</h1>
+
+<p>
+    سجّل معاملاتك بالنص أو الصوت
+</p>
+
+</div>
+
+</header>
+
+
+<div class="container">
+
+
+<div class="card">
+
+<h2>
+    🤖 تسجيل معاملة بالذكاء الاصطناعي
+</h2>
+
+<p>
+    اكتب العملية كما تتحدث بها مع المحاسب.
+</p>
+
+
+<textarea
+    id="transactionText"
+    placeholder="مثال:
+فاتورة مبيعات ٥٠ كرتون زيت شفاف سعر ٥٠٠ ريال للكرتون اجل على العميل علي أحمد لمدة 30 يوم"
+></textarea>
+
+
+<div>
+
+<button
+    class="primary"
+    onclick="analyzeTransaction()"
+>
+    🔍 تحليل المعاملة
+</button>
+
+
+<button
+    onclick="startVoice()"
+>
+    🎤 تحدث
+</button>
+
+</div>
+
+
+<div
+    id="analysisResult"
+></div>
+
+
+</div>
+
+
+
+<div class="card">
+
+<h2>
+    📊 لوحة التحكم
+</h2>
+
+
+<div class="grid">
+
+
+<div class="stat">
+
+<div>
+    إجمالي المبيعات
+</div>
+
+<strong
+    id="sales"
+>
+    0
+</strong>
+
+<span>
+    ريال
+</span>
+
+</div>
+
+
+<div class="stat">
+
+<div>
+    الذمم المدينة
+</div>
+
+<strong
+    id="receivables"
+>
+    0
+</strong>
+
+<span>
+    ريال
+</span>
+
+</div>
+
+
+<div class="stat">
+
+<div>
+    العملاء
+</div>
+
+<strong
+    id="customers"
+>
+    0
+</strong>
+
+</div>
+
+
+<div class="stat">
+
+<div>
+    الأصناف
+</div>
+
+<strong
+    id="products"
+>
+    0
+</strong>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>
+    🧾 آخر الفواتير
+</h2>
+
+<div id="invoiceList">
+    جاري التحميل...
+</div>
+
+</div>
+
+
+</div>
+
+
+<script>
+
+let parsedTransaction = null;
+
+
+function formatNumber(value) {
+
+    return Number(value || 0)
+        .toLocaleString(
+            "ar-YE"
+        );
+
+}
+
+
+async function analyzeTransaction() {
+
+    const text =
+        document
+            .getElementById(
+                "transactionText"
+            )
+            .value
+            .trim();
+
+
+    if (!text) {
+
+        alert(
+            "اكتب المعاملة أولاً"
+        );
+
+        return;
+
+    }
+
+
+    const response =
+        await fetch(
+            "/api/ai/parse",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body:
+                    JSON.stringify({
+                        text
+                    })
+
+            }
+        );
+
+
+    const data =
+        await response.json();
+
+
+    if (!data.success) {
+
+        alert(
+            data.error
+        );
+
+        return;
+
+    }
+
+
+    parsedTransaction =
+        data.parsed;
+
+
+    showPreview(
+        parsedTransaction
+    );
+
+}
+
+
+function showPreview(data) {
+
+    const container =
+        document
+            .getElementById(
+                "analysisResult"
+            );
+
+
+    if (!data.ready) {
+
+        container.innerHTML = `
+
+            <div class="preview">
+
+                <h3>
+                    ⚠️ تحتاج العملية إلى بيانات إضافية
+                </h3>
+
+                <pre>${JSON.stringify(
+                    data,
+                    null,
+                    2
+                )}</pre>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let itemsHtml = "";
+
+
+    for (
+        const item
+        of data.items
+    ) {
+
+        itemsHtml += `
+
+            <tr>
+
+                <td>
+                    ${item.name}
+                </td>
+
+                <td>
+                    ${item.qty}
+                </td>
+
+                <td>
+                    ${item.unit}
+                </td>
+
+                <td>
+                    ${formatNumber(item.price)}
+                </td>
+
+                <td>
+                    ${formatNumber(
+                        item.qty *
+                        item.price
+                    )}
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    container.innerHTML = `
+
+        <div class="preview">
+
+            <h3>
+                ✅ فهمت العملية
+            </h3>
+
+
+            <p>
+
+                <strong>
+                    العميل:
+                </strong>
+
+                ${data.customer}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    نوع البيع:
+                </strong>
+
+                ${
+                    data.type === "credit"
+                        ? "آجل"
+                        : "نقدي"
+                }
+
+            </p>
+
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            الصنف
+                        </th>
+
+                        <th>
+                            الكمية
+                        </th>
+
+                        <th>
+                            الوحدة
+                        </th>
+
+                        <th>
+                            السعر
+                        </th>
+
+                        <th>
+                            الإجمالي
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    ${itemsHtml}
+
+                </tbody>
+
+            </table>
+
+
+            <h2>
+
+                الإجمالي:
+
+                ${formatNumber(
+                    data.total
+                )}
+
+                ريال
+
+            </h2>
+
+
+            <button
+                class="success"
+                onclick="commitTransaction()"
+            >
+                ✅ اعتماد وإنشاء الفاتورة
+            </button>
+
+
+            <button
+                class="warning"
+                onclick="editTransaction()"
+            >
+                ✏️ تعديل
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+async function commitTransaction() {
+
+    if (!parsedTransaction) {
+
+        return;
+
+    }
+
+
+    const response =
+        await fetch(
+            "/api/transactions/commit",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body:
+                    JSON.stringify({
+
+                        parsed:
+                            parsedTransaction
+
+                    })
+
+            }
+        );
+
+
+    const data =
+        await response.json();
+
+
+    if (!data.success) {
+
+        alert(
+            data.error
+        );
+
+        return;
+
+    }
+
+
+    document
+        .getElementById(
+            "analysisResult"
+        )
+        .innerHTML = `
+
+            <div class="preview">
+
+                <h3>
+                    🎉 تم إنشاء الفاتورة
+                </h3>
+
+                <p>
+                    رقم الفاتورة:
+                    <strong>
+                        ${data.invoice.inv_no}
+                    </strong>
+                </p>
+
+                <p>
+                    الإجمالي:
+                    ${formatNumber(
+                        data.invoice.total
+                    )}
+                    ريال
+                </p>
+
+                <a
+                    href="${data.invoice.pdf_url}"
+                    target="_blank"
+                >
+                    📄 فتح الفاتورة PDF
+                </a>
+
+            </div>
+
+        `;
+
+
+    loadDashboard();
+
+    loadInvoices();
+
+}
+
+
+function editTransaction() {
+
+    document
+        .getElementById(
+            "transactionText"
+        )
+        .focus();
+
+}
+
+
+function startVoice() {
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+
+    if (!SpeechRecognition) {
+
+        alert(
+            "التعرف الصوتي غير متاح في هذا المتصفح"
+        );
+
+        return;
+
+    }
+
+
+    const recognition =
+        new SpeechRecognition();
+
+
+    recognition.lang =
+        "ar-SA";
+
+
+    recognition.interimResults =
+        false;
+
+
+    recognition.continuous =
+        false;
+
+
+    recognition.onstart =
+        function () {
+
+            alert(
+                "🎤 تحدث الآن..."
+            );
+
+        };
+
+
+    recognition.onresult =
+        function (event) {
+
+            const text =
+                event
+                    .results[0][0]
+                    .transcript;
+
+
+            document
+                .getElementById(
+                    "transactionText"
+                )
+                .value = text;
+
+
+            analyzeTransaction();
+
+        };
+
+
+    recognition.onerror =
+        function () {
+
+            alert(
+                "تعذر التقاط الصوت"
+            );
+
+        };
+
+
+    recognition.start();
+
+}
+
+
+async function loadDashboard() {
+
+    const response =
+        await fetch(
+            "/api/dashboard"
+        );
+
+
+    const data =
+        await response.json();
+
+
+    document
+        .getElementById(
+            "sales"
+        )
+        .textContent =
+            formatNumber(
+                data.sales
+            );
+
+
+    document
+        .getElementById(
+            "receivables"
+        )
+        .textContent =
+            formatNumber(
+                data.receivables
+            );
+
+
+    document
+        .getElementById(
+            "customers"
+        )
+        .textContent =
+            data.customers;
+
+
+    document
+        .getElementById(
+            "products"
+        )
+        .textContent =
+            data.products;
+
+}
+
+
+async function loadInvoices() {
+
+    const response =
+        await fetch(
+            "/api/invoices"
+        );
+
+
+    const data =
+        await response.json();
+
+
+    const container =
+        document
+            .getElementById(
+                "invoiceList"
+            );
+
+
+    if (
+        !data.invoices ||
+        !data.invoices.length
+    ) {
+
+        container.innerHTML =
+            "لا توجد فواتير.";
+
+        return;
+
+    }
+
+
+    let html = `
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        الرقم
+                    </th>
+
+                    <th>
+                        العميل
+                    </th>
+
+                    <th>
+                        النوع
+                    </th>
+
+                    <th>
+                        الإجمالي
+                    </th>
+
+                    <th>
+                        المتبقي
+                    </th>
+
+                    <th>
+                        الحالة
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+    `;
+
+
+    for (
+        const invoice
+        of data.invoices
+    ) {
+
+        html += `
+
+            <tr>
+
+                <td>
+                    ${invoice.inv_no}
+                </td>
+
+                <td>
+                    ${invoice.customer_name}
+                </td>
+
+                <td>
+                    ${
+                        invoice.type === "credit"
+                            ? "آجل"
+                            : "نقدي"
+                    }
+                </td>
+
+                <td>
+                    ${formatNumber(
+                        invoice.total
+                    )}
+                </td>
+
+                <td>
+                    ${formatNumber(
+                        invoice.total -
+                        invoice.paid
+                    )}
+                </td>
+
+                <td>
+
+                    <span class="badge">
+
+                        ${
+                            invoice.status
+                        }
+
+                    </span>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    html += `
+
+            </tbody>
+
+        </table>
+
+    `;
+
+
+    container.innerHTML =
+        html;
+
+}
+
+
+loadDashboard();
+
+loadInvoices();
+
+</script>
+
+</body>
+
+  </html>
