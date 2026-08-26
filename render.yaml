@@ -1,0 +1,30 @@
+services:
+
+  - type: web
+
+    name: jusoor-accounting
+
+    runtime: node
+
+    plan: free
+
+    buildCommand: npm install
+
+    startCommand: npm start
+
+    envVars:
+
+      - key: NODE_VERSION
+        value: 20
+
+      - key: PORT
+        value: 3001
+
+      - key: OPENAI_API_KEY
+        sync: false
+
+      - key: PUBLIC_BASE_URL
+        sync: false
+
+      - key: DB_PATH
+        value: jusoor.db
