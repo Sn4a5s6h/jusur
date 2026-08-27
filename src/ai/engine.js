@@ -1,127 +1,305 @@
-"use strict";
+/*
+|--------------------------------------------------------------------------
+| JUSOOR AI ACCOUNTING ENGINE
+|--------------------------------------------------------------------------
+| تحليل العمليات المحاسبية باللغة العربية
+|
+| يدعم:
+| - بيع نقدي
+| - بيع آجل
+| - قبض من عميل
+| - شراء نقدي
+| - شراء آجل
+| - دفع لمورد
+| - إضافة أصناف
+| - مصروف
+| - إيداع وسحب نقدية
+|
+| ملاحظة:
+| هذا المحرك لا ينفذ أي عملية في قاعدة البيانات.
+| وظيفته تحليل النص فقط، ثم يقوم server.js بالمراجعة
+| قبل الحفظ.
+|--------------------------------------------------------------------------
+*/
 
-const {
-    normalizeText,
-    detectSignals,
-    extractNumbers
-} = require("./normalizer");
+"use strict";
 
 
 /*
-========================================
-JUSOOR ACCOUNTING AI ENGINE
-المرحلة الأولى من محرك الفهم المحاسبي
-========================================
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
 */
 
-
-/* ================================
-   Helpers
-================================ */
-
-function cleanName(value) {
-
-    if (!value) return null;
-
-    return String(value)
-        .replace(
-            /^(العميل|عميل|للعميل|لدى العميل|المورد|مورد)\s+/i,
-            ""
-        )
-        .trim();
-
-}
-
-
-function toNumber(value) {
+function cleanString(value) {
 
     if (
-        value === null ||
         value === undefined ||
-        value === ""
+        value === null
     ) {
         return null;
     }
 
-    const n =
-        Number(
-            String(value)
-                .replace(/[,،]/g, "")
-                .trim()
-        );
+    const text =
+        String(value).trim();
 
-    return Number.isFinite(n)
-        ? n
+    return text || null;
+}
+
+
+function normalizeArabicNumbers(text) {
+
+    if (!text) {
+        return "";
+    }
+
+    const arabicNumbers = {
+        "٠": "0",
+        "١": "1",
+        "٢": "2",
+        "٣": "3",
+        "٤": "4",
+        "٥": "5",
+        "٦": "6",
+        "٧": "7",
+        "٨": "8",
+        "٩": "9",
+        "۰": "0",
+        "۱": "1",
+        "۲": "2",
+        "۳": "3",
+        "۴": "4",
+        "۵": "5",
+        "۶": "6",
+        "۷": "7",
+        "۸": "8",
+        "۹": "9"
+    };
+
+    return String(text)
+        .replace(
+            /[٠-٩۰-۹]/g,
+            char => arabicNumbers[char]
+        )
+        .replace(/٬/g, "")
+        .replace(/٫/g, ".")
+        .replace(/,/g, "");
+}
+
+
+function numberFromText(value) {
+
+    if (
+        value === undefined ||
+        value === null
+    ) {
+        return null;
+    }
+
+    const text =
+        normalizeArabicNumbers(
+            String(value)
+        )
+        .replace(/[^\d.-]/g, "");
+
+    if (!text) {
+        return null;
+    }
+
+    const number =
+        Number(text);
+
+    return Number.isFinite(number)
+        ? number
         : null;
+}
+
+
+function roundNumber(value) {
+
+    return Math.round(
+        Number(value || 0) * 100
+    ) / 100;
 
 }
 
 
-/* ================================
-   Detect Intent
-================================ */
+function addItem(
+    items,
+    name,
+    qty,
+    price,
+    unit
+) {
+
+    name =
+        cleanString(name);
+
+    qty =
+        numberFromText(qty);
+
+    price =
+        numberFromText(price);
+
+    unit =
+        cleanString(unit) ||
+        "قطعة";
+
+
+    if (!name) {
+        return;
+    }
+
+    if (
+        qty === null ||
+        qty <= 0
+    ) {
+        return;
+    }
+
+    if (
+        price === null ||
+        price < 0
+    ) {
+        return;
+    }
+
+
+    items.push({
+
+        name,
+
+        qty:
+            roundNumber(qty),
+
+        price:
+            roundNumber(price),
+
+        unit
+
+    });
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE COMMON WORDS FROM PRODUCT NAMES
+|--------------------------------------------------------------------------
+*/
+
+function cleanItemName(name) {
+
+    if (!name) {
+        return null;
+    }
+
+    let result =
+        String(name).trim();
+
+
+    result =
+        result
+            .replace(
+                /^(من|عدد|كمية|الصنف|صنف)\s+/i,
+                ""
+            )
+            .replace(
+                /\s+(بسعر|سعر|بقيمة|قيمة)\s*.*$/i,
+                ""
+            )
+            .trim();
+
+
+    return result || null;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| DETECT TRANSACTION TYPE
+|--------------------------------------------------------------------------
+*/
+
+function detectType(text) {
+
+    const value =
+        text.toLowerCase();
+
+
+    if (
+        /آجل|اجل|بالآجل|بالاجل|على الحساب|دين|دائن/.test(
+            value
+        )
+    ) {
+
+        return "credit";
+
+    }
+
+
+    return "cash";
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| DETECT INTENT
+|--------------------------------------------------------------------------
+*/
 
 function detectIntent(text) {
 
-    const t =
-        normalizeText(text);
+    const value =
+        text.toLowerCase();
 
 
     /*
-     * الاستعلامات
-     */
+    |--------------------------------------------------------------------------
+    | CUSTOMER PAYMENT
+    |--------------------------------------------------------------------------
+    */
 
     if (
-        /كشف حساب|رصيد العميل|كم باقي|كم عليه|المتبقي|المستحق|ذمم/i
-            .test(t)
+        /قبض|استلام|تحصيل|استلمنا|استلمت|سدد لنا|سداد من العميل|دفع العميل/.test(
+            value
+        )
     ) {
 
-        return "customer_statement";
-
-    }
-
-
-    if (
-        /كم مبيعات|مبيعات اليوم|اجمالي المبيعات|إجمالي المبيعات/i
-            .test(t)
-    ) {
-
-        return "sales_report";
-
-    }
-
-
-    if (
-        /من عليه|العملاء المتأخرين|ديون العملاء|الديون المستحقة/i
-            .test(t)
-    ) {
-
-        return "receivables_report";
+        return "customer_payment";
 
     }
 
 
     /*
-     * سداد
-     */
+    |--------------------------------------------------------------------------
+    | SUPPLIER PAYMENT
+    |--------------------------------------------------------------------------
+    */
 
     if (
-        /سدد|سددت|دفع|دفعت|حول|حولت|استلمت|استلم/i
-            .test(t)
+        /دفع للمورد|سداد للمورد|سددنا للمورد|سدد للمورد|صرف للمورد/.test(
+            value
+        )
     ) {
 
-        return "payment";
+        return "supplier_payment";
 
     }
 
 
     /*
-     * مشتريات
-     */
+    |--------------------------------------------------------------------------
+    | PURCHASE
+    |--------------------------------------------------------------------------
+    */
 
     if (
-        /مشتريات|شراء|اشتريت|اشترينا|من المورد/i
-            .test(t)
+        /شراء|اشترينا|اشترى|مشتريات|توريد/.test(
+            value
+        )
     ) {
 
         return "purchase_invoice";
@@ -130,12 +308,66 @@ function detectIntent(text) {
 
 
     /*
-     * مبيعات
-     */
+    |--------------------------------------------------------------------------
+    | EXPENSE
+    |--------------------------------------------------------------------------
+    */
 
     if (
-        /فاتورة|بيع|مبيعات|بعت|بعنا|للعميل/i
-            .test(t)
+        /مصروف|مصاريف|إيجار|ايجار|كهرباء|ماء|رواتب|راتب|نقل|مواصلات/.test(
+            value
+        )
+    ) {
+
+        return "expense";
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CASH WITHDRAWAL
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        /سحب نقدي|سحب من الصندوق|سحبنا من الصندوق/.test(
+            value
+        )
+    ) {
+
+        return "cash_withdrawal";
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CASH DEPOSIT
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        /إيداع|ايداع|إيداع نقدي|اودع/.test(
+            value
+        )
+    ) {
+
+        return "cash_deposit";
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SALES
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        /بيع|مبيعات|بعنا|باع|فاتورة بيع|فاتورة/.test(
+            value
+        )
     ) {
 
         return "sales_invoice";
@@ -148,39 +380,76 @@ function detectIntent(text) {
 }
 
 
-/* ================================
-   Detect Customer
-================================ */
+/*
+|--------------------------------------------------------------------------
+| EXTRACT CUSTOMER / SUPPLIER NAME
+|--------------------------------------------------------------------------
+*/
 
-function extractCustomer(text) {
-
-    const t =
-        normalizeText(text);
-
+function extractPersonName(
+    text,
+    intent
+) {
 
     const patterns = [
 
-        /للعميل\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|اجل|آجل|نقدي|لمدة|بمبلغ|بقيمة)|$)/i,
+        /(?:لـ|ل|إلى|الى)\s+([^\s:،,]+(?:\s+[^\s:،,]+){0,3})/i,
 
-        /العميل\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|اجل|آجل|نقدي|لمدة|بمبلغ|بقيمة)|$)/i,
+        /(?:من)\s+([^\s:،,]+(?:\s+[^\s:،,]+){0,3})/i,
 
-        /على\s+(.+?)(?=\s+(?:لمدة|بمبلغ|بقيمة|اجل|آجل|نقدي)|$)/i,
+        /(?:العميل)\s*[:\-]?\s*([^\s:،,]+(?:\s+[^\s:،,]+){0,3})/i,
 
-        /من\s+(.+?)(?=\s+(?:المورد|بمبلغ|بقيمة)|$)/i
+        /(?:المورد)\s*[:\-]?\s*([^\s:،,]+(?:\s+[^\s:،,]+){0,3})/i
 
     ];
 
 
-    for (const pattern of patterns) {
+    for (
+        const pattern
+        of patterns
+    ) {
 
         const match =
-            t.match(pattern);
+            text.match(pattern);
 
-        if (match && match[1]) {
 
-            return cleanName(
+        if (!match) {
+            continue;
+        }
+
+
+        let name =
+            cleanString(
                 match[1]
             );
+
+
+        if (!name) {
+            continue;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REMOVE TRAILING ACTION WORDS
+        |--------------------------------------------------------------------------
+        */
+
+        name =
+            name
+                .replace(
+                    /\s+(دفع|دفعنا|وباقي|والباقي|بمبلغ|بقيمة|مبلغ|هاتف|رقم).*$/i,
+                    ""
+                )
+                .trim();
+
+
+        if (
+            name.length > 0 &&
+            name.length < 100
+        ) {
+
+            return name;
 
         }
 
@@ -192,545 +461,613 @@ function extractCustomer(text) {
 }
 
 
-/* ================================
-   Detect Supplier
-================================ */
+/*
+|--------------------------------------------------------------------------
+| EXTRACT PHONE
+|--------------------------------------------------------------------------
+*/
 
-function extractSupplier(text) {
+function extractPhone(text) {
 
-    const t =
-        normalizeText(text);
-
-
-    const patterns = [
-
-        /من المورد\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|بمبلغ|بقيمة)|$)/i,
-
-        /المورد\s+(.+?)(?=\s+(?:بـ|ب|بسعر|سعر|بمبلغ|بقيمة)|$)/i
-
-    ];
+    const normalized =
+        normalizeArabicNumbers(
+            text
+        );
 
 
-    for (const pattern of patterns) {
-
-        const match =
-            t.match(pattern);
-
-        if (match && match[1]) {
-
-            return cleanName(
-                match[1]
-            );
-
-        }
-
-    }
+    const match =
+        normalized.match(
+            /(?:05|07|7|967|\+967)[0-9]{7,12}/
+        );
 
 
-    return null;
+    return match
+        ? match[0]
+        : null;
 
 }
 
 
-/* ================================
-   Detect Payment Type
-================================ */
-
-function detectPaymentType(text) {
-
-    const signals =
-        detectSignals(text);
-
-
-    if (signals.isFree) {
-
-        return "free";
-
-    }
-
-
-    if (signals.isCredit) {
-
-        return "credit";
-
-    }
-
-
-    if (signals.isCash) {
-
-        return "cash";
-
-    }
-
-
-    return "cash";
-
-}
-
-
-/* ================================
-   Detect Due Days
-================================ */
+/*
+|--------------------------------------------------------------------------
+| EXTRACT DUE DAYS
+|--------------------------------------------------------------------------
+*/
 
 function extractDueDays(text) {
 
-    const t =
-        normalizeText(text);
+    const normalized =
+        normalizeArabicNumbers(
+            text
+        );
 
 
     const match =
-        t.match(
-            /(?:لمدة|بعد|خلال)\s*(\d+)\s*(?:يوم|ايام|أيام)/i
+        normalized.match(
+            /(\d+)\s*(?:يوم|أيام|ايام|يوماً)/
         );
 
 
-    if (match) {
-
-        return Number(
-            match[1]
-        );
-
+    if (!match) {
+        return null;
     }
 
 
-    if (
-        /30\s*يوم/i.test(t)
-    ) {
-
-        return 30;
-
-    }
-
-
-    if (
-        /60\s*يوم/i.test(t)
-    ) {
-
-        return 60;
-
-    }
-
-
-    if (
-        /90\s*يوم/i.test(t)
-    ) {
-
-        return 90;
-
-    }
-
-
-    return null;
+    return Number(
+        match[1]
+    );
 
 }
 
 
-/* ================================
-   Detect Amount
-================================ */
+/*
+|--------------------------------------------------------------------------
+| EXTRACT PAID AMOUNT
+|--------------------------------------------------------------------------
+*/
 
-function extractAmount(text) {
+function extractPaid(text) {
 
-    const t =
-        normalizeText(text);
+    const normalized =
+        normalizeArabicNumbers(
+            text
+        );
 
 
     const patterns = [
 
-        /(?:بمبلغ|بقيمة|مبلغ)\s*(\d+(?:\.\d+)?)/i,
+        /(?:دفع|دفع العميل|تم دفع|دفعنا|المبلغ المدفوع|المدفوع)\s*(?:مبلغ|بقيمة|قدر|قدرها)?\s*[:\-]?\s*([\d.]+)/i,
 
-        /(?:سدد|دفع|دفعت|حول|حولت|استلمت)\s*(\d+(?:\.\d+)?)/i,
+        /(?:دفع)\s*([\d.]+)/i,
 
-        /(\d+(?:\.\d+)?)\s*(?:ريال|دولار)/i
+        /(?:استلمنا|استلمت|قبضنا|قبض)\s*([\d.]+)/i
 
     ];
 
 
-    for (const pattern of patterns) {
+    for (
+        const pattern
+        of patterns
+    ) {
 
         const match =
-            t.match(pattern);
+            normalized.match(
+                pattern
+            );
+
 
         if (match) {
 
-            return toNumber(
-                match[1]
-            );
+            const amount =
+                numberFromText(
+                    match[1]
+                );
+
+
+            if (
+                amount !== null
+            ) {
+
+                return amount;
+
+            }
 
         }
 
     }
 
 
-    return null;
+    return 0;
 
 }
 
 
-/* ================================
-   Detect Items
-================================ */
+/*
+|--------------------------------------------------------------------------
+| EXTRACT DISCOUNT
+|--------------------------------------------------------------------------
+*/
 
-function extractItems(text) {
+function extractDiscount(text) {
 
-    const t =
-        normalizeText(text);
-
-
-    /*
-     * مثال:
-     * 50 كرتون زيت سعر 500
-     */
-
-    const pattern =
-        /(\d+(?:\.\d+)?)\s+([^\d]+?)\s+(?:سعر|بسعر)\s*(\d+(?:\.\d+)?)/i;
+    const normalized =
+        normalizeArabicNumbers(
+            text
+        );
 
 
     const match =
-        t.match(pattern);
+        normalized.match(
+            /(?:خصم|الخصم)\s*(?:مبلغ|بقيمة)?\s*[:\-]?\s*([\d.]+)/
+        );
 
 
-    if (match) {
+    return match
+        ? numberFromText(match[1])
+        : 0;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| EXTRACT TAX
+|--------------------------------------------------------------------------
+*/
+
+function extractTax(text) {
+
+    const normalized =
+        normalizeArabicNumbers(
+            text
+        );
+
+
+    const match =
+        normalized.match(
+            /(?:ضريبة|الضريبة)\s*(?:مبلغ|بقيمة)?\s*[:\-]?\s*([\d.]+)/
+        );
+
+
+    return match
+        ? numberFromText(match[1])
+        : 0;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| EXTRACT ITEMS
+|--------------------------------------------------------------------------
+|
+| أمثلة:
+|
+| 2 كيس أرز 25 كيلو بسعر 25000 للكيس
+| 5 زيت بسعر 4000
+| 3 سكر بسعر 8000
+|
+|--------------------------------------------------------------------------
+*/
+
+function extractItems(text) {
+
+    const items = [];
+
+
+    const normalized =
+        normalizeArabicNumbers(
+            text
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PATTERN 1
+    |--------------------------------------------------------------------------
+    | 2 كيس أرز 25 كيلو بسعر 25000 للكيس
+    |--------------------------------------------------------------------------
+    */
+
+    const patternWithWeight =
+        /(\d+(?:\.\d+)?)\s+(?:كيس|أكياس|كيساً)\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(?:كيلو|كجم|kg)\s+بسعر\s+(\d+(?:\.\d+)?)\s*(?:للكيس|للوحدة|للوحده)?/gi;
+
+
+    let match;
+
+
+    while (
+        (match =
+            patternWithWeight.exec(
+                normalized
+            )) !== null
+    ) {
 
         const qty =
             Number(match[1]);
 
         const name =
-            match[2]
-                .replace(
-                    /^(من|عدد)\s+/i,
-                    ""
-                )
-                .trim();
+            cleanItemName(
+                match[2]
+            );
+
+        const price =
+            Number(match[4]);
+
+
+        addItem(
+            items,
+            name,
+            qty,
+            price,
+            "كيس"
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PATTERN 2
+    |--------------------------------------------------------------------------
+    | 5 زيت بسعر 4000
+    |--------------------------------------------------------------------------
+    */
+
+    const patternSimple =
+        /(\d+(?:\.\d+)?)\s+([^\d،,؛;:]+?)\s+(?:بسعر|سعر)\s+(\d+(?:\.\d+)?)/gi;
+
+
+    while (
+        (match =
+            patternSimple.exec(
+                normalized
+            )) !== null
+    ) {
+
+        const qty =
+            Number(match[1]);
+
+
+        let name =
+            cleanItemName(
+                match[2]
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLEAN NAME
+        |--------------------------------------------------------------------------
+        */
+
+        if (name) {
+
+            name =
+                name
+                    .replace(
+                        /\s+(للكيلو|للكيس|للقطعة|للوحدة)$/i,
+                        ""
+                    )
+                    .trim();
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AVOID DUPLICATES
+        |--------------------------------------------------------------------------
+        */
+
+        const exists =
+            items.some(
+                item =>
+                    item.name === name &&
+                    item.qty === qty &&
+                    item.price === Number(match[3])
+            );
+
+
+        if (!exists) {
+
+            addItem(
+                items,
+                name,
+                qty,
+                Number(match[3]),
+                "قطعة"
+            );
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PATTERN 3
+    |--------------------------------------------------------------------------
+    | 2 أرز × 25000
+    |--------------------------------------------------------------------------
+    */
+
+    const multiplication =
+        /(\d+(?:\.\d+)?)\s+([^\d،,؛;:]+?)\s*[x×*]\s*(\d+(?:\.\d+)?)/gi;
+
+
+    while (
+        (match =
+            multiplication.exec(
+                normalized
+            )) !== null
+    ) {
+
+        const qty =
+            Number(match[1]);
+
+
+        const name =
+            cleanItemName(
+                match[2]
+            );
 
 
         const price =
             Number(match[3]);
 
 
-        return [
+        const exists =
+            items.some(
+                item =>
+                    item.name === name &&
+                    item.qty === qty &&
+                    item.price === price
+            );
 
-            {
 
+        if (!exists) {
+
+            addItem(
+                items,
                 name,
-
                 qty,
-
-                unit: "قطعة",
-
                 price,
+                "قطعة"
+            );
 
-                total:
-                    qty * price
-
-            }
-
-        ];
+        }
 
     }
 
 
     /*
-     * محاولة ثانية:
-     *
-     * 50 كرتون زيت
-     */
+    |--------------------------------------------------------------------------
+    | PATTERN 4
+    |--------------------------------------------------------------------------
+    | أرز 2 بسعر 25000
+    |--------------------------------------------------------------------------
+    */
 
-    const simplePattern =
-        /(\d+(?:\.\d+)?)\s+([^\d]+?)(?=\s+(?:آجل|اجل|نقدي|مجاني|بمبلغ|بقيمة|$))/i;
-
-
-    const simple =
-        t.match(
-            simplePattern
-        );
+    const reversePattern =
+        /([^\d،,؛;:]+?)\s+(\d+(?:\.\d+)?)\s+(?:بسعر|سعر)\s+(\d+(?:\.\d+)?)/gi;
 
 
-    if (simple) {
+    while (
+        (match =
+            reversePattern.exec(
+                normalized
+            )) !== null
+    ) {
 
-        return [
+        const name =
+            cleanItemName(
+                match[1]
+            );
 
-            {
 
-                name:
-                    simple[2].trim(),
+        const qty =
+            Number(match[2]);
 
-                qty:
-                    Number(simple[1]),
 
-                unit:
-                    "قطعة",
+        const price =
+            Number(match[3]);
 
-                price:
-                    0,
 
-                total:
-                    0
+        if (!name) {
+            continue;
+        }
 
-            }
 
-        ];
+        const exists =
+            items.some(
+                item =>
+                    item.name === name &&
+                    item.qty === qty &&
+                    item.price === price
+            );
+
+
+        if (!exists) {
+
+            addItem(
+                items,
+                name,
+                qty,
+                price,
+                "قطعة"
+            );
+
+        }
 
     }
 
 
-    return [];
+    return items;
 
 }
 
 
-/* ================================
-   Calculate Totals
-================================ */
+/*
+|--------------------------------------------------------------------------
+| CALCULATE TOTAL
+|--------------------------------------------------------------------------
+*/
 
-function calculateTotals(items) {
+function calculateTotals(
+    items,
+    discount,
+    tax
+) {
 
     const subtotal =
         items.reduce(
+            (
+                total,
+                item
+            ) => {
 
-            (sum, item) => {
-
-                return sum +
+                return total +
                     (
-                        Number(item.qty || 0) *
-                        Number(item.price || 0)
+                        Number(item.qty) *
+                        Number(item.price)
                     );
 
             },
-
             0
-
         );
+
+
+    const safeDiscount =
+        Number(discount || 0);
+
+
+    const safeTax =
+        Number(tax || 0);
+
+
+    const total =
+        subtotal -
+        safeDiscount +
+        safeTax;
 
 
     return {
 
-        subtotal,
+        subtotal:
+            roundNumber(
+                subtotal
+            ),
 
-        discount: 0,
+        discount:
+            roundNumber(
+                safeDiscount
+            ),
 
-        tax: 0,
+        tax:
+            roundNumber(
+                safeTax
+            ),
 
-        total: subtotal
+        total:
+            roundNumber(
+                Math.max(
+                    total,
+                    0
+                )
+            )
 
     };
 
 }
 
 
-/* ================================
-   Validate Basic Transaction
-================================ */
+/*
+|--------------------------------------------------------------------------
+| PARSE SALES
+|--------------------------------------------------------------------------
+*/
 
-function validateTransaction(data) {
+function parseSales(
+    text
+) {
 
-    const errors = [];
-
-
-    if (
-        data.intent ===
-        "sales_invoice"
-    ) {
-
-        if (!data.customer) {
-
-            errors.push(
-                "اسم العميل مطلوب"
-            );
-
-        }
-
-
-        if (
-            !data.items ||
-            !data.items.length
-        ) {
-
-            errors.push(
-                "لم يتم تحديد الأصناف"
-            );
-
-        }
-
-
-        const hasPrice =
-            data.items &&
-            data.items.some(
-                item =>
-                    Number(item.price) > 0
-            );
-
-
-        if (!hasPrice) {
-
-            errors.push(
-                "سعر البيع غير محدد"
-            );
-
-        }
-
-    }
-
-
-    if (
-        data.intent ===
-        "payment"
-    ) {
-
-        if (!data.customer) {
-
-            errors.push(
-                "اسم العميل مطلوب للسداد"
-            );
-
-        }
-
-
-        if (!data.amount) {
-
-            errors.push(
-                "مبلغ السداد مطلوب"
-            );
-
-        }
-
-    }
-
-
-    return {
-
-        valid:
-            errors.length === 0,
-
-        errors
-
-    };
-
-}
-
-
-/* ================================
-   Main Parser
-================================ */
-
-function parseTransaction(text) {
-
-    if (
-        typeof text !== "string" ||
-        !text.trim()
-    ) {
-
-        throw new Error(
-            "النص مطلوب"
-        );
-
-    }
-
-
-    const normalized =
-        normalizeText(text);
-
-
-    const signals =
-        detectSignals(
-            normalized
-        );
-
-
-    const intent =
-        detectIntent(
-            normalized
+    const type =
+        detectType(
+            text
         );
 
 
     const customer =
-        extractCustomer(
-            normalized
+        extractPersonName(
+            text,
+            "sales"
         );
 
 
-    const supplier =
-        extractSupplier(
-            normalized
-        );
-
-
-    const paymentType =
-        detectPaymentType(
-            normalized
+    const customerPhone =
+        extractPhone(
+            text
         );
 
 
     const dueDays =
-        extractDueDays(
-            normalized
-        );
-
-
-    const amount =
-        extractAmount(
-            normalized
-        );
+        type === "credit"
+            ? extractDueDays(text)
+            : null;
 
 
     const items =
         extractItems(
-            normalized
+            text
         );
 
 
-    /*
-     * المجاني = قيمة صفر
-     */
+    const discount =
+        extractDiscount(
+            text
+        );
 
-    if (
-        paymentType === "free"
-    ) {
 
-        for (
-            const item
-            of items
-        ) {
-
-            item.price = 0;
-
-            item.total = 0;
-
-        }
-
-    }
+    const tax =
+        extractTax(
+            text
+        );
 
 
     const totals =
         calculateTotals(
-            items
+            items,
+            discount,
+            tax
         );
 
 
-    const data = {
+    const paid =
+        extractPaid(
+            text
+        );
 
-        raw_text:
-            text,
 
-        normalized_text:
-            normalized,
+    const balance =
+        Math.max(
+            totals.total -
+            paid,
+            0
+        );
 
-        intent,
+
+    return {
+
+        intent:
+            "sales_invoice",
 
         customer,
 
-        supplier,
-
         customer_phone:
-            null,
+            customerPhone,
 
-        type:
-            paymentType === "credit"
-                ? "credit"
-                : "cash",
-
-        payment_type:
-            paymentType,
+        type,
 
         due_days:
             dueDays,
@@ -738,12 +1075,7 @@ function parseTransaction(text) {
         due_date:
             null,
 
-        amount,
-
         items,
-
-        subtotal:
-            totals.subtotal,
 
         discount:
             totals.discount,
@@ -751,76 +1083,464 @@ function parseTransaction(text) {
         tax:
             totals.tax,
 
+        subtotal:
+            totals.subtotal,
+
         total:
             totals.total,
 
-        signals,
+        paid:
+            roundNumber(
+                paid
+            ),
+
+        balance:
+            roundNumber(
+                balance
+            ),
 
         ready:
-            false,
+            Boolean(
+                customer &&
+                items.length > 0 &&
+                (
+                    type === "cash" ||
+                    dueDays !== null
+                )
+            ),
 
-        errors: []
+        needs_confirmation:
+            true,
+
+        original_text:
+            text
 
     };
-
-
-    const validation =
-        validateTransaction(
-            data
-        );
-
-
-    data.ready =
-        validation.valid;
-
-
-    data.errors =
-        validation.errors;
-
-
-    /*
-     * العمليات التي ليست فواتير
-     * لا تحتاج شرط الفاتورة.
-     */
-
-    if (
-        intent !== "sales_invoice" &&
-        intent !== "purchase_invoice"
-    ) {
-
-        data.ready =
-            validation.valid;
-
-    }
-
-
-    return data;
 
 }
 
 
-/* ================================
-   Export
-================================ */
+/*
+|--------------------------------------------------------------------------
+| PARSE CUSTOMER PAYMENT
+|--------------------------------------------------------------------------
+*/
+
+function parseCustomerPayment(
+    text
+) {
+
+    const customer =
+        extractPersonName(
+            text,
+            "customer_payment"
+        );
+
+
+    const amount =
+        extractPaid(
+            text
+        );
+
+
+    return {
+
+        intent:
+            "customer_payment",
+
+        customer,
+
+        customer_phone:
+            extractPhone(text),
+
+        type:
+            "cash",
+
+        amount:
+            roundNumber(amount),
+
+        ready:
+            Boolean(
+                customer &&
+                amount > 0
+            ),
+
+        needs_confirmation:
+            true,
+
+        original_text:
+            text
+
+    };
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PARSE PURCHASE
+|--------------------------------------------------------------------------
+*/
+
+function parsePurchase(
+    text
+) {
+
+    const supplier =
+        extractPersonName(
+            text,
+            "purchase"
+        );
+
+
+    const type =
+        detectType(
+            text
+        );
+
+
+    const items =
+        extractItems(
+            text
+        );
+
+
+    const discount =
+        extractDiscount(
+            text
+        );
+
+
+    const tax =
+        extractTax(
+            text
+        );
+
+
+    const totals =
+        calculateTotals(
+            items,
+            discount,
+            tax
+        );
+
+
+    const paid =
+        extractPaid(
+            text
+        );
+
+
+    return {
+
+        intent:
+            "purchase_invoice",
+
+        supplier,
+
+        type,
+
+        items,
+
+        discount:
+            totals.discount,
+
+        tax:
+            totals.tax,
+
+        subtotal:
+            totals.subtotal,
+
+        total:
+            totals.total,
+
+        paid:
+            roundNumber(
+                paid
+            ),
+
+        balance:
+            roundNumber(
+                Math.max(
+                    totals.total -
+                    paid,
+                    0
+                )
+            ),
+
+        due_days:
+            type === "credit"
+                ? extractDueDays(text)
+                : null,
+
+        ready:
+            Boolean(
+                supplier &&
+                items.length > 0
+            ),
+
+        needs_confirmation:
+            true,
+
+        original_text:
+            text
+
+    };
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PARSE EXPENSE
+|--------------------------------------------------------------------------
+*/
+
+function parseExpense(
+    text
+) {
+
+    const amount =
+        extractPaid(
+            text
+        );
+
+
+    let description =
+        text
+            .replace(
+                /مصروف|مصاريف|إيجار|ايجار|كهرباء|ماء|رواتب|راتب/gi,
+                ""
+            )
+            .trim();
+
+
+    return {
+
+        intent:
+            "expense",
+
+        description,
+
+        amount:
+            roundNumber(amount),
+
+        type:
+            "cash",
+
+        ready:
+            amount > 0,
+
+        needs_confirmation:
+            true,
+
+        original_text:
+            text
+
+    };
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MAIN PARSER
+|--------------------------------------------------------------------------
+*/
+
+function parseTransaction(
+    input
+) {
+
+    const text =
+        cleanString(
+            input
+        );
+
+
+    if (!text) {
+
+        throw new Error(
+            "النص المحاسبي مطلوب"
+        );
+
+    }
+
+
+    const normalizedText =
+        normalizeArabicNumbers(
+            text
+        );
+
+
+    const intent =
+        detectIntent(
+            normalizedText
+        );
+
+
+    let result;
+
+
+    switch (intent) {
+
+        case "sales_invoice":
+
+            result =
+                parseSales(
+                    normalizedText
+                );
+
+            break;
+
+
+        case "customer_payment":
+
+            result =
+                parseCustomerPayment(
+                    normalizedText
+                );
+
+            break;
+
+
+        case "purchase_invoice":
+
+            result =
+                parsePurchase(
+                    normalizedText
+                );
+
+            break;
+
+
+        case "expense":
+
+            result =
+                parseExpense(
+                    normalizedText
+                );
+
+            break;
+
+
+        default:
+
+            result = {
+
+                intent:
+                    "unknown",
+
+                customer:
+                    null,
+
+                customer_phone:
+                    null,
+
+                type:
+                    "cash",
+
+                due_days:
+                    null,
+
+                due_date:
+                    null,
+
+                items: [],
+
+                discount:
+                    0,
+
+                tax:
+                    0,
+
+                subtotal:
+                    0,
+
+                total:
+                    0,
+
+                paid:
+                    0,
+
+                balance:
+                    0,
+
+                ready:
+                    false,
+
+                needs_confirmation:
+                    true,
+
+                original_text:
+                    text,
+
+                error:
+                    "لم أستطع تحديد نوع المعاملة"
+
+            };
+
+            break;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ALWAYS KEEP ORIGINAL TEXT
+    |--------------------------------------------------------------------------
+    */
+
+    result.original_text =
+        text;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE NUMERIC VALUES
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        result.items &&
+        Array.isArray(result.items)
+    ) {
+
+        result.items =
+            result.items.map(
+                item => ({
+
+                    ...item,
+
+                    qty:
+                        roundNumber(
+                            item.qty
+                        ),
+
+                    price:
+                        roundNumber(
+                            item.price
+                        )
+
+                })
+            );
+
+    }
+
+
+    return result;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| EXPORT
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
 
-    parseTransaction,
-
-    detectIntent,
-
-    extractCustomer,
-
-    extractSupplier,
-
-    extractAmount,
-
-    extractItems,
-
-    extractDueDays,
-
-    detectPaymentType,
-
-    validateTransaction
+    parseTransaction
 
 };
