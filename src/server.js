@@ -1661,6 +1661,7 @@ app.post(
 
     }
 
+);
 
 app.post(
     "/api/transactions/preview",
