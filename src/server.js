@@ -22,6 +22,11 @@ const {
     generateInvoicePDF
 } = require("./pdf");
 
+const {
+    hashPassword,
+    verifyPassword,
+    createToken
+} = require("./auth/auth");
 
 /*
 |--------------------------------------------------------------------------
