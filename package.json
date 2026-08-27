@@ -1,7 +1,7 @@
 {
   "name": "jusoor-accounting",
-  "version": "3.0.0",
-  "description": "Jusoor AI Accounting ERP",
+  "version": "3.1.0",
+  "description": "Jusoor AI Accounting ERP - نظام جسور المحاسبي المتكامل بالذكاء الاصطناعي",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -11,10 +11,12 @@
     "node": "20.x"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "pdfkit": "^0.17.1"
   }
