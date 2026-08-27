@@ -1,82 +1,208 @@
 const db = require("./db");
 
-function nextInvoiceNo() {
 
-    const row = db
-        .prepare(`
-            SELECT COUNT(*) AS n
-            FROM invoices
-        `)
-        .get();
+/*
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
+*/
 
-    return `INV-${String(row.n + 1).padStart(6, "0")}`;
+function toNumber(value, fallback = 0) {
+
+    if (
+        value === undefined ||
+        value === null ||
+        value === ""
+    ) {
+        return fallback;
+    }
+
+    const n = Number(value);
+
+    return Number.isFinite(n)
+        ? n
+        : fallback;
 }
 
 
-function getOrCreateCustomer(name, phone = null) {
+function cleanString(value) {
 
-    if (!name) {
-        throw new Error("اسم العميل مطلوب");
+    if (
+        value === undefined ||
+        value === null
+    ) {
+        return null;
     }
 
-    let customer = db
-        .prepare(`
+    const text =
+        String(value).trim();
+
+    return text || null;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| INVOICE NUMBER
+|--------------------------------------------------------------------------
+*/
+
+function nextInvoiceNo() {
+
+    const row =
+        db.prepare(`
+            SELECT COUNT(*) AS n
+            FROM invoices
+        `).get();
+
+    const number =
+        Number(row.n || 0) + 1;
+
+    return `INV-${String(number).padStart(6, "0")}`;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER
+|--------------------------------------------------------------------------
+*/
+
+function getOrCreateCustomer(
+    name,
+    phone = null
+) {
+
+    name = cleanString(name);
+
+    phone = cleanString(phone);
+
+    if (!name) {
+
+        throw new Error(
+            "اسم العميل مطلوب"
+        );
+
+    }
+
+
+    let customer =
+        db.prepare(`
             SELECT *
             FROM customers
             WHERE name = ?
-        `)
-        .get(name);
+        `).get(name);
+
 
     if (!customer) {
 
-        const result = db
-            .prepare(`
+        const result =
+            db.prepare(`
                 INSERT INTO customers
-                (name, phone)
+                (
+                    name,
+                    phone
+                )
                 VALUES (?, ?)
             `)
-            .run(name, phone);
+            .run(
+                name,
+                phone
+            );
 
-        customer = db
-            .prepare(`
+
+        customer =
+            db.prepare(`
                 SELECT *
                 FROM customers
                 WHERE id = ?
             `)
-            .get(result.lastInsertRowid);
+            .get(
+                result.lastInsertRowid
+            );
 
-    } else if (phone && customer.phone !== phone) {
+    }
+
+    else if (
+        phone &&
+        customer.phone !== phone
+    ) {
 
         db.prepare(`
             UPDATE customers
             SET phone = ?
             WHERE id = ?
-        `).run(phone, customer.id);
+        `)
+        .run(
+            phone,
+            customer.id
+        );
+
+        customer =
+            db.prepare(`
+                SELECT *
+                FROM customers
+                WHERE id = ?
+            `)
+            .get(
+                customer.id
+            );
 
     }
+
 
     return customer;
 }
 
 
+/*
+|--------------------------------------------------------------------------
+| PRODUCT
+|--------------------------------------------------------------------------
+*/
+
 function getOrCreateProduct(item) {
 
-    if (!item.name) {
-        throw new Error("اسم الصنف مطلوب");
+    const name =
+        cleanString(item.name);
+
+    if (!name) {
+
+        throw new Error(
+            "اسم الصنف مطلوب"
+        );
+
     }
 
-    let product = db
-        .prepare(`
+
+    const unit =
+        cleanString(item.unit) ||
+        "قطعة";
+
+
+    const price =
+        toNumber(item.price);
+
+
+    let product =
+        db.prepare(`
             SELECT *
             FROM products
             WHERE name = ?
         `)
-        .get(item.name);
+        .get(name);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PRODUCT
+    |--------------------------------------------------------------------------
+    */
 
     if (!product) {
 
-        const result = db
-            .prepare(`
+        const result =
+            db.prepare(`
                 INSERT INTO products
                 (
                     name,
@@ -85,46 +211,155 @@ function getOrCreateProduct(item) {
                     cost_price,
                     stock
                 )
-                VALUES (?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?)
             `)
             .run(
-                item.name,
-                item.unit || "قطعة",
-                Number(item.price) || 0,
+
+                name,
+
+                unit,
+
+                price,
+
+                0,
+
                 0
+
             );
 
-        product = db
-            .prepare(`
+
+        product =
+            db.prepare(`
                 SELECT *
                 FROM products
                 WHERE id = ?
             `)
-            .get(result.lastInsertRowid);
-
-    } else {
-
-        if (
-            item.price !== undefined &&
-            Number(item.price) > 0
-        ) {
-
-            db.prepare(`
-                UPDATE products
-                SET sale_price = ?
-                WHERE id = ?
-            `).run(
-                Number(item.price),
-                product.id
+            .get(
+                result.lastInsertRowid
             );
 
-        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE SELLING PRICE
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        price > 0 &&
+        Number(product.sale_price) !== price
+    ) {
+
+        db.prepare(`
+            UPDATE products
+            SET sale_price = ?
+            WHERE id = ?
+        `)
+        .run(
+            price,
+            product.id
+        );
+
+        product.sale_price =
+            price;
 
     }
+
 
     return product;
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| JOURNAL VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+function validateJournalLines(lines) {
+
+    if (
+        !Array.isArray(lines) ||
+        lines.length === 0
+    ) {
+
+        throw new Error(
+            "القيد المحاسبي فارغ"
+        );
+
+    }
+
+
+    let debit = 0;
+    let credit = 0;
+
+
+    for (const line of lines) {
+
+        const d =
+            toNumber(line.debit);
+
+        const c =
+            toNumber(line.credit);
+
+
+        if (
+            d < 0 ||
+            c < 0
+        ) {
+
+            throw new Error(
+                "لا يمكن أن تكون قيم القيد سالبة"
+            );
+
+        }
+
+
+        if (
+            d > 0 &&
+            c > 0
+        ) {
+
+            throw new Error(
+                "لا يمكن أن يحتوي السطر على مدين ودائن معاً"
+            );
+
+        }
+
+
+        debit += d;
+
+        credit += c;
+
+    }
+
+
+    if (
+        Math.abs(debit - credit) >
+        0.001
+    ) {
+
+        throw new Error(
+            `القيد غير متوازن: المدين ${debit} والدائن ${credit}`
+        );
+
+    }
+
+
+    return {
+        debit,
+        credit
+    };
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CREATE JOURNAL
+|--------------------------------------------------------------------------
+*/
 
 function createJournal(
     description,
@@ -133,8 +368,14 @@ function createJournal(
     lines
 ) {
 
-    const result = db
-        .prepare(`
+    const totals =
+        validateJournalLines(
+            lines
+        );
+
+
+    const result =
+        db.prepare(`
             INSERT INTO journal_entries
             (
                 reference_type,
@@ -144,317 +385,872 @@ function createJournal(
             VALUES (?, ?, ?)
         `)
         .run(
+
             referenceType,
+
             referenceId,
+
             description
+
         );
 
-    const journalId = result.lastInsertRowid;
 
-    const statement = db.prepare(`
-        INSERT INTO journal_lines
-        (
-            journal_id,
-            account_code,
-            account_name,
-            debit,
-            credit
-        )
-        VALUES (?, ?, ?, ?, ?)
-    `);
+    const journalId =
+        Number(
+            result.lastInsertRowid
+        );
+
+
+    const insertLine =
+        db.prepare(`
+            INSERT INTO journal_lines
+            (
+                journal_id,
+                account_code,
+                account_name,
+                debit,
+                credit
+            )
+            VALUES (?, ?, ?, ?, ?)
+        `);
+
 
     for (const line of lines) {
 
-        statement.run(
+        insertLine.run(
+
             journalId,
-            line.code,
-            line.name,
-            Number(line.debit) || 0,
-            Number(line.credit) || 0
+
+            String(
+                line.code
+            ),
+
+            String(
+                line.name
+            ),
+
+            toNumber(
+                line.debit
+            ),
+
+            toNumber(
+                line.credit
+            )
+
         );
 
     }
 
-    return journalId;
+
+    return {
+
+        id: journalId,
+
+        debit:
+            totals.debit,
+
+        credit:
+            totals.credit
+
+    };
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| STOCK MOVEMENT
+|--------------------------------------------------------------------------
+*/
+
+function createStockMovement({
+
+    productId,
+
+    quantity,
+
+    movementType,
+
+    referenceType,
+
+    referenceId
+
+}) {
+
+    db.prepare(`
+        INSERT INTO stock_movements
+        (
+            product_id,
+            quantity,
+            movement_type,
+            reference_type,
+            reference_id
+        )
+        VALUES (?, ?, ?, ?, ?)
+    `)
+    .run(
+
+        Number(productId),
+
+        toNumber(quantity),
+
+        movementType,
+
+        referenceType,
+
+        referenceId || null
+
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| AUDIT
+|--------------------------------------------------------------------------
+*/
+
+function createAuditLog(
+    action,
+    entityType,
+    entityId,
+    details
+) {
+
+    db.prepare(`
+        INSERT INTO audit_logs
+        (
+            action,
+            entity_type,
+            entity_id,
+            details
+        )
+        VALUES (?, ?, ?, ?)
+    `)
+    .run(
+
+        action,
+
+        entityType,
+
+        entityId,
+
+        JSON.stringify(
+            details || {}
+        )
+
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CREATE INVOICE
+|--------------------------------------------------------------------------
+*/
 
 function createInvoice(input) {
 
-    if (!input.customer) {
-        throw new Error("العميل مطلوب");
-    }
+    if (!input) {
 
-    if (!Array.isArray(input.items) || !input.items.length) {
-        throw new Error("يجب إضافة صنف واحد على الأقل");
-    }
-
-    const customer = getOrCreateCustomer(
-        input.customer,
-        input.customer_phone
-    );
-
-    const items = input.items.map(item => ({
-
-        name: item.name,
-
-        qty: Number(item.qty),
-
-        price: Number(item.price),
-
-        unit: item.unit || "قطعة"
-
-    }));
-
-    for (const item of items) {
-
-        if (item.qty <= 0) {
-            throw new Error(
-                `الكمية غير صحيحة للصنف ${item.name}`
-            );
-        }
-
-        if (item.price < 0) {
-            throw new Error(
-                `السعر غير صحيح للصنف ${item.name}`
-            );
-        }
+        throw new Error(
+            "بيانات الفاتورة مطلوبة"
+        );
 
     }
 
-    const subtotal = items.reduce(
-        (sum, item) =>
-            sum + item.qty * item.price,
-        0
-    );
 
-    const discount =
-        Number(input.discount) || 0;
+    const customerName =
+        cleanString(
+            input.customer
+        );
 
-    const tax =
-        Number(input.tax) || 0;
 
-    const total =
-        subtotal - discount + tax;
+    if (!customerName) {
 
-    const invNo = nextInvoiceNo();
+        throw new Error(
+            "العميل مطلوب"
+        );
 
-    const transaction = db.transaction(() => {
+    }
 
-        const result = db
-            .prepare(`
-                INSERT INTO invoices
-                (
-                    inv_no,
-                    customer_id,
-                    customer_name,
-                    type,
-                    due_date,
-                    subtotal,
-                    discount,
-                    tax,
-                    total,
-                    paid,
-                    status,
-                    items_json
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `)
-            .run(
 
-                invNo,
+    if (
+        !Array.isArray(input.items) ||
+        input.items.length === 0
+    ) {
 
-                customer.id,
+        throw new Error(
+            "يجب إضافة صنف واحد على الأقل"
+        );
 
-                customer.name,
+    }
 
-                input.type || "cash",
 
-                input.due_date || null,
+    /*
+    |--------------------------------------------------------------------------
+    | CUSTOMER
+    |--------------------------------------------------------------------------
+    */
 
-                subtotal,
+    const customer =
+        getOrCreateCustomer(
 
-                discount,
+            customerName,
 
-                tax,
-
-                total,
-
-                0,
-
-                "approved",
-
-                JSON.stringify(items)
-
-            );
-
-        const invoiceId =
-            result.lastInsertRowid;
-
-
-        for (const item of items) {
-
-            const product =
-                getOrCreateProduct(item);
-
-            db.prepare(`
-                INSERT INTO stock_movements
-                (
-                    product_id,
-                    quantity,
-                    movement_type,
-                    reference_type,
-                    reference_id
-                )
-                VALUES (?, ?, ?, ?, ?)
-            `).run(
-
-                product.id,
-
-                -item.qty,
-
-                "sale",
-
-                "invoice",
-
-                invoiceId
-
-            );
-
-
-            db.prepare(`
-                UPDATE products
-                SET stock = stock - ?
-                WHERE id = ?
-            `).run(
-                item.qty,
-                product.id
-            );
-
-        }
-
-
-        if (input.type === "credit") {
-
-            createJournal(
-
-                `فاتورة مبيعات ${invNo}`,
-
-                "invoice",
-
-                invoiceId,
-
-                [
-
-                    {
-
-                        code: "1100",
-
-                        name:
-                            `العملاء - ${customer.name}`,
-
-                        debit: total
-
-                    },
-
-                    {
-
-                        code: "4100",
-
-                        name: "المبيعات",
-
-                        credit: total
-
-                    }
-
-                ]
-
-            );
-
-        } else {
-
-            createJournal(
-
-                `فاتورة نقدية ${invNo}`,
-
-                "invoice",
-
-                invoiceId,
-
-                [
-
-                    {
-
-                        code: "1000",
-
-                        name: "الصندوق",
-
-                        debit: total
-
-                    },
-
-                    {
-
-                        code: "4100",
-
-                        name: "المبيعات",
-
-                        credit: total
-
-                    }
-
-                ]
-
-            );
-
-        }
-
-
-        db.prepare(`
-            INSERT INTO audit_logs
-            (
-                action,
-                entity_type,
-                entity_id,
-                details
-            )
-            VALUES (?, ?, ?, ?)
-        `).run(
-
-            "create",
-
-            "invoice",
-
-            invoiceId,
-
-            JSON.stringify({
-
-                invNo,
-
-                total,
-
-                customer: customer.name
-
-            })
+            input.customer_phone
 
         );
 
 
-        return invoiceId;
+    /*
+    |--------------------------------------------------------------------------
+    | ITEMS
+    |--------------------------------------------------------------------------
+    */
 
-    });
+    const items =
+        input.items.map(item => {
+
+            const name =
+                cleanString(
+                    item.name
+                );
 
 
-    const invoice =
-        db.prepare(`
+            const qty =
+                toNumber(
+                    item.qty
+                );
+
+
+            const price =
+                toNumber(
+                    item.price
+                );
+
+
+            const unit =
+                cleanString(
+                    item.unit
+                ) ||
+                "قطعة";
+
+
+            if (!name) {
+
+                throw new Error(
+                    "اسم الصنف مطلوب"
+                );
+
+            }
+
+
+            if (
+                !Number.isFinite(qty) ||
+                qty <= 0
+            ) {
+
+                throw new Error(
+                    `الكمية غير صحيحة للصنف: ${name}`
+                );
+
+            }
+
+
+            if (
+                !Number.isFinite(price) ||
+                price < 0
+            ) {
+
+                throw new Error(
+                    `السعر غير صحيح للصنف: ${name}`
+                );
+
+            }
+
+
+            return {
+
+                name,
+
+                qty,
+
+                price,
+
+                unit
+
+            };
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOTALS
+    |--------------------------------------------------------------------------
+    */
+
+    const subtotal =
+        items.reduce(
+
+            (sum, item) =>
+                sum +
+                (
+                    item.qty *
+                    item.price
+                ),
+
+            0
+
+        );
+
+
+    const discount =
+        toNumber(
+            input.discount
+        );
+
+
+    const tax =
+        toNumber(
+            input.tax
+        );
+
+
+    if (discount < 0) {
+
+        throw new Error(
+            "الخصم غير صحيح"
+        );
+
+    }
+
+
+    if (tax < 0) {
+
+        throw new Error(
+            "الضريبة غير صحيحة"
+        );
+
+    }
+
+
+    if (
+        discount > subtotal
+    ) {
+
+        throw new Error(
+            "الخصم أكبر من قيمة المبيعات"
+        );
+
+    }
+
+
+    const total =
+        subtotal -
+        discount +
+        tax;
+
+
+    if (total < 0) {
+
+        throw new Error(
+            "إجمالي الفاتورة غير صحيح"
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TYPE
+    |--------------------------------------------------------------------------
+    */
+
+    const type =
+        input.type === "credit"
+            ? "credit"
+            : "cash";
+
+
+    const dueDate =
+        type === "credit"
+            ? cleanString(
+                input.due_date
+            )
+            : null;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INVOICE NUMBER
+    |--------------------------------------------------------------------------
+    */
+
+    const invNo =
+        nextInvoiceNo();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TRANSACTION
+    |--------------------------------------------------------------------------
+    */
+
+    const invoiceId =
+        db.transaction(() => {
+
+            /*
+            --------------------------------------------------------------
+            | PRODUCTS FIRST
+            --------------------------------------------------------------
+            */
+
+            const products = [];
+
+
+            for (const item of items) {
+
+                const product =
+                    getOrCreateProduct(
+                        item
+                    );
+
+
+                products.push({
+
+                    item,
+
+                    product
+
+                });
+
+            }
+
+
+            /*
+            --------------------------------------------------------------
+            | STOCK VALIDATION
+            --------------------------------------------------------------
+            */
+
+            const preventNegativeStock =
+                process.env.PREVENT_NEGATIVE_STOCK === "true";
+
+
+            if (
+                preventNegativeStock
+            ) {
+
+                for (
+                    const entry
+                    of products
+                ) {
+
+                    const stock =
+                        toNumber(
+                            entry.product.stock
+                        );
+
+
+                    if (
+                        stock <
+                        entry.item.qty
+                    ) {
+
+                        throw new Error(
+                            `المخزون غير كاف للصنف ${entry.item.name}. المتاح: ${stock}`
+                        );
+
+                    }
+
+                }
+
+            }
+
+
+            /*
+            --------------------------------------------------------------
+            | CASH / CREDIT
+            --------------------------------------------------------------
+            */
+
+            const paid =
+                type === "cash"
+                    ? total
+                    : 0;
+
+
+            const status =
+                type === "cash"
+                    ? "paid"
+                    : "approved";
+
+
+            /*
+            --------------------------------------------------------------
+            | INSERT INVOICE
+            --------------------------------------------------------------
+            */
+
+            const result =
+                db.prepare(`
+                    INSERT INTO invoices
+                    (
+                        inv_no,
+                        customer_id,
+                        customer_name,
+                        type,
+                        due_date,
+                        subtotal,
+                        discount,
+                        tax,
+                        total,
+                        paid,
+                        status,
+                        items_json
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `)
+                .run(
+
+                    invNo,
+
+                    customer.id,
+
+                    customer.name,
+
+                    type,
+
+                    dueDate,
+
+                    subtotal,
+
+                    discount,
+
+                    tax,
+
+                    total,
+
+                    paid,
+
+                    status,
+
+                    JSON.stringify(
+                        items
+                    )
+
+                );
+
+
+            const id =
+                Number(
+                    result.lastInsertRowid
+                );
+
+
+            /*
+            --------------------------------------------------------------
+            | STOCK
+            --------------------------------------------------------------
+            */
+
+            let totalCost = 0;
+
+
+            for (
+                const entry
+                of products
+            ) {
+
+                const item =
+                    entry.item;
+
+
+                const product =
+                    entry.product;
+
+
+                const cost =
+                    toNumber(
+                        product.cost_price
+                    );
+
+
+                const itemCost =
+                    item.qty *
+                    cost;
+
+
+                totalCost +=
+                    itemCost;
+
+
+                /*
+                خصم المخزون
+                */
+
+                db.prepare(`
+                    UPDATE products
+                    SET stock = stock - ?
+                    WHERE id = ?
+                `)
+                .run(
+
+                    item.qty,
+
+                    product.id
+
+                );
+
+
+                /*
+                حركة مخزون
+                */
+
+                createStockMovement({
+
+                    productId:
+                        product.id,
+
+                    quantity:
+                        -item.qty,
+
+                    movementType:
+                        "sale",
+
+                    referenceType:
+                        "invoice",
+
+                    referenceId:
+                        id
+
+                });
+
+            }
+
+
+            /*
+            --------------------------------------------------------------
+            | SALES JOURNAL
+            --------------------------------------------------------------
+            */
+
+            const salesLines = [];
+
+
+            if (type === "credit") {
+
+                salesLines.push({
+
+                    code:
+                        "1100",
+
+                    name:
+                        `العملاء - ${customer.name}`,
+
+                    debit:
+                        total,
+
+                    credit:
+                        0
+
+                });
+
+            }
+
+            else {
+
+                salesLines.push({
+
+                    code:
+                        "1000",
+
+                    name:
+                        "الصندوق",
+
+                    debit:
+                        total,
+
+                    credit:
+                        0
+
+                });
+
+            }
+
+
+            salesLines.push({
+
+                code:
+                    "4100",
+
+                name:
+                    "المبيعات",
+
+                debit:
+                    0,
+
+                credit:
+                    total
+
+            });
+
+
+            createJournal(
+
+                type === "credit"
+                    ? `فاتورة مبيعات آجلة ${invNo}`
+                    : `فاتورة مبيعات نقدية ${invNo}`,
+
+                "invoice",
+
+                id,
+
+                salesLines
+
+            );
+
+
+            /*
+            --------------------------------------------------------------
+            | COST OF GOODS SOLD
+            --------------------------------------------------------------
+            |
+            | إذا كانت تكلفة الأصناف معروفة، نسجل:
+            |
+            | مدين  5100 تكلفة المبيعات
+            | دائن  1300 المخزون
+            |
+            --------------------------------------------------------------
+            */
+
+            if (
+                totalCost > 0
+            ) {
+
+                createJournal(
+
+                    `تكلفة المبيعات - ${invNo}`,
+
+                    "cogs",
+
+                    id,
+
+                    [
+
+                        {
+
+                            code:
+                                "5100",
+
+                            name:
+                                "تكلفة المبيعات",
+
+                            debit:
+                                totalCost,
+
+                            credit:
+                                0
+
+                        },
+
+                        {
+
+                            code:
+                                "1300",
+
+                            name:
+                                "المخزون",
+
+                            debit:
+                                0,
+
+                            credit:
+                                totalCost
+
+                        }
+
+                    ]
+
+                );
+
+            }
+
+
+            /*
+            --------------------------------------------------------------
+            | AUDIT
+            --------------------------------------------------------------
+            */
+
+            createAuditLog(
+
+                "create",
+
+                "invoice",
+
+                id,
+
+                {
+
+                    invoice:
+                        invNo,
+
+                    customer:
+                        customer.name,
+
+                    type,
+
+                    subtotal,
+
+                    discount,
+
+                    tax,
+
+                    total,
+
+                    paid,
+
+                    cost_of_goods_sold:
+                        totalCost
+
+                }
+
+            );
+
+
+            return id;
+
+        })();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN CREATED INVOICE
+    |--------------------------------------------------------------------------
+    */
+
+    return db
+        .prepare(`
             SELECT *
             FROM invoices
             WHERE id = ?
-        `).get(transaction);
+        `)
+        .get(
+            invoiceId
+        );
 
-    return invoice;
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| RECORD PAYMENT
+|--------------------------------------------------------------------------
+*/
 
 function recordPayment({
 
@@ -468,140 +1264,296 @@ function recordPayment({
 
 }) {
 
+    const id =
+        Number(invoiceId);
+
+
+    const value =
+        toNumber(amount);
+
+
+    if (
+        !Number.isInteger(id)
+    ) {
+
+        throw new Error(
+            "رقم الفاتورة غير صحيح"
+        );
+
+    }
+
+
+    if (
+        !Number.isFinite(value) ||
+        value <= 0
+    ) {
+
+        throw new Error(
+            "قيمة السداد غير صحيحة"
+        );
+
+    }
+
+
     const invoice =
         db.prepare(`
             SELECT *
             FROM invoices
             WHERE id = ?
         `)
-        .get(invoiceId);
+        .get(id);
+
 
     if (!invoice) {
-        throw new Error("الفاتورة غير موجودة");
-    }
-
-
-    const remaining =
-        invoice.total - invoice.paid;
-
-    const value = Number(amount);
-
-
-    if (
-        !Number.isFinite(value) ||
-        value <= 0 ||
-        value > remaining
-    ) {
 
         throw new Error(
-            "قيمة السداد غير صالحة"
+            "الفاتورة غير موجودة"
         );
 
     }
 
 
-    const transaction =
-        db.transaction(() => {
+    if (
+        invoice.status ===
+        "cancelled"
+    ) {
 
-            db.prepare(`
-                INSERT INTO payments
-                (
-                    customer_id,
-                    invoice_id,
-                    amount,
-                    method,
-                    reference
-                )
-                VALUES (?, ?, ?, ?, ?)
-            `).run(
+        throw new Error(
+            "لا يمكن سداد فاتورة ملغاة"
+        );
 
-                invoice.customer_id,
+    }
 
-                invoiceId,
 
-                value,
+    const remaining =
+        Math.max(
 
+            0,
+
+            toNumber(invoice.total) -
+            toNumber(invoice.paid)
+
+        );
+
+
+    if (
+        value > remaining + 0.001
+    ) {
+
+        throw new Error(
+            `مبلغ السداد أكبر من المتبقي. المتبقي: ${remaining}`
+        );
+
+    }
+
+
+    const paymentMethod =
+        cleanString(method) ||
+        "cash";
+
+
+    const paymentReference =
+        cleanString(reference);
+
+
+    db.transaction(() => {
+
+        /*
+        --------------------------------------------------------------
+        | PAYMENT
+        --------------------------------------------------------------
+        */
+
+        db.prepare(`
+            INSERT INTO payments
+            (
+                customer_id,
+                invoice_id,
+                amount,
                 method,
-
                 reference
+            )
+            VALUES (?, ?, ?, ?, ?)
+        `)
+        .run(
 
-            );
+            invoice.customer_id,
 
+            id,
 
-            const newPaid =
-                invoice.paid + value;
+            value,
 
+            paymentMethod,
 
-            const status =
-                newPaid >= invoice.total
-                    ? "paid"
-                    : "partially_paid";
+            paymentReference
 
-
-            db.prepare(`
-                UPDATE invoices
-                SET paid = ?,
-                    status = ?
-                WHERE id = ?
-            `).run(
-
-                newPaid,
-
-                status,
-
-                invoiceId
-
-            );
+        );
 
 
-            const accountCode =
-                method === "bank"
-                    ? "1200"
-                    : "1000";
+        /*
+        --------------------------------------------------------------
+        | UPDATE INVOICE
+        --------------------------------------------------------------
+        */
+
+        const newPaid =
+            toNumber(invoice.paid) +
+            value;
 
 
-            const accountName =
-                method === "bank"
-                    ? "البنك"
-                    : "الصندوق";
+        const newStatus =
+            newPaid >=
+            toNumber(invoice.total) - 0.001
+                ? "paid"
+                : "partially_paid";
 
 
-            createJournal(
+        db.prepare(`
+            UPDATE invoices
+            SET
+                paid = ?,
+                status = ?
+            WHERE id = ?
+        `)
+        .run(
 
-                `سداد فاتورة ${invoice.inv_no}`,
+            newPaid,
 
-                "payment",
+            newStatus,
 
-                invoiceId,
+            id
 
-                [
+        );
 
-                    {
 
-                        code: accountCode,
+        /*
+        --------------------------------------------------------------
+        | CASH / BANK
+        --------------------------------------------------------------
+        */
 
-                        name: accountName,
+        let accountCode =
+            "1000";
 
-                        debit: value
 
-                    },
+        let accountName =
+            "الصندوق";
 
-                    {
 
-                        code: "1100",
+        if (
+            paymentMethod === "bank"
+        ) {
 
-                        name:
-                            `العملاء - ${invoice.customer_name}`,
+            accountCode =
+                "1200";
 
-                        credit: value
+            accountName =
+                "البنك";
 
-                    }
+        }
 
-                ]
 
-            );
+        /*
+        --------------------------------------------------------------
+        | PAYMENT JOURNAL
+        --------------------------------------------------------------
+        */
 
-        });
+        createJournal(
+
+            `سداد فاتورة ${invoice.inv_no}`,
+
+            "payment",
+
+            id,
+
+            [
+
+                {
+
+                    code:
+                        accountCode,
+
+                    name:
+                        accountName,
+
+                    debit:
+                        value,
+
+                    credit:
+                        0
+
+                },
+
+                {
+
+                    code:
+                        "1100",
+
+                    name:
+                        `العملاء - ${invoice.customer_name}`,
+
+                    debit:
+                        0,
+
+                    credit:
+                        value
+
+                }
+
+            ]
+
+        );
+
+
+        /*
+        --------------------------------------------------------------
+        | AUDIT
+        --------------------------------------------------------------
+        */
+
+        createAuditLog(
+
+            "payment",
+
+            "invoice",
+
+            id,
+
+            {
+
+                invoice:
+                    invoice.inv_no,
+
+                amount:
+                    value,
+
+                method:
+                    paymentMethod,
+
+                reference:
+                    paymentReference,
+
+                previous_paid:
+                    invoice.paid,
+
+                new_paid:
+                    newPaid,
+
+                remaining:
+                    Math.max(
+                        0,
+                        toNumber(
+                            invoice.total
+                        ) -
+                        newPaid
+                    )
+
+            }
+
+        );
+
+    })();
 
 
     return db
@@ -610,11 +1562,31 @@ function recordPayment({
             FROM invoices
             WHERE id = ?
         `)
-        .get(invoiceId);
+        .get(id);
+
 }
 
 
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER STATEMENT
+|--------------------------------------------------------------------------
+*/
+
 function customerStatement(name) {
+
+    const customerName =
+        cleanString(name);
+
+
+    if (!customerName) {
+
+        throw new Error(
+            "اسم العميل مطلوب"
+        );
+
+    }
+
 
     const customer =
         db.prepare(`
@@ -622,25 +1594,50 @@ function customerStatement(name) {
             FROM customers
             WHERE name = ?
         `)
-        .get(name);
+        .get(
+            customerName
+        );
 
 
     if (!customer) {
 
         return {
 
-            customer: null,
+            customer:
+                null,
 
-            invoices: [],
+            invoices:
+                [],
 
-            payments: [],
+            payments:
+                [],
 
-            balance: 0
+            balance:
+                0,
+
+            totals: {
+
+                sales:
+                    0,
+
+                paid:
+                    0,
+
+                remaining:
+                    0
+
+            }
 
         };
 
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | INVOICES
+    |--------------------------------------------------------------------------
+    */
 
     const invoices =
         db.prepare(`
@@ -649,33 +1646,102 @@ function customerStatement(name) {
                 inv_no,
                 type,
                 due_date,
+                subtotal,
+                discount,
+                tax,
                 total,
                 paid,
                 (total - paid) AS remaining,
                 status,
                 created_at
             FROM invoices
-            WHERE customer_id = ?
-            ORDER BY id DESC
+            WHERE
+                customer_id = ?
+            AND
+                status != 'cancelled'
+            ORDER BY
+                id DESC
         `)
-        .all(customer.id);
+        .all(
+            customer.id
+        );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENTS
+    |--------------------------------------------------------------------------
+    */
 
     const payments =
         db.prepare(`
-            SELECT *
+            SELECT
+                id,
+                invoice_id,
+                amount,
+                method,
+                reference,
+                payment_date
             FROM payments
-            WHERE customer_id = ?
-            ORDER BY id DESC
+            WHERE
+                customer_id = ?
+            ORDER BY
+                id DESC
         `)
-        .all(customer.id);
+        .all(
+            customer.id
+        );
 
 
-    const balance =
+    /*
+    |--------------------------------------------------------------------------
+    | TOTALS
+    |--------------------------------------------------------------------------
+    */
+
+    const totals =
         invoices.reduce(
-            (sum, invoice) =>
-                sum + invoice.remaining,
-            0
+
+            (result, invoice) => {
+
+                result.sales +=
+                    toNumber(
+                        invoice.total
+                    );
+
+                result.paid +=
+                    toNumber(
+                        invoice.paid
+                    );
+
+                result.remaining +=
+                    Math.max(
+                        0,
+                        toNumber(
+                            invoice.total
+                        ) -
+                        toNumber(
+                            invoice.paid
+                        )
+                    );
+
+                return result;
+
+            },
+
+            {
+
+                sales:
+                    0,
+
+                paid:
+                    0,
+
+                remaining:
+                    0
+
+            }
+
         );
 
 
@@ -687,12 +1753,114 @@ function customerStatement(name) {
 
         payments,
 
-        balance
+        balance:
+            totals.remaining,
+
+        totals
 
     };
 
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| GET CUSTOMER BALANCE
+|--------------------------------------------------------------------------
+*/
+
+function getCustomerBalance(
+    customerId
+) {
+
+    const row =
+        db.prepare(`
+            SELECT
+                COALESCE(
+                    SUM(
+                        total - paid
+                    ),
+                    0
+                ) AS balance
+            FROM invoices
+            WHERE
+                customer_id = ?
+            AND
+                status != 'cancelled'
+        `)
+        .get(
+            Number(customerId)
+        );
+
+
+    return toNumber(
+        row.balance
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GET INVOICE
+|--------------------------------------------------------------------------
+*/
+
+function getInvoiceById(id) {
+
+    const invoice =
+        db.prepare(`
+            SELECT *
+            FROM invoices
+            WHERE id = ?
+        `)
+        .get(
+            Number(id)
+        );
+
+
+    if (!invoice) {
+
+        return null;
+
+    }
+
+
+    let items = [];
+
+
+    try {
+
+        items =
+            JSON.parse(
+                invoice.items_json
+            );
+
+    }
+
+    catch {
+
+        items = [];
+
+    }
+
+
+    return {
+
+        ...invoice,
+
+        items
+
+    };
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| EXPORT
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
 
@@ -704,6 +1872,12 @@ module.exports = {
 
     getOrCreateCustomer,
 
-    getOrCreateProduct
+    getOrCreateProduct,
+
+    createJournal,
+
+    getCustomerBalance,
+
+    getInvoiceById
 
 };
