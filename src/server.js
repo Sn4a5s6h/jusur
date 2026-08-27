@@ -1836,4 +1836,1658 @@ app.get(
             }
 
 
-            const
+            const summary =
+                db.prepare(`
+                    SELECT
+
+                        COUNT(*) AS count,
+
+                        COALESCE(
+                            SUM(total),
+                            0
+                        ) AS sales,
+
+                        COALESCE(
+                            SUM(paid),
+                            0
+                        ) AS paid,
+
+                        COALESCE(
+                            SUM(
+                                total - paid
+                            ),
+                            0
+                        ) AS balance
+
+                    FROM invoices
+
+                    WHERE
+                        customer_id = ?
+
+                    AND
+                        status !=
+                        'cancelled'
+                `).get(id);
+
+
+            res.json({
+
+                success: true,
+
+                customer,
+
+                summary
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| PRODUCTS
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/products",
+    (req, res) => {
+
+        try {
+
+            const products =
+                db.prepare(`
+                    SELECT *
+                    FROM products
+                    ORDER BY name
+                `).all();
+
+
+            res.json({
+
+                success: true,
+
+                products
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| CREATE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+    "/api/products",
+    (req, res) => {
+
+        try {
+
+            const name =
+                cleanString(
+                    req.body.name
+                );
+
+
+            const unit =
+                cleanString(
+                    req.body.unit
+                ) ||
+                "قطعة";
+
+
+            const salePrice =
+                toNumber(
+                    req.body.sale_price
+                );
+
+
+            const costPrice =
+                toNumber(
+                    req.body.cost_price
+                );
+
+
+            const stock =
+                toNumber(
+                    req.body.stock
+                );
+
+
+            if (!name) {
+
+                return res
+                    .status(400)
+                    .json({
+
+                        success: false,
+
+                        error:
+                            "اسم الصنف مطلوب"
+
+                    });
+
+            }
+
+
+            const result =
+                db.prepare(`
+                    INSERT INTO products
+                    (
+                        name,
+                        unit,
+                        sale_price,
+                        cost_price,
+                        stock
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(
+
+                    name,
+
+                    unit,
+
+                    salePrice,
+
+                    costPrice,
+
+                    stock
+
+                );
+
+
+            res.json({
+
+                success: true,
+
+                id:
+                    Number(
+                        result.lastInsertRowid
+                    ),
+
+                message:
+                    "تم إنشاء الصنف"
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| STOCK ADJUSTMENT
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+    "/api/products/:id/stock",
+    (req, res) => {
+
+        try {
+
+            const id =
+                Number(
+                    req.params.id
+                );
+
+
+            const quantity =
+                toNumber(
+                    req.body.quantity
+                );
+
+
+            if (
+                !Number.isInteger(id)
+            ) {
+
+                throw new Error(
+                    "معرف الصنف غير صحيح"
+                );
+
+            }
+
+
+            if (
+                !Number.isFinite(
+                    quantity
+                ) ||
+                quantity === 0
+            ) {
+
+                throw new Error(
+                    "الكمية غير صحيحة"
+                );
+
+            }
+
+
+            const product =
+                db.prepare(`
+                    SELECT *
+                    FROM products
+                    WHERE id = ?
+                `).get(id);
+
+
+            if (!product) {
+
+                throw new Error(
+                    "الصنف غير موجود"
+                );
+
+            }
+
+
+            const newStock =
+                Number(product.stock) +
+                Number(quantity);
+
+
+            if (newStock < 0) {
+
+                throw new Error(
+                    "لا يمكن أن يصبح المخزون سالباً"
+                );
+
+            }
+
+
+            db.transaction(() => {
+
+                db.prepare(`
+                    UPDATE products
+                    SET stock = stock + ?
+                    WHERE id = ?
+                `).run(
+
+                    quantity,
+
+                    id
+
+                );
+
+
+                db.prepare(`
+                    INSERT INTO stock_movements
+                    (
+                        product_id,
+                        quantity,
+                        movement_type,
+                        reference_type
+                    )
+                    VALUES (?, ?, ?, ?)
+                `).run(
+
+                    id,
+
+                    quantity,
+
+                    quantity >= 0
+                        ? "purchase"
+                        : "adjustment",
+
+                    "manual"
+
+                );
+
+            })();
+
+
+            const updated =
+                db.prepare(`
+                    SELECT *
+                    FROM products
+                    WHERE id = ?
+                `).get(id);
+
+
+            res.json({
+
+                success: true,
+
+                product:
+                    updated
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| INVOICES LIST
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/invoices",
+    (req, res) => {
+
+        try {
+
+            const limit =
+                Math.min(
+
+                    Math.max(
+
+                        Number(
+                            req.query.limit
+                        ) || 100,
+
+                        1
+
+                    ),
+
+                    500
+
+                );
+
+
+            const invoices =
+                db.prepare(`
+                    SELECT *
+                    FROM invoices
+                    ORDER BY id DESC
+                    LIMIT ?
+                `).all(
+                    limit
+                );
+
+
+            res.json({
+
+                success: true,
+
+                invoices
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/dashboard",
+    (req, res) => {
+
+        try {
+
+            const sales =
+                db.prepare(`
+                    SELECT
+                        COALESCE(
+                            SUM(total),
+                            0
+                        ) AS total
+
+                    FROM invoices
+
+                    WHERE
+                        status !=
+                        'draft'
+
+                    AND
+                        status !=
+                        'cancelled'
+                `)
+                .get()
+                .total;
+
+
+            const receivables =
+                db.prepare(`
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                total - paid
+                            ),
+                            0
+                        ) AS total
+
+                    FROM invoices
+
+                    WHERE
+                        type =
+                        'credit'
+
+                    AND
+                        status !=
+                        'paid'
+
+                    AND
+                        status !=
+                        'cancelled'
+                `)
+                .get()
+                .total;
+
+
+            const customers =
+                db.prepare(`
+                    SELECT
+                        COUNT(*) AS n
+                    FROM customers
+                `)
+                .get()
+                .n;
+
+
+            const products =
+                db.prepare(`
+                    SELECT
+                        COUNT(*) AS n
+                    FROM products
+                `)
+                .get()
+                .n;
+
+
+            const invoices =
+                db.prepare(`
+                    SELECT
+                        COUNT(*) AS n
+
+                    FROM invoices
+
+                    WHERE
+                        status !=
+                        'cancelled'
+                `)
+                .get()
+                .n;
+
+
+            const payments =
+                db.prepare(`
+                    SELECT
+                        COALESCE(
+                            SUM(amount),
+                            0
+                        ) AS total
+
+                    FROM payments
+                `)
+                .get()
+                .total;
+
+
+            const inventory =
+                db.prepare(`
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                stock *
+                                cost_price
+                            ),
+                            0
+                        ) AS total
+
+                    FROM products
+                `)
+                .get()
+                .total;
+
+
+            res.json({
+
+                success: true,
+
+                sales:
+                    Number(sales),
+
+                receivables:
+                    Number(
+                        receivables
+                    ),
+
+                customers:
+                    Number(customers),
+
+                products:
+                    Number(products),
+
+                invoices:
+                    Number(invoices),
+
+                payments:
+                    Number(payments),
+
+                inventory_value:
+                    Number(inventory)
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| JOURNAL
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/journal",
+    (req, res) => {
+
+        try {
+
+            const entries =
+                db.prepare(`
+                    SELECT
+
+                        je.id,
+
+                        je.reference_type,
+
+                        je.reference_id,
+
+                        je.description,
+
+                        je.entry_date,
+
+                        jl.id AS line_id,
+
+                        jl.account_code,
+
+                        jl.account_name,
+
+                        jl.debit,
+
+                        jl.credit
+
+                    FROM journal_entries je
+
+                    JOIN journal_lines jl
+                        ON jl.journal_id =
+                           je.id
+
+                    ORDER BY
+                        je.id DESC,
+                        jl.id ASC
+
+                    LIMIT 1000
+                `)
+                .all();
+
+
+            res.json({
+
+                success: true,
+
+                entries
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| TRIAL BALANCE
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/reports/trial-balance",
+    (req, res) => {
+
+        try {
+
+            const rows =
+                db.prepare(`
+                    SELECT
+
+                        account_code,
+
+                        account_name,
+
+                        COALESCE(
+                            SUM(debit),
+                            0
+                        ) AS debit,
+
+                        COALESCE(
+                            SUM(credit),
+                            0
+                        ) AS credit
+
+                    FROM journal_lines
+
+                    GROUP BY
+                        account_code,
+                        account_name
+
+                    ORDER BY
+                        account_code
+                `)
+                .all();
+
+
+            const totals =
+                rows.reduce(
+
+                    (
+                        result,
+                        row
+                    ) => {
+
+                        result.debit +=
+                            Number(
+                                row.debit
+                            );
+
+                        result.credit +=
+                            Number(
+                                row.credit
+                            );
+
+                        return result;
+
+                    },
+
+                    {
+                        debit: 0,
+                        credit: 0
+                    }
+
+                );
+
+
+            res.json({
+
+                success: true,
+
+                accounts:
+                    rows,
+
+                totals,
+
+                balanced:
+                    Math.abs(
+                        totals.debit -
+                        totals.credit
+                    ) < 0.001
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| PROFIT REPORT
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/reports/profit",
+    (req, res) => {
+
+        try {
+
+            const sales =
+                db.prepare(`
+                    SELECT
+                        COALESCE(
+                            SUM(total),
+                            0
+                        ) AS total
+
+                    FROM invoices
+
+                    WHERE
+                        status !=
+                        'cancelled'
+                `)
+                .get()
+                .total;
+
+
+            res.json({
+
+                success: true,
+
+                revenue:
+                    Number(sales),
+
+                cost_of_goods_sold:
+                    0,
+
+                gross_profit:
+                    Number(sales),
+
+                note:
+                    "محرك تكلفة المخزون FIFO / Average Cost سيتم تفعيله في المرحلة التالية"
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| BANK UPLOAD
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+    "/api/upload-bank",
+    upload.single("file"),
+    (req, res) => {
+
+        try {
+
+            if (!req.file) {
+
+                return res
+                    .status(400)
+                    .json({
+
+                        success: false,
+
+                        error:
+                            "ملف كشف البنك مطلوب"
+
+                    });
+
+            }
+
+
+            res.json({
+
+                success: true,
+
+                message:
+                    "تم استلام كشف البنك",
+
+                file: {
+
+                    original_name:
+                        req.file.originalname,
+
+                    path:
+                        req.file.path,
+
+                    size:
+                        req.file.size
+
+                },
+
+                next_step:
+                    "bank_reconciliation"
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| WHATSAPP ACCOUNTS
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/whatsapp/accounts",
+    (req, res) => {
+
+        try {
+
+            const accounts =
+                db.prepare(`
+                    SELECT
+
+                        id,
+                        name,
+                        phone,
+                        status,
+                        provider,
+                        created_at
+
+                    FROM whatsapp_accounts
+
+                    ORDER BY id DESC
+                `)
+                .all();
+
+
+            res.json({
+
+                success: true,
+
+                accounts
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| CREATE WHATSAPP ACCOUNT
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+    "/api/whatsapp/accounts",
+    (req, res) => {
+
+        try {
+
+            const name =
+                cleanString(
+                    req.body.name
+                ) ||
+                "WhatsApp";
+
+
+            const phone =
+                cleanString(
+                    req.body.phone
+                );
+
+
+            const result =
+                db.prepare(`
+                    INSERT INTO whatsapp_accounts
+                    (
+                        name,
+                        phone,
+                        status,
+                        provider
+                    )
+                    VALUES (?, ?, ?, ?)
+                `).run(
+
+                    name,
+
+                    phone,
+
+                    "disconnected",
+
+                    "gateway"
+
+                );
+
+
+            res.json({
+
+                success: true,
+
+                accountId:
+                    Number(
+                        result.lastInsertRowid
+                    ),
+
+                status:
+                    "disconnected",
+
+                message:
+                    "تم إنشاء حساب WhatsApp"
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| WHATSAPP INBOX
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+    "/api/whatsapp/messages",
+    async (req, res) => {
+
+        try {
+
+            const accountId =
+                Number(
+                    req.body.account_id
+                );
+
+
+            const phone =
+                cleanString(
+                    req.body.phone
+                );
+
+
+            const body =
+                cleanString(
+                    req.body.body
+                );
+
+
+            if (
+                !Number.isInteger(
+                    accountId
+                )
+            ) {
+
+                throw new Error(
+                    "حساب WhatsApp غير صحيح"
+                );
+
+            }
+
+
+            if (!body) {
+
+                throw new Error(
+                    "نص الرسالة مطلوب"
+                );
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CHECK ACCOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            const account =
+                db.prepare(`
+                    SELECT *
+                    FROM whatsapp_accounts
+                    WHERE id = ?
+                `).get(
+                    accountId
+                );
+
+
+            if (!account) {
+
+                throw new Error(
+                    "حساب WhatsApp غير موجود"
+                );
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AI ANALYSIS
+            |--------------------------------------------------------------------------
+            */
+
+            const result =
+                await Promise.resolve(
+                    parseTransaction(
+                        body
+                    )
+                );
+
+
+            const normalized =
+                normalizeTransaction(
+                    result
+                );
+
+
+            normalized.original_text =
+                normalized.original_text ||
+                body;
+
+
+            const validationErrors =
+                validateTransaction(
+                    normalized
+                );
+
+
+            normalized.validation_errors =
+                validationErrors;
+
+
+            normalized.ready =
+                validationErrors.length === 0;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE MESSAGE
+            |--------------------------------------------------------------------------
+            */
+
+            const messageResult =
+                db.prepare(`
+                    INSERT INTO whatsapp_messages
+                    (
+                        account_id,
+                        direction,
+                        phone,
+                        body,
+                        parsed_json
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(
+
+                    accountId,
+
+                    "inbound",
+
+                    phone,
+
+                    body,
+
+                    safeJson(
+                        normalized
+                    )
+
+                );
+
+
+            res.json({
+
+                success: true,
+
+                messageId:
+                    Number(
+                        messageResult
+                            .lastInsertRowid
+                    ),
+
+                parsed:
+                    normalized
+
+            });
+
+        }
+        catch (error) {
+
+            console.error(
+                "WHATSAPP MESSAGE ERROR:",
+                error
+            );
+
+
+            res
+                .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| AUDIT LOG
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/audit",
+    (req, res) => {
+
+        try {
+
+            const logs =
+                db.prepare(`
+                    SELECT *
+
+                    FROM audit_logs
+
+                    ORDER BY id DESC
+
+                    LIMIT 500
+                `)
+                .all();
+
+
+            res.json({
+
+                success: true,
+
+                logs
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/settings/:key",
+    (req, res) => {
+
+        try {
+
+            const key =
+                cleanString(
+                    req.params.key
+                );
+
+
+            const setting =
+                db.prepare(`
+                    SELECT *
+
+                    FROM settings
+
+                    WHERE key = ?
+                `).get(
+                    key
+                );
+
+
+            res.json({
+
+                success: true,
+
+                setting:
+                    setting || null
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+app.post(
+    "/api/settings",
+    (req, res) => {
+
+        try {
+
+            const key =
+                cleanString(
+                    req.body.key
+                );
+
+
+            const value =
+                req.body.value;
+
+
+            if (!key) {
+
+                throw new Error(
+                    "مفتاح الإعداد مطلوب"
+                );
+
+            }
+
+
+            const safeValue =
+                typeof value === "string"
+                    ? value
+                    : safeJson(value);
+
+
+            db.prepare(`
+                INSERT INTO settings
+                (
+                    key,
+                    value
+                )
+                VALUES (?, ?)
+
+                ON CONFLICT(key)
+                DO UPDATE SET
+                    value =
+                    excluded.value
+            `).run(
+
+                key,
+
+                String(
+                    safeValue
+                )
+
+            );
+
+
+            res.json({
+
+                success: true,
+
+                message:
+                    "تم حفظ الإعداد"
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| API 404
+|--------------------------------------------------------------------------
+|
+| مهم:
+| لا نستخدم app.get("*")
+| لأن Express 5 يستخدم path-to-regexp
+| بطريقة مختلفة.
+|
+*/
+
+app.use(
+    "/api",
+    (req, res) => {
+
+        res
+            .status(404)
+            .json({
+
+                success: false,
+
+                error:
+                    "API endpoint not found",
+
+                path:
+                    req.originalUrl
+
+            });
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| GLOBAL ERROR HANDLER
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+    (error, req, res, next) => {
+
+        console.error(
+            "GLOBAL ERROR:",
+            error
+        );
+
+
+        if (
+            res.headersSent
+        ) {
+
+            return next(
+                error
+            );
+
+        }
+
+
+        res
+            .status(500)
+            .json({
+
+                success: false,
+
+                error:
+                    "حدث خطأ داخلي في النظام"
+
+            });
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| FRONTEND FALLBACK
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+    (req, res, next) => {
+
+        if (
+            req.path.startsWith(
+                "/api"
+            )
+        ) {
+
+            return next();
+
+        }
+
+
+        if (
+            req.path.startsWith(
+                "/invoices"
+            )
+        ) {
+
+            return next();
+
+        }
+
+
+        res.sendFile(
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            )
+        );
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| SERVER START
+|--------------------------------------------------------------------------
+|
+| يوجد app.listen واحد فقط.
+|
+*/
+
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+
+        console.log(
+            "========================================"
+        );
+
+        console.log(
+            "🌉 JUSOOR ACCOUNTING"
+        );
+
+        console.log(
+            "🚀 Accounting Engine: ACTIVE"
+        );
+
+        console.log(
+            "🤖 AI Engine: ACTIVE"
+        );
+
+        console.log(
+            "🗄️ Database: SQLite"
+        );
+
+        console.log(
+            `🌐 Port: ${PORT}`
+        );
+
+        console.log(
+            "========================================"
+        );
+
+    }
+);
