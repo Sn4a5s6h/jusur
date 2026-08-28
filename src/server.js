@@ -6,8 +6,14 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-const db = require("./db");
+// ============================================
+// BASE DE DATOS - desde la raíz del proyecto
+// ============================================
+const db = require("../db");
 
+// ============================================
+// ARCHIVOS DENTRO DE src/
+// ============================================
 const {
     parseTransaction
 } = require("./ai/engine");
@@ -22,6 +28,9 @@ const {
     generateInvoicePDF
 } = require("./pdf");
 
+// ============================================
+// AUTENTICACIÓN - desde la raíz del proyecto
+// ============================================
 const {
     hashPassword,
     verifyPassword,
@@ -30,14 +39,14 @@ const {
 } = require("../auth/auth");
 
 // ============================================
-// MIDDLEWARE - NEW
+// MIDDLEWARE Y SERVICIOS - desde la raíz del proyecto
 // ============================================
-const { initializeDatabase } = require("./db/init");
-const { validate, schemas } = require("./middleware/validate");
-const { authorize, authorizeRole } = require("./middleware/rbac");
-const { authLimiter, apiLimiter, sensitiveLimiter } = require("./middleware/rateLimit");
-const { cleanupUploads, cleanupInvoices } = require("./services/cleanup");
-const { sendInvoiceEmail, sendPaymentConfirmation } = require("./services/email");
+const { initializeDatabase } = require("../db/init");
+const { validate, schemas } = require("../middleware/validate");
+const { authorize, authorizeRole } = require("../middleware/rbac");
+const { authLimiter, apiLimiter, sensitiveLimiter } = require("../middleware/rateLimit");
+const { cleanupUploads, cleanupInvoices } = require("../services/cleanup");
+const { sendInvoiceEmail, sendPaymentConfirmation } = require("../services/email");
 
 /*
 |--------------------------------------------------------------------------
@@ -80,7 +89,7 @@ fs.mkdirSync(INVOICES, {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE INITIALIZATION - NEW
+| DATABASE INITIALIZATION
 |--------------------------------------------------------------------------
 */
 
@@ -132,7 +141,7 @@ app.use(
 
 /*
 |--------------------------------------------------------------------------
-| RATE LIMITING - NEW
+| RATE LIMITING
 |--------------------------------------------------------------------------
 */
 
@@ -589,7 +598,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| AUTH REGISTER - NEW
+| AUTH REGISTER
 |--------------------------------------------------------------------------
 */
 
@@ -2354,7 +2363,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| INVOICE EMAIL - NEW
+| INVOICE EMAIL
 |--------------------------------------------------------------------------
 */
 
@@ -2436,7 +2445,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| PAYMENT ROUTES - FIXED (async)
+| PAYMENT ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -2444,7 +2453,7 @@ app.post(
     "/api/payments",
     authenticate,
     validate(schemas.payment),
-    async (req, res) => { // ✅ تم إضافة async هنا
+    async (req, res) => {
 
         try {
 
@@ -2650,7 +2659,7 @@ app.post(
 
             }
 
-            // ✅ إرسال تأكيد الدفع عبر البريد - الآن يعمل بشكل صحيح
+            // إرسال تأكيد الدفع عبر البريد
             try {
                 const customer = db.prepare(`
                     SELECT phone FROM customers WHERE id = ?
@@ -3494,7 +3503,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| PURCHASE INVOICES - NEW
+| PURCHASE INVOICES
 |--------------------------------------------------------------------------
 */
 
@@ -4122,7 +4131,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| REPORTS - NEW
+| REPORTS
 |--------------------------------------------------------------------------
 */
 
@@ -5263,7 +5272,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| CLEANUP - NEW
+| CLEANUP
 |--------------------------------------------------------------------------
 */
 
