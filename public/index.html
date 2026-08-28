@@ -3,194 +3,954 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌉 جسور للمحاسبة</title>
-    <!-- CSS -->
+    <title>🌉 جسور للمحاسبة - Jusoor Accounting</title>
+    
+    <!-- ✅ ربط ملف CSS -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- ✅ ربط مكتبة Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    
+    <!-- ✅ ربط مكتبة FontAwesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        /* أنماط إضافية صغيرة */
+        .hidden {
+            display: none !important;
+        }
+        .flex-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gap-10 {
+            gap: 10px;
+        }
+        .mt-10 {
+            margin-top: 10px;
+        }
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-muted {
+            color: var(--gray);
+        }
+        .w-full {
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <!-- شريط التنقل -->
-    <nav>
-        <div class="logo">🌉 جسور</div>
-        <div class="nav-links">
-            <a href="#dashboard">لوحة التحكم</a>
-            <a href="#customers">العملاء</a>
-            <a href="#suppliers">الموردين</a>
-            <a href="#products">المنتجات</a>
-            <a href="#invoices">الفواتير</a>
-            <a href="#purchases">فواتير الشراء</a>
-            <a href="#ai">الذكاء الاصطناعي</a>
-            <a href="#reports">التقارير</a>
-            <a href="#settings">الإعدادات</a>
+
+    <!-- ============================================
+    شريط التنقل (Navbar)
+    ============================================ -->
+    <nav id="mainNav" style="display:none;">
+        <div class="logo">
+            🌉 جسور
+            <span>v4.0</span>
         </div>
+        
+        <div class="nav-links">
+            <a href="#" data-section="dashboard" class="active" onclick="showSection('dashboard')">
+                <i class="fas fa-chart-pie"></i> لوحة التحكم
+            </a>
+            <a href="#" data-section="ai" onclick="showSection('ai')">
+                <i class="fas fa-robot"></i> الذكاء الاصطناعي
+            </a>
+            <a href="#" data-section="customers" onclick="showSection('customers')">
+                <i class="fas fa-users"></i> العملاء
+            </a>
+            <a href="#" data-section="suppliers" onclick="showSection('suppliers')">
+                <i class="fas fa-truck"></i> الموردين
+            </a>
+            <a href="#" data-section="products" onclick="showSection('products')">
+                <i class="fas fa-boxes"></i> المنتجات
+            </a>
+            <a href="#" data-section="invoices" onclick="showSection('invoices')">
+                <i class="fas fa-file-invoice"></i> الفواتير
+            </a>
+            <a href="#" data-section="purchases" onclick="showSection('purchases')">
+                <i class="fas fa-file-invoice-dollar"></i> فواتير الشراء
+            </a>
+            <a href="#" data-section="reports" onclick="showSection('reports')">
+                <i class="fas fa-chart-bar"></i> التقارير
+            </a>
+            <a href="#" data-section="audit" onclick="showSection('audit')">
+                <i class="fas fa-history"></i> سجل التدقيق
+            </a>
+            <a href="#" data-section="settings" onclick="showSection('settings')">
+                <i class="fas fa-cog"></i> الإعدادات
+            </a>
+        </div>
+        
         <div class="user-info">
-            <span id="userName"></span>
-            <button id="logoutBtn">تسجيل خروج</button>
+            <span id="userName"><i class="fas fa-user"></i> مستخدم</span>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> خروج
+            </button>
         </div>
     </nav>
 
-    <!-- صفحات تسجيل الدخول -->
+    <!-- ============================================
+    صفحة تسجيل الدخول
+    ============================================ -->
     <div id="loginPage">
-        <h2>تسجيل الدخول</h2>
-        <form id="loginForm">
-            <input type="text" id="username" placeholder="اسم المستخدم">
-            <input type="password" id="password" placeholder="كلمة المرور">
-            <button type="submit">دخول</button>
-        </form>
-        <a href="#register">إنشاء حساب جديد</a>
-    </div>
-
-    <!-- صفحة تسجيل المستخدم -->
-    <div id="registerPage" style="display:none">
-        <h2>إنشاء حساب جديد</h2>
-        <form id="registerForm">
-            <input type="text" id="regUsername" placeholder="اسم المستخدم">
-            <input type="password" id="regPassword" placeholder="كلمة المرور">
-            <input type="text" id="regName" placeholder="الاسم (اختياري)">
-            <button type="submit">إنشاء حساب</button>
-        </form>
-        <a href="#login">لديك حساب؟ تسجيل دخول</a>
-    </div>
-
-    <!-- التطبيق الرئيسي (يظهر بعد تسجيل الدخول) -->
-    <main id="appContent" style="display:none">
+        <div style="text-align:center; margin-bottom:20px;">
+            <h1 style="font-size:48px;">🌉</h1>
+            <h2>جسور للمحاسبة</h2>
+            <p class="subtitle">نظام محاسبي مدعوم بالذكاء الاصطناعي</p>
+        </div>
         
-        <!-- لوحة التحكم -->
-        <section id="dashboard">
-            <h2>📊 لوحة التحكم</h2>
+        <form class="auth-form" id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+            <input type="text" id="loginUsername" placeholder="👤 اسم المستخدم" required>
+            <input type="password" id="loginPassword" placeholder="🔒 كلمة المرور" required>
+            <button type="submit" class="btn-primary">تسجيل الدخول</button>
+        </form>
+        
+        <div class="auth-link">
+            ليس لديك حساب؟ <a onclick="showRegister()">إنشاء حساب جديد</a>
+        </div>
+        
+        <div class="auth-link text-muted" style="font-size:12px; margin-top:10px;">
+            المستخدم الافتراضي: admin / admin123
+        </div>
+    </div>
+
+    <!-- ============================================
+    صفحة تسجيل مستخدم جديد
+    ============================================ -->
+    <div id="registerPage" style="display:none;">
+        <div style="text-align:center; margin-bottom:20px;">
+            <h1 style="font-size:48px;">🌉</h1>
+            <h2>إنشاء حساب جديد</h2>
+            <p class="subtitle">سجل الآن للاستفادة من نظام جسور</p>
+        </div>
+        
+        <form class="auth-form" id="registerForm" onsubmit="event.preventDefault(); handleRegister();">
+            <input type="text" id="regUsername" placeholder="👤 اسم المستخدم" required>
+            <input type="password" id="regPassword" placeholder="🔒 كلمة المرور (6 أحرف على الأقل)" required>
+            <input type="text" id="regName" placeholder="📛 الاسم (اختياري)">
+            <button type="submit" class="btn-primary">إنشاء حساب</button>
+        </form>
+        
+        <div class="auth-link">
+            لديك حساب؟ <a onclick="showLogin()">تسجيل الدخول</a>
+        </div>
+    </div>
+
+    <!-- ============================================
+    المحتوى الرئيسي (بعد تسجيل الدخول)
+    ============================================ -->
+    <main id="appContent" style="display:none;">
+
+        <!-- ==========================================
+        لوحة التحكم (Dashboard)
+        ========================================== -->
+        <section id="dashboard" class="active">
+            <h2>
+                <i class="fas fa-chart-pie"></i> لوحة التحكم
+                <span class="badge" id="dashboardDate"></span>
+            </h2>
+            
             <div class="stats-grid">
-                <div class="stat-card" id="statSales">المبيعات: 0</div>
-                <div class="stat-card" id="statReceivables">المستحقات: 0</div>
-                <div class="stat-card" id="statCustomers">العملاء: 0</div>
-                <div class="stat-card" id="statProducts">المنتجات: 0</div>
-                <div class="stat-card" id="statInvoices">الفواتير: 0</div>
-                <div class="stat-card" id="statPayments">المدفوعات: 0</div>
-                <div class="stat-card" id="statInventory">قيمة المخزون: 0</div>
+                <div class="stat-card sales">
+                    <span class="icon">💰</span>
+                    <strong id="statSales">0</strong>
+                    <small>إجمالي المبيعات</small>
+                </div>
+                <div class="stat-card receivables">
+                    <span class="icon">📋</span>
+                    <strong id="statReceivables">0</strong>
+                    <small>المستحقات</small>
+                </div>
+                <div class="stat-card customers">
+                    <span class="icon">👤</span>
+                    <strong id="statCustomers">0</strong>
+                    <small>العملاء</small>
+                </div>
+                <div class="stat-card products">
+                    <span class="icon">📦</span>
+                    <strong id="statProducts">0</strong>
+                    <small>المنتجات</small>
+                </div>
+                <div class="stat-card invoices">
+                    <span class="icon">📄</span>
+                    <strong id="statInvoices">0</strong>
+                    <small>الفواتير</small>
+                </div>
+                <div class="stat-card payments">
+                    <span class="icon">💳</span>
+                    <strong id="statPayments">0</strong>
+                    <small>المدفوعات</small>
+                </div>
+                <div class="stat-card inventory">
+                    <span class="icon">🏪</span>
+                    <strong id="statInventory">0</strong>
+                    <small>قيمة المخزون</small>
+                </div>
+            </div>
+            
+            <!-- رسم بياني بسيط -->
+            <div style="background:var(--white); padding:20px; border-radius:var(--radius); box-shadow:var(--shadow);">
+                <h4 style="margin-bottom:15px;"><i class="fas fa-chart-line"></i> المبيعات الشهرية</h4>
+                <canvas id="salesChart" height="200"></canvas>
             </div>
         </section>
 
-        <!-- الذكاء الاصطناعي -->
+        <!-- ==========================================
+        الذكاء الاصطناعي (AI)
+        ========================================== -->
         <section id="ai">
-            <h2>🤖 المساعد الذكي</h2>
-            <textarea id="aiInput" placeholder="أدخل نص المعاملة..."></textarea>
-            <button id="aiParseBtn">تحليل</button>
-            <div id="aiResult"></div>
-            <button id="aiCommitBtn" style="display:none">تأكيد وحفظ</button>
+            <h2><i class="fas fa-robot"></i> المساعد الذكي</h2>
+            
+            <div class="ai-container">
+                <p class="text-muted" style="margin-bottom:12px;">
+                    أدخل نص المعاملة وسيقوم الذكاء الاصطناعي بتحليلها وإنشاء فاتورة تلقائياً.
+                    <br>مثال: <strong>"فاتورة لمحمد 2 كرتون حليب بسعر 10 ريال"</strong>
+                </p>
+                
+                <textarea id="aiInput" placeholder="أدخل نص المعاملة هنا..."></textarea>
+                
+                <div class="ai-actions">
+                    <button class="btn btn-primary" id="aiParseBtn" onclick="handleAIParse()">
+                        <i class="fas fa-microchip"></i> تحليل
+                    </button>
+                    <button class="btn btn-success" id="aiCommitBtn" style="display:none;" onclick="handleAICommit()">
+                        <i class="fas fa-save"></i> تأكيد وحفظ
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('aiInput').value = ''; document.getElementById('aiResult').innerHTML = ''; document.getElementById('aiCommitBtn').style.display = 'none';">
+                        <i class="fas fa-undo"></i> مسح
+                    </button>
+                </div>
+                
+                <div id="aiResult">
+                    <p class="text-muted text-center" style="padding:20px;">
+                        <i class="fas fa-info-circle"></i> انتظر حتى تقوم بتحليل نص المعاملة
+                    </p>
+                </div>
+            </div>
         </section>
 
-        <!-- العملاء -->
+        <!-- ==========================================
+        العملاء (Customers)
+        ========================================== -->
         <section id="customers">
-            <h2>👤 العملاء</h2>
-            <form id="customerForm">
-                <input type="text" id="customerName" placeholder="اسم العميل">
-                <input type="text" id="customerPhone" placeholder="رقم الهاتف">
-                <input type="text" id="customerAddress" placeholder="العنوان">
-                <button type="submit">إضافة عميل</button>
+            <h2><i class="fas fa-users"></i> العملاء</h2>
+            
+            <form class="form-group" id="customerForm" onsubmit="event.preventDefault(); handleAddCustomer();">
+                <input type="text" id="customerName" placeholder="📛 اسم العميل" required>
+                <input type="text" id="customerPhone" placeholder="📞 رقم الهاتف">
+                <input type="text" id="customerAddress" placeholder="📍 العنوان">
+                <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> إضافة</button>
             </form>
-            <table id="customersTable">
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>الهاتف</th>
-                        <th>الرصيد</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="customersList"></tbody>
-            </table>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>العنوان</th>
+                            <th>الرصيد</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersList">
+                        <tr><td colspan="5" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <!-- المنتجات -->
+        <!-- ==========================================
+        الموردين (Suppliers)
+        ========================================== -->
+        <section id="suppliers">
+            <h2><i class="fas fa-truck"></i> الموردين</h2>
+            
+            <form class="form-group" id="supplierForm" onsubmit="event.preventDefault(); handleAddSupplier();">
+                <input type="text" id="supplierName" placeholder="📛 اسم المورد" required>
+                <input type="text" id="supplierPhone" placeholder="📞 رقم الهاتف">
+                <input type="text" id="supplierAddress" placeholder="📍 العنوان">
+                <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> إضافة</button>
+            </form>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>العنوان</th>
+                            <th>الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliersList">
+                        <tr><td colspan="4" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==========================================
+        المنتجات (Products)
+        ========================================== -->
         <section id="products">
-            <h2>📦 المنتجات</h2>
-            <form id="productForm">
-                <input type="text" id="productName" placeholder="اسم المنتج">
-                <input type="number" id="productPrice" placeholder="سعر البيع">
-                <input type="number" id="productCost" placeholder="سعر الشراء">
-                <input type="number" id="productStock" placeholder="المخزون">
-                <button type="submit">إضافة منتج</button>
+            <h2><i class="fas fa-boxes"></i> المنتجات</h2>
+            
+            <form class="form-group" id="productForm" onsubmit="event.preventDefault(); handleAddProduct();">
+                <input type="text" id="productName" placeholder="📛 اسم المنتج" required>
+                <input type="text" id="productUnit" placeholder="📏 الوحدة (قطعة)" value="قطعة">
+                <input type="number" id="productSalePrice" placeholder="💰 سعر البيع" step="0.01">
+                <input type="number" id="productCostPrice" placeholder="💲 سعر الشراء" step="0.01">
+                <input type="number" id="productStock" placeholder="📦 المخزون" step="0.01">
+                <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> إضافة</button>
             </form>
-            <table id="productsTable">
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>الوحدة</th>
-                        <th>سعر البيع</th>
-                        <th>سعر الشراء</th>
-                        <th>المخزون</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="productsList"></tbody>
-            </table>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الوحدة</th>
+                            <th>سعر البيع</th>
+                            <th>سعر الشراء</th>
+                            <th>المخزون</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsList">
+                        <tr><td colspan="6" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <!-- الفواتير -->
+        <!-- ==========================================
+        الفواتير (Invoices)
+        ========================================== -->
         <section id="invoices">
-            <h2>📄 الفواتير</h2>
-            <table id="invoicesTable">
-                <thead>
-                    <tr>
-                        <th>رقم الفاتورة</th>
-                        <th>العميل</th>
-                        <th>الإجمالي</th>
-                        <th>المدفوع</th>
-                        <th>الحالة</th>
-                        <th>التاريخ</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="invoicesList"></tbody>
-            </table>
+            <h2><i class="fas fa-file-invoice"></i> الفواتير</h2>
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                <button class="btn btn-primary" onclick="loadInvoices()">
+                    <i class="fas fa-sync"></i> تحديث
+                </button>
+                <span class="text-muted" style="display:flex; align-items:center; font-size:13px;">
+                    <i class="fas fa-info-circle"></i> يتم إنشاء الفواتير عبر الذكاء الاصطناعي
+                </span>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>رقم الفاتورة</th>
+                            <th>العميل</th>
+                            <th>الإجمالي</th>
+                            <th>المدفوع</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoicesList">
+                        <tr><td colspan="7" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <!-- فواتير الشراء -->
+        <!-- ==========================================
+        فواتير الشراء (Purchases)
+        ========================================== -->
         <section id="purchases">
-            <h2>📥 فواتير الشراء</h2>
-            <form id="purchaseForm">
-                <input type="text" id="purchaseSupplier" placeholder="اسم المورد">
-                <button type="button" id="addPurchaseItemBtn">إضافة صنف</button>
-                <div id="purchaseItemsContainer"></div>
-                <button type="submit">إنشاء فاتورة شراء</button>
+            <h2><i class="fas fa-file-invoice-dollar"></i> فواتير الشراء</h2>
+            
+            <form class="form-group" id="purchaseForm" style="flex-direction:column;" onsubmit="event.preventDefault(); handleAddPurchase();">
+                <div style="display:flex; flex-wrap:wrap; gap:10px; width:100%;">
+                    <input type="text" id="purchaseSupplier" placeholder="📛 اسم المورد" required style="flex:2;">
+                    <button type="button" class="btn btn-info" onclick="addPurchaseItem()">
+                        <i class="fas fa-plus"></i> إضافة صنف
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> إنشاء فاتورة
+                    </button>
+                </div>
+                
+                <div id="purchaseItemsContainer" style="width:100%; margin-top:10px;"></div>
             </form>
-            <table id="purchasesTable">
-                <thead>
-                    <tr>
-                        <th>رقم الفاتورة</th>
-                        <th>المورد</th>
-                        <th>الإجمالي</th>
-                        <th>التاريخ</th>
-                    </tr>
-                </thead>
-                <tbody id="purchasesList"></tbody>
-            </table>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>رقم الفاتورة</th>
+                            <th>المورد</th>
+                            <th>الإجمالي</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchasesList">
+                        <tr><td colspan="5" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <!-- التقارير -->
+        <!-- ==========================================
+        التقارير (Reports)
+        ========================================== -->
         <section id="reports">
-            <h2>📊 التقارير</h2>
+            <h2><i class="fas fa-chart-bar"></i> التقارير</h2>
+            
             <div class="report-tabs">
-                <button class="report-tab active" data-report="sales">تقرير المبيعات</button>
-                <button class="report-tab" data-report="customer-balances">أرصدة العملاء</button>
-                <button class="report-tab" data-report="top-products">أفضل المنتجات</button>
+                <button class="report-tab active" data-report="sales" onclick="loadReport('sales')">
+                    <i class="fas fa-chart-line"></i> المبيعات
+                </button>
+                <button class="report-tab" data-report="customer-balances" onclick="loadReport('customer-balances')">
+                    <i class="fas fa-user"></i> أرصدة العملاء
+                </button>
+                <button class="report-tab" data-report="top-products" onclick="loadReport('top-products')">
+                    <i class="fas fa-crown"></i> أفضل المنتجات
+                </button>
+                <button class="report-tab" data-report="trial-balance" onclick="loadReport('trial-balance')">
+                    <i class="fas fa-balance-scale"></i> ميزان المراجعة
+                </button>
+                <button class="report-tab" data-report="profit" onclick="loadReport('profit')">
+                    <i class="fas fa-coins"></i> الأرباح
+                </button>
             </div>
-            <div id="reportContent"></div>
+            
+            <div id="reportContent">
+                <p class="text-muted text-center" style="padding:40px;">
+                    <i class="fas fa-chart-bar" style="font-size:40px; display:block; margin-bottom:10px;"></i>
+                    اختر تقريراً من الأعلى لعرضه
+                </p>
+            </div>
         </section>
 
-        <!-- الإعدادات -->
-        <section id="settings">
-            <h2>⚙️ الإعدادات</h2>
-            <div class="settings-group">
-                <h3>البريد الإلكتروني</h3>
-                <input type="text" id="settingSmtpHost" placeholder="SMTP Host">
-                <input type="number" id="settingSmtpPort" placeholder="SMTP Port">
-                <input type="text" id="settingSmtpUser" placeholder="SMTP User">
-                <input type="password" id="settingSmtpPass" placeholder="SMTP Password">
-                <button id="saveSmtpBtn">حفظ الإعدادات</button>
+        <!-- ==========================================
+        سجل التدقيق (Audit)
+        ========================================== -->
+        <section id="audit">
+            <h2><i class="fas fa-history"></i> سجل التدقيق</h2>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn btn-primary" onclick="loadAudit()">
+                    <i class="fas fa-sync"></i> تحديث
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>العملية</th>
+                            <th>النوع</th>
+                            <th>التفاصيل</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditList">
+                        <tr><td colspan="5" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </section>
+
+        <!-- ==========================================
+        الإعدادات (Settings)
+        ========================================== -->
+        <section id="settings">
+            <h2><i class="fas fa-cog"></i> الإعدادات</h2>
+            
+            <div class="settings-group">
+                <h3><i class="fas fa-building"></i> معلومات الشركة</h3>
+                <div class="form-row">
+                    <label>اسم الشركة</label>
+                    <input type="text" id="setting_company_name" placeholder="اسم الشركة">
+                </div>
+                <div class="form-row">
+                    <label>رقم الهاتف</label>
+                    <input type="text" id="setting_company_phone" placeholder="رقم الهاتف">
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    <i class="fas fa-save"></i> حفظ الإعدادات
+                </button>
+            </div>
+            
+            <div class="settings-group">
+                <h3><i class="fas fa-envelope"></i> إعدادات البريد الإلكتروني (SMTP)</h3>
+                <div class="form-row">
+                    <label>SMTP Host</label>
+                    <input type="text" id="setting_smtp_host" placeholder="smtp.gmail.com">
+                </div>
+                <div class="form-row">
+                    <label>SMTP Port</label>
+                    <input type="number" id="setting_smtp_port" placeholder="587">
+                </div>
+                <div class="form-row">
+                    <label>SMTP User</label>
+                    <input type="text" id="setting_smtp_user" placeholder="your-email@gmail.com">
+                </div>
+                <div class="form-row">
+                    <label>SMTP Password</label>
+                    <input type="password" id="setting_smtp_pass" placeholder="كلمة المرور أو App Password">
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    <i class="fas fa-save"></i> حفظ الإعدادات
+                </button>
+            </div>
+        </section>
+
     </main>
 
-    <!-- JavaScript -->
+    <!-- ============================================
+    عنصر عرض الرسائل (Toast Container)
+    ============================================ -->
+    <div id="toastContainer"></div>
+
+    <!-- ============================================
+    ربط ملف JavaScript
+    ============================================ -->
     <script src="app.js"></script>
+
+    <!-- ============================================
+    كود التهيئة والتشغيل
+    ============================================ -->
+    <script>
+        // تهيئة التطبيق عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            // التحقق من وجود توكن في localStorage
+            const savedToken = localStorage.getItem('token');
+            const savedUser = localStorage.getItem('user');
+            
+            if (savedToken && savedUser) {
+                try {
+                    authToken = savedToken;
+                    currentUser = JSON.parse(savedUser);
+                    showApp();
+                    loadDashboard();
+                    loadCustomers();
+                    loadProducts();
+                    loadInvoices();
+                    loadPurchases();
+                    loadSuppliers();
+                    loadAudit();
+                    loadSettings();
+                    
+                    // تحديث التاريخ
+                    document.getElementById('dashboardDate').textContent = 
+                        new Date().toLocaleDateString('ar', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        });
+                } catch (e) {
+                    console.error('Init error:', e);
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
+        });
+
+        // ============================================
+        // دوال معالجة النماذج (Handlers)
+        // ============================================
+
+        function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!username || !password) {
+                showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'warning');
+                return;
+            }
+            
+            login(username, password);
+        }
+
+        function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const name = document.getElementById('regName').value.trim();
+            
+            if (!username || !password) {
+                showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'warning');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'warning');
+                return;
+            }
+            
+            register(username, password, name || username);
+        }
+
+        function handleAIParse() {
+            const text = document.getElementById('aiInput').value.trim();
+            if (!text) {
+                showToast('الرجاء إدخال نص المعاملة', 'warning');
+                return;
+            }
+            parseTransaction(text);
+        }
+
+        function handleAICommit() {
+            if (currentParsed) {
+                commitTransaction(currentParsed);
+            } else {
+                showToast('لا توجد معاملة للحفظ', 'warning');
+            }
+        }
+
+        function handleAddCustomer() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
+            
+            if (!name) {
+                showToast('الرجاء إدخال اسم العميل', 'warning');
+                return;
+            }
+            
+            addCustomer(name, phone, address);
+        }
+
+        function handleAddSupplier() {
+            const name = document.getElementById('supplierName').value.trim();
+            const phone = document.getElementById('supplierPhone').value.trim();
+            const address = document.getElementById('supplierAddress').value.trim();
+            
+            if (!name) {
+                showToast('الرجاء إدخال اسم المورد', 'warning');
+                return;
+            }
+            
+            addSupplier(name, phone, address);
+        }
+
+        function handleAddProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const unit = document.getElementById('productUnit').value.trim() || 'قطعة';
+            const salePrice = parseFloat(document.getElementById('productSalePrice').value) || 0;
+            const costPrice = parseFloat(document.getElementById('productCostPrice').value) || 0;
+            const stock = parseFloat(document.getElementById('productStock').value) || 0;
+            
+            if (!name) {
+                showToast('الرجاء إدخال اسم المنتج', 'warning');
+                return;
+            }
+            
+            addProduct(name, unit, salePrice, costPrice, stock);
+        }
+
+        function handleAddPurchase() {
+            submitPurchase();
+        }
+
+        // ============================================
+        // دوال مساعدة للفوترة
+        // ============================================
+
+        function showPaymentModal(invoiceId, invoiceNo) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+                    <h3>💳 تسجيل دفعة</h3>
+                    <p><strong>الفاتورة:</strong> ${invoiceNo}</p>
+                    <form id="paymentForm" onsubmit="event.preventDefault(); handlePayment(${invoiceId});">
+                        <div class="form-group" style="flex-direction:column; box-shadow:none; padding:0;">
+                            <input type="number" id="paymentAmount" placeholder="المبلغ" required step="0.01" min="0.01">
+                            <select id="paymentMethod">
+                                <option value="cash">نقدي</option>
+                                <option value="bank">تحويل بنكي</option>
+                                <option value="cheque">شيك</option>
+                            </select>
+                            <input type="text" id="paymentReference" placeholder="رقم المرجع (اختياري)">
+                            <button type="submit" class="btn btn-success">تسجيل الدفعة</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function handlePayment(invoiceId) {
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const method = document.getElementById('paymentMethod').value;
+            const reference = document.getElementById('paymentReference').value.trim() || null;
+            
+            if (!amount || amount <= 0) {
+                showToast('الرجاء إدخال مبلغ صحيح', 'warning');
+                return;
+            }
+            
+            recordPayment(invoiceId, amount, method, reference);
+            document.querySelector('.modal-overlay')?.remove();
+        }
+
+        // ============================================
+        // دوال إدارة المنتجات (إضافية)
+        // ============================================
+
+        window.adjustStock = function(id) {
+            const quantity = prompt('أدخل الكمية (رقم موجب للإضافة، سالب للخصم):');
+            if (quantity === null) return;
+            
+            const qty = parseFloat(quantity);
+            if (isNaN(qty) || qty === 0) {
+                showToast('الكمية غير صحيحة', 'error');
+                return;
+            }
+            
+            fetch(`${API_BASE}/products/${id}/stock`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ quantity: qty })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('تم تحديث المخزون بنجاح ✅', 'success');
+                    loadProducts();
+                } else {
+                    showToast(data.error || 'فشل تحديث المخزون', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Adjust stock error:', err);
+                showToast('حدث خطأ أثناء تحديث المخزون', 'error');
+            });
+        };
+
+        // ============================================
+        // دوال إدارة الفواتير (إضافية)
+        // ============================================
+
+        window.viewInvoice = function(id) {
+            fetch(`${API_BASE}/invoices/${id}`, {
+                headers: getHeaders()
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const inv = data.invoice;
+                    let itemsHtml = '';
+                    if (inv.items && inv.items.length > 0) {
+                        itemsHtml = `
+                            <h4>📦 الأصناف</h4>
+                            <table>
+                                <thead>
+                                    <tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>المجموع</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${inv.items.map(item => `
+                                        <tr>
+                                            <td>${item.name}</td>
+                                            <td>${item.qty}</td>
+                                            <td>${Number(item.price).toLocaleString()}</td>
+                                            <td>${Number(item.qty * item.price).toLocaleString()}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                    
+                    showModal(`
+                        <h3>📄 فاتورة ${inv.inv_no}</h3>
+                        <p><strong>العميل:</strong> ${inv.customer_name || '-'}</p>
+                        <p><strong>النوع:</strong> ${inv.type}</p>
+                        <p><strong>الحالة:</strong> ${inv.status}</p>
+                        <p><strong>الإجمالي:</strong> ${Number(inv.total).toLocaleString()}</p>
+                        <p><strong>المدفوع:</strong> ${Number(inv.paid).toLocaleString()}</p>
+                        <p><strong>المتبقي:</strong> ${Number(inv.total - inv.paid).toLocaleString()}</p>
+                        ${itemsHtml}
+                        <hr>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            ${inv.pdf_path ? `<a href="${inv.pdf_path}" target="_blank" class="btn btn-success">📄 تحميل PDF</a>` : ''}
+                            ${inv.status !== 'cancelled' ? `<button class="btn btn-primary" onclick="showPaymentModal(${inv.id}, '${inv.inv_no}')">💳 تسجيل دفعة</button>` : ''}
+                            ${inv.status !== 'cancelled' ? `<button class="btn btn-danger" onclick="cancelInvoice(${inv.id})">🗑️ إلغاء</button>` : ''}
+                            <button class="btn btn-info" onclick="sendInvoiceEmail(${inv.id})">📧 إرسال بالبريد</button>
+                        </div>
+                    `);
+                }
+            })
+            .catch(err => {
+                console.error('View invoice error:', err);
+                showToast('حدث خطأ في عرض الفاتورة', 'error');
+            });
+        };
+
+        window.cancelInvoice = function(id) {
+            if (!confirm('هل أنت متأكد من إلغاء هذه الفاتورة؟ سيتم استرجاع المخزون.')) return;
+            
+            fetch(`${API_BASE}/invoices/${id}/cancel`, {
+                method: 'POST',
+                headers: getHeaders()
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('تم إلغاء الفاتورة بنجاح ✅', 'success');
+                    loadInvoices();
+                    loadProducts();
+                    document.querySelector('.modal-overlay')?.remove();
+                } else {
+                    showToast(data.error || 'فشل إلغاء الفاتورة', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Cancel invoice error:', err);
+                showToast('حدث خطأ أثناء إلغاء الفاتورة', 'error');
+            });
+        };
+
+        window.sendInvoiceEmail = function(id) {
+            const email = prompt('أدخل البريد الإلكتروني للمستلم:');
+            if (!email) return;
+            if (!email.includes('@')) {
+                showToast('البريد الإلكتروني غير صحيح', 'error');
+                return;
+            }
+            
+            fetch(`${API_BASE}/invoices/${id}/email`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ email })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('تم إرسال الفاتورة عبر البريد ✅', 'success');
+                } else {
+                    showToast(data.error || 'فشل إرسال البريد', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Send invoice email error:', err);
+                showToast('حدث خطأ أثناء إرسال البريد', 'error');
+            });
+        };
+
+        // ============================================
+        // سجل التدقيق (Audit)
+        // ============================================
+
+        async function loadAudit() {
+            try {
+                const response = await fetch(`${API_BASE}/audit`, {
+                    headers: getHeaders()
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const tbody = document.getElementById('auditList');
+                    if (!data.logs || data.logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا يوجد سجلات</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.logs.map(log => `
+                        <tr>
+                            <td>${log.id}</td>
+                            <td><span class="status active">${log.action}</span></td>
+                            <td>${log.entity_type}</td>
+                            <td>${log.details || '-'}</td>
+                            <td>${new Date(log.created_at).toLocaleString('ar')}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Load audit error:', error);
+                showToast('حدث خطأ في تحميل سجل التدقيق', 'error');
+            }
+        }
+
+        // ============================================
+        // الإعدادات (Settings)
+        // ============================================
+
+        async function saveSettings() {
+            const settings = {
+                company_name: document.getElementById('setting_company_name').value,
+                company_phone: document.getElementById('setting_company_phone').value,
+                smtp_host: document.getElementById('setting_smtp_host').value,
+                smtp_port: document.getElementById('setting_smtp_port').value,
+                smtp_user: document.getElementById('setting_smtp_user').value,
+                smtp_pass: document.getElementById('setting_smtp_pass').value
+            };
+            
+            for (const [key, value] of Object.entries(settings)) {
+                if (value) {
+                    await saveSetting(key, value);
+                }
+            }
+            
+            showToast('تم حفظ جميع الإعدادات ✅', 'success');
+        }
+
+        // ============================================
+        // عرض النوافذ المنبثقة (Modal)
+        // ============================================
+
+        function showModal(content) {
+            // إزالة أي مودال موجود
+            document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+                    ${content}
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // ============================================
+        // دوال مساعدة إضافية
+        // ============================================
+
+        // تصدير الدوال للنطاق العام
+        window.showLogin = showLogin;
+        window.showRegister = showRegister;
+        window.showApp = showApp;
+        window.showSection = showSection;
+        window.logout = logout;
+        window.loadDashboard = loadDashboard;
+        window.loadCustomers = loadCustomers;
+        window.loadProducts = loadProducts;
+        window.loadInvoices = loadInvoices;
+        window.loadPurchases = loadPurchases;
+        window.loadSuppliers = loadSuppliers;
+        window.loadAudit = loadAudit;
+        window.loadSettings = loadSettings;
+        window.loadReport = loadReport;
+        window.saveSettings = saveSettings;
+        window.addPurchaseItem = addPurchaseItem;
+        window.submitPurchase = submitPurchase;
+        window.showModal = showModal;
+        window.showToast = showToast;
+        window.recordPayment = recordPayment;
+        
+        console.log('🌉 Jusoor Accounting v4.0 - تم التحميل بنجاح');
+    </script>
+
 </body>
 </html>
