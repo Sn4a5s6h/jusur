@@ -9,7 +9,7 @@ const path = require("path");
 // ============================================
 // BASE DE DATOS - desde la raíz del proyecto
 // ============================================
-const db = require("../db");
+const db = require("./db");
 
 // ============================================
 // ARCHIVOS DENTRO DE src/
