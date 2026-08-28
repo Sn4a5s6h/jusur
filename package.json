@@ -1,15 +1,16 @@
 {
   "name": "jusoor-accounting",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "🌉 Jusoor Accounting - نظام محاسبي مدعوم بالذكاء الاصطناعي",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "postinstall": "npm rebuild better-sqlite3 --force",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
-    "node": ">=20.0.0 <22.0.0"
+    "node": "20.18.0"
   },
   "keywords": [
     "accounting",
