@@ -546,6 +546,26 @@ function createAuditLog(
 
 /*
 |--------------------------------------------------------------------------
+| COMPANY INFO
+|--------------------------------------------------------------------------
+*/
+
+const COMPANY_INFO = {
+    name: 'محلات الغانم للتجارة العامة',
+    name_en: 'ALGANIM STORS FOR TRADING',
+    address: 'صنعاء - شعوب - الصياح',
+    phone: '777463289',
+    description: 'لبيع جميع انواع البقوليات والبهارات والمكسرات جملة - تجزئة',
+    currency: 'YER'
+};
+
+function getCompanyInfo() {
+    return COMPANY_INFO;
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | CREATE INVOICE
 |--------------------------------------------------------------------------
 */
@@ -891,6 +911,15 @@ function createInvoice(input) {
 
             /*
             --------------------------------------------------------------
+            | COMPANY INFO
+            --------------------------------------------------------------
+            */
+
+            const company = getCompanyInfo();
+
+
+            /*
+            --------------------------------------------------------------
             | INSERT INVOICE
             --------------------------------------------------------------
             */
@@ -902,6 +931,7 @@ function createInvoice(input) {
                         inv_no,
                         customer_id,
                         customer_name,
+                        customer_phone,
                         type,
                         due_date,
                         subtotal,
@@ -910,9 +940,13 @@ function createInvoice(input) {
                         total,
                         paid,
                         status,
-                        items_json
+                        items_json,
+                        company_name,
+                        company_address,
+                        company_phone,
+                        company_currency
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `)
                 .run(
 
@@ -921,6 +955,8 @@ function createInvoice(input) {
                     customer.id,
 
                     customer.name,
+
+                    customer.phone || null,
 
                     type,
 
@@ -940,7 +976,15 @@ function createInvoice(input) {
 
                     JSON.stringify(
                         items
-                    )
+                    ),
+
+                    company.name,
+
+                    company.address,
+
+                    company.phone,
+
+                    company.currency
 
                 );
 
@@ -1118,13 +1162,6 @@ function createInvoice(input) {
             --------------------------------------------------------------
             | COST OF GOODS SOLD
             --------------------------------------------------------------
-            |
-            | إذا كانت تكلفة الأصناف معروفة، نسجل:
-            |
-            | مدين  5100 تكلفة المبيعات
-            | دائن  1300 المخزون
-            |
-            --------------------------------------------------------------
             */
 
             if (
@@ -1233,7 +1270,8 @@ function createInvoice(input) {
     |--------------------------------------------------------------------------
     */
 
-    return db
+    const invoice =
+        db
         .prepare(`
             SELECT *
             FROM invoices
@@ -1242,6 +1280,12 @@ function createInvoice(input) {
         .get(
             invoiceId
         );
+
+    // إضافة معلومات الشركة للفاتورة
+    return {
+        ...invoice,
+        company: COMPANY_INFO
+    };
 
 }
 
@@ -1845,14 +1889,121 @@ function getInvoiceById(id) {
     }
 
 
+    // إضافة معلومات الشركة
+    const company = getCompanyInfo();
+
     return {
 
         ...invoice,
 
-        items
+        items,
+
+        company
 
     };
 
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GET INVOICE WITH COMPANY
+|--------------------------------------------------------------------------
+*/
+
+function getInvoiceWithCompany(id) {
+
+    const invoice = getInvoiceById(id);
+
+    if (!invoice) return null;
+
+    return {
+        ...invoice,
+        company: getCompanyInfo()
+    };
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GET COMPANY INFO
+|--------------------------------------------------------------------------
+*/
+
+function getCompanyInfo() {
+    return COMPANY_INFO;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE COMPANY INFO
+|--------------------------------------------------------------------------
+*/
+
+function updateCompanyInfo(data) {
+
+    if (data.name) {
+        COMPANY_INFO.name = cleanString(data.name) || COMPANY_INFO.name;
+    }
+
+    if (data.name_en) {
+        COMPANY_INFO.name_en = cleanString(data.name_en) || COMPANY_INFO.name_en;
+    }
+
+    if (data.address) {
+        COMPANY_INFO.address = cleanString(data.address) || COMPANY_INFO.address;
+    }
+
+    if (data.phone) {
+        COMPANY_INFO.phone = cleanString(data.phone) || COMPANY_INFO.phone;
+    }
+
+    if (data.description) {
+        COMPANY_INFO.description = cleanString(data.description) || COMPANY_INFO.description;
+    }
+
+    if (data.currency) {
+        COMPANY_INFO.currency = cleanString(data.currency) || COMPANY_INFO.currency;
+    }
+
+    // حفظ الإعدادات في قاعدة البيانات
+    try {
+        db.prepare(`
+            INSERT OR REPLACE INTO settings (key, value)
+            VALUES (?, ?)
+        `).run('company_info', JSON.stringify(COMPANY_INFO));
+    } catch (error) {
+        console.error('SAVE COMPANY INFO ERROR:', error);
+    }
+
+    return COMPANY_INFO;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD COMPANY INFO FROM DATABASE
+|--------------------------------------------------------------------------
+*/
+
+function loadCompanyInfo() {
+
+    try {
+        const row = db.prepare(`
+            SELECT value FROM settings WHERE key = ?
+        `).get('company_info');
+
+        if (row && row.value) {
+            const saved = JSON.parse(row.value);
+            Object.assign(COMPANY_INFO, saved);
+        }
+    } catch (error) {
+        console.error('LOAD COMPANY INFO ERROR:', error);
+    }
+
+    return COMPANY_INFO;
 }
 
 
@@ -1878,6 +2029,14 @@ module.exports = {
 
     getCustomerBalance,
 
-    getInvoiceById
+    getInvoiceById,
+
+    getInvoiceWithCompany,
+
+    getCompanyInfo,
+
+    updateCompanyInfo,
+
+    loadCompanyInfo
 
 };
