@@ -140,7 +140,11 @@ db.exec(`
         notes TEXT,
         user_id INTEGER,
         company_id INTEGER,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        company_name TEXT,
+        company_address TEXT,
+        company_phone TEXT,
+        company_currency TEXT DEFAULT 'YER'
     );
 
     CREATE TABLE IF NOT EXISTS payments (
@@ -236,6 +240,14 @@ safeAddColumn("users", "active", "INTEGER DEFAULT 1");
 safeAddColumn("users", "company_id", "INTEGER");
 
 // ============================================
+// ADD COMPANY COLUMNS TO INVOICES (MIGRATION)
+// ============================================
+safeAddColumn("invoices", "company_name", "TEXT");
+safeAddColumn("invoices", "company_address", "TEXT");
+safeAddColumn("invoices", "company_phone", "TEXT");
+safeAddColumn("invoices", "company_currency", "TEXT DEFAULT 'YER'");
+
+// ============================================
 // CREATE DEFAULT COMPANY
 // ============================================
 try {
@@ -244,7 +256,7 @@ try {
         const result = db.prepare(`
             INSERT INTO companies (name, legal_name, currency, active)
             VALUES (?, ?, ?, ?)
-        `).run("الشركة الافتراضية", "الشركة الافتراضية", "YER", 1);
+        `).run("محلات الغانم للتجارة العامة", "محلات الغانم للتجارة العامة", "YER", 1);
         console.log("✅ تم إنشاء الشركة الافتراضية");
     }
 } catch (error) {
@@ -286,6 +298,34 @@ try {
     }
 } catch (error) {
     console.error("ADMIN ERROR:", error.message);
+}
+
+// ============================================
+// SAVE COMPANY INFO TO SETTINGS
+// ============================================
+try {
+    const companyInfo = {
+        name: 'محلات الغانم للتجارة العامة',
+        name_en: 'ALGANIM STORS FOR TRADING',
+        address: 'صنعاء - شعوب - الصياح',
+        phone: '777463289',
+        description: 'لبيع جميع انواع البقوليات والبهارات والمكسرات جملة - تجزئة',
+        currency: 'YER'
+    };
+
+    const existing = db.prepare(`
+        SELECT value FROM settings WHERE key = 'company_info'
+    `).get();
+
+    if (!existing) {
+        db.prepare(`
+            INSERT INTO settings (key, value)
+            VALUES (?, ?)
+        `).run('company_info', JSON.stringify(companyInfo));
+        console.log("✅ تم حفظ معلومات الشركة في الإعدادات");
+    }
+} catch (error) {
+    console.error("COMPANY INFO ERROR:", error.message);
 }
 
 // ============================================
