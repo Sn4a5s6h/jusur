@@ -243,13 +243,6 @@ function safeJson(value) {
 |--------------------------------------------------------------------------
 | AUTHENTICATION
 |--------------------------------------------------------------------------
-|
-| جميع العمليات المحاسبية ستحتاج إلى تسجيل دخول.
-| نستثني فقط:
-|
-| /api/health
-| /api/auth/*
-|
 */
 
 function authenticate(req, res, next) {
@@ -292,25 +285,6 @@ function authenticate(req, res, next) {
 
                     error:
                         "رمز الدخول مفقود"
-
-                });
-
-        }
-
-
-        if (
-            typeof verifyToken !==
-            "function"
-        ) {
-
-            return res
-                .status(500)
-                .json({
-
-                    success: false,
-
-                    error:
-                        "دالة التحقق من JWT غير موجودة في auth.js"
 
                 });
 
@@ -369,7 +343,7 @@ function authenticate(req, res, next) {
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC API
+| PUBLIC API - HEALTH
 |--------------------------------------------------------------------------
 */
 
@@ -411,11 +385,6 @@ app.get(
 /*
 |--------------------------------------------------------------------------
 | AUTH ROUTES
-|--------------------------------------------------------------------------
-|
-| ملاحظة:
-| هذه المسارات يجب أن تكون قبل authenticate().
-|
 |--------------------------------------------------------------------------
 */
 
@@ -468,12 +437,6 @@ app.post(
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | FIND USER
-            |--------------------------------------------------------------------------
-            */
-
             const user =
                 db.prepare(`
                     SELECT *
@@ -502,12 +465,6 @@ app.post(
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | VERIFY PASSWORD
-            |--------------------------------------------------------------------------
-            */
-
             const valid =
                 await Promise.resolve(
                     verifyPassword(
@@ -533,12 +490,6 @@ app.post(
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | JWT
-            |--------------------------------------------------------------------------
-            */
-
             const token =
                 createToken({
 
@@ -553,12 +504,6 @@ app.post(
 
                 });
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | AUDIT
-            |--------------------------------------------------------------------------
-            */
 
             try {
 
@@ -652,9 +597,86 @@ app.post(
 );
 
 
+app.post(
+    "/api/auth/logout",
+    authenticate,
+    (req, res) => {
+
+        try {
+
+            try {
+
+                db.prepare(`
+                    INSERT INTO audit_logs
+                    (
+                        action,
+                        entity_type,
+                        entity_id,
+                        details
+                    )
+                    VALUES (?, ?, ?, ?)
+                `).run(
+
+                    "logout",
+
+                    "user",
+
+                    Number(
+                        req.user.id
+                    ),
+
+                    safeJson({
+
+                        username:
+                            req.user.username
+
+                    })
+
+                );
+
+            }
+            catch (auditError) {
+
+                console.error(
+                    "LOGOUT AUDIT ERROR:",
+                    auditError
+                );
+
+            }
+
+
+            res.json({
+
+                success: true,
+
+                message:
+                    "تم تسجيل الخروج"
+
+            });
+
+        }
+        catch (error) {
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
 /*
 |--------------------------------------------------------------------------
-| AUTH ME
+| AUTH ME - بتصحيح التكرار
 |--------------------------------------------------------------------------
 */
 
@@ -678,7 +700,9 @@ app.get(
                     WHERE id = ?
                     LIMIT 1
                 `).get(
-                    req.user.id
+                    Number(
+                        req.user.id
+                    )
                 );
 
 
@@ -709,6 +733,11 @@ app.get(
         }
         catch (error) {
 
+            console.error(
+                "ME ERROR:",
+                error
+            );
+
             res
                 .status(500)
                 .json({
@@ -728,53 +757,40 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| PROTECTED API
-|--------------------------------------------------------------------------
-|
-| من هنا تبدأ جميع الخدمات التي تحتاج تسجيل دخول.
-|
+| PROTECTED API MIDDLEWARE - تصحيح الترتيب
 |--------------------------------------------------------------------------
 */
 
+// هذه الـ middleware تُطبق على جميع مسارات /api
 app.use(
     "/api",
     (req, res, next) => {
 
-        /*
-        |--------------------------------------------------------------------------
-        | PUBLIC ROUTES
-        |--------------------------------------------------------------------------
-        */
-
+        // استثناء مسار الصحة
         if (
             req.path === "/health"
         ) {
-
             return next();
-
         }
 
-
+        // استثناء مسارات المصادقة
         if (
-            req.path.startsWith(
-                "/auth/"
-            )
+            req.path.startsWith("/auth/")
         ) {
-
             return next();
-
         }
 
-
-                return authenticate(
-            req,
-            res,
-            next
-        );
-
+        // تطبيق المصادقة على باقي المسارات
+        return authenticate(req, res, next);
     }
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| PROTECTED API ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/system",
@@ -879,162 +895,11 @@ app.get(
 );
 
 
-
-app.get(
-    "/api/auth/me",
-    authenticate,
-    (req, res) => {
-
-        try {
-
-            const user =
-                db.prepare(`
-                    SELECT
-                        id,
-                        username,
-                        name,
-                        role,
-                        status,
-                        created_at
-                    FROM users
-                    WHERE id = ?
-                    LIMIT 1
-                `).get(
-                    Number(
-                        req.user.id
-                    )
-                );
-
-
-            if (!user) {
-
-                return res
-                    .status(404)
-                    .json({
-
-                        success: false,
-
-                        error:
-                            "المستخدم غير موجود"
-
-                    });
-
-            }
-
-
-            res.json({
-
-                success: true,
-
-                user
-
-            });
-
-        }
-        catch (error) {
-
-            console.error(
-                "ME ERROR:",
-                error
-            );
-
-            res
-                .status(500)
-                .json({
-
-                    success: false,
-
-                    error:
-                        error.message
-
-                });
-
-        }
-
-    }
-);
-
-
-
-
-app.post(
-    "/api/auth/logout",
-    authenticate,
-    (req, res) => {
-
-        try {
-
-            try {
-
-                db.prepare(`
-                    INSERT INTO audit_logs
-                    (
-                        action,
-                        entity_type,
-                        entity_id,
-                        details
-                    )
-                    VALUES (?, ?, ?, ?)
-                `).run(
-
-                    "logout",
-
-                    "user",
-
-                    Number(
-                        req.user.id
-                    ),
-
-                    safeJson({
-
-                        username:
-                            req.user.username
-
-                    })
-
-                );
-
-            }
-            catch (auditError) {
-
-                console.error(
-                    "LOGOUT AUDIT ERROR:",
-                    auditError
-                );
-
-            }
-
-
-            res.json({
-
-                success: true,
-
-                message:
-                    "تم تسجيل الخروج"
-
-            });
-
-        }
-        catch (error) {
-
-            res
-                .status(500)
-                .json({
-
-                    success: false,
-
-                    error:
-                        error.message
-
-                });
-
-        }
-
-    }
-);
-
-
-
+/*
+|--------------------------------------------------------------------------
+| NORMALIZE FUNCTIONS
+|--------------------------------------------------------------------------
+*/
 
 function normalizeItems(items) {
 
@@ -1562,6 +1427,11 @@ function calculateDueDate(
 }
 
 
+/*
+|--------------------------------------------------------------------------
+| AI ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.post(
     "/api/ai/parse",
@@ -1738,8 +1608,6 @@ app.post(
 );
 
 
-
-
 app.post(
     "/api/transactions/commit",
     async (req, res) => {
@@ -1811,14 +1679,10 @@ app.post(
             }
 
 
-            
-
             const dueDate =
                 calculateDueDate(
                     parsed
                 );
-
-
 
 
             const invoice =
@@ -1846,8 +1710,6 @@ app.post(
                         parsed.tax
 
                 });
-
-
 
 
             let payment = null;
@@ -1897,8 +1759,6 @@ app.post(
 
             }
 
-
-            
 
             let pdfUrl = null;
 
@@ -1952,8 +1812,6 @@ app.post(
             }
 
 
-
-
             db.prepare(`
                 INSERT INTO audit_logs
                 (
@@ -2005,8 +1863,6 @@ app.post(
             );
 
 
-
-
             res.json({
 
                 success: true,
@@ -2056,7 +1912,11 @@ app.post(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| INVOICE ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/invoices/:id",
@@ -2171,8 +2031,6 @@ app.get(
 );
 
 
-
-
 app.get(
     "/api/invoices",
     (req, res) => {
@@ -2258,8 +2116,6 @@ app.post(
                 );
 
 
-            
-
             if (
                 !Number.isInteger(invoiceId) ||
                 invoiceId <= 0
@@ -2277,8 +2133,6 @@ app.post(
                     });
 
             }
-
-
 
 
             const invoice =
@@ -2308,8 +2162,6 @@ app.post(
             }
 
 
-
-
             if (
                 invoice.status ===
                 "cancelled"
@@ -2327,8 +2179,6 @@ app.post(
                 });
 
             }
-
-
 
 
             let items = [];
@@ -2350,12 +2200,8 @@ app.post(
             }
 
 
-
-
             const cancelInvoice =
                 db.transaction(() => {
-
-
 
 
                     for (
@@ -2385,8 +2231,6 @@ app.post(
                         }
 
 
-      
-
                         const product =
                             db.prepare(`
                                 SELECT *
@@ -2396,8 +2240,6 @@ app.post(
                             `).get(
                                 productName
                             );
-
-
 
 
                         if (product) {
@@ -2416,7 +2258,6 @@ app.post(
                                 )
 
                             );
-
 
 
                             db.prepare(`
@@ -2450,8 +2291,6 @@ app.post(
                     }
 
 
-
-
                     db.prepare(`
                         UPDATE invoices
                         SET
@@ -2460,8 +2299,6 @@ app.post(
                     `).run(
                         invoiceId
                     );
-
-
 
 
                     db.prepare(`
@@ -2515,11 +2352,7 @@ app.post(
                 });
 
 
-            
-
             cancelInvoice();
-
-
 
 
             const updatedInvoice =
@@ -2531,8 +2364,6 @@ app.post(
                 `).get(
                     invoiceId
                 );
-
-
 
 
             res.json({
@@ -2573,6 +2404,11 @@ app.post(
 );
 
 
+/*
+|--------------------------------------------------------------------------
+| PAYMENT ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.post(
     "/api/payments",
@@ -2605,8 +2441,6 @@ app.post(
                 );
 
 
-
-
             if (
                 !Number.isInteger(
                     invoiceId
@@ -2628,8 +2462,6 @@ app.post(
             }
 
 
-
-
             if (
                 !Number.isFinite(
                     amount
@@ -2649,8 +2481,6 @@ app.post(
                     });
 
             }
-
-
 
 
             const invoice =
@@ -2680,8 +2510,6 @@ app.post(
             }
 
 
-
-
             if (
                 invoice.status ===
                 "cancelled"
@@ -2699,8 +2527,6 @@ app.post(
                     });
 
             }
-
-
 
 
             const remaining =
@@ -2739,8 +2565,6 @@ app.post(
             }
 
 
-
-
             const updatedInvoice =
                 recordPayment({
 
@@ -2753,8 +2577,6 @@ app.post(
                     reference
 
                 });
-
-
 
 
             try {
@@ -2809,8 +2631,6 @@ app.post(
             }
 
 
-
-
             res.json({
 
                 success: true,
@@ -2859,7 +2679,11 @@ app.post(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/customer/:name",
@@ -2994,8 +2818,6 @@ app.get(
 );
 
 
-
-
 app.post(
     "/api/customers",
     (req, res) => {
@@ -3099,7 +2921,6 @@ app.post(
                 );
 
 
-
             db.prepare(`
                 INSERT INTO audit_logs
                 (
@@ -3169,8 +2990,6 @@ app.post(
 
     }
 );
-
-
 
 
 app.get(
@@ -3334,7 +3153,6 @@ app.get(
 );
 
 
-
 app.put(
     "/api/customers/:id",
     (req, res) => {
@@ -3464,6 +3282,11 @@ app.put(
 );
 
 
+/*
+|--------------------------------------------------------------------------
+| SUPPLIER ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/suppliers",
@@ -3508,8 +3331,6 @@ app.get(
         }
         catch (error) {
 
-            
-
             try {
 
                 const suppliers =
@@ -3548,7 +3369,6 @@ app.get(
 
     }
 );
-
 
 
 app.post(
@@ -3662,7 +3482,11 @@ app.post(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| PRODUCT ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/products",
@@ -3709,7 +3533,6 @@ app.get(
 
     }
 );
-
 
 
 app.post(
@@ -3811,8 +3634,6 @@ app.post(
                 );
 
 
-            
-
             if (stock > 0) {
 
                 db.prepare(`
@@ -3880,7 +3701,6 @@ app.post(
 
     }
 );
-
 
 
 app.post(
@@ -4088,8 +3908,11 @@ app.post(
 );
 
 
-
-
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/dashboard",
@@ -4261,7 +4084,11 @@ app.get(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| JOURNAL & REPORTS
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/journal",
@@ -4334,8 +4161,6 @@ app.get(
 
     }
 );
-
-
 
 
 app.get(
@@ -4441,8 +4266,6 @@ app.get(
 );
 
 
-
-
 app.get(
     "/api/reports/profit",
     (req, res) => {
@@ -4505,7 +4328,11 @@ app.get(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| BANK UPLOAD
+|--------------------------------------------------------------------------
+*/
 
 app.post(
     "/api/upload-bank",
@@ -4575,7 +4402,11 @@ app.post(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| WHATSAPP ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/whatsapp/accounts",
@@ -4626,8 +4457,6 @@ app.get(
 
     }
 );
-
-
 
 
 app.post(
@@ -4710,8 +4539,6 @@ app.post(
 );
 
 
-
-
 app.post(
     "/api/whatsapp/messages",
     async (req, res) => {
@@ -4758,8 +4585,6 @@ app.post(
             }
 
 
-            
-
             const account =
                 db.prepare(`
                     SELECT *
@@ -4780,7 +4605,6 @@ app.post(
             }
 
 
-            
             const result =
                 await Promise.resolve(
                     parseTransaction(
@@ -4813,8 +4637,6 @@ app.post(
             normalized.ready =
                 validationErrors.length === 0;
 
-
-            
 
             const messageResult =
                 db.prepare(`
@@ -4886,7 +4708,11 @@ app.post(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| AUDIT
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/audit",
@@ -4935,7 +4761,11 @@ app.get(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| SETTINGS
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     "/api/settings/:key",
@@ -5075,6 +4905,11 @@ app.post(
 );
 
 
+/*
+|--------------------------------------------------------------------------
+| 404 - API NOT FOUND
+|--------------------------------------------------------------------------
+*/
 
 app.use(
     "/api",
@@ -5098,7 +4933,11 @@ app.use(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| GLOBAL ERROR HANDLER
+|--------------------------------------------------------------------------
+*/
 
 app.use(
     (error, req, res, next) => {
@@ -5135,7 +4974,11 @@ app.use(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| SPA FALLBACK
+|--------------------------------------------------------------------------
+*/
 
 app.use(
     (req, res, next) => {
@@ -5173,7 +5016,11 @@ app.use(
 );
 
 
-
+/*
+|--------------------------------------------------------------------------
+| START SERVER
+|--------------------------------------------------------------------------
+*/
 
 app.listen(
     PORT,
