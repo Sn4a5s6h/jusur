@@ -15,7 +15,10 @@ const {
 const {
     createInvoice,
     recordPayment,
-    customerStatement
+    customerStatement,
+    getCompanyInfo,
+    updateCompanyInfo,
+    loadCompanyInfo
 } = require("./accounting");
 
 const {
@@ -598,6 +601,72 @@ app.post(
 
 
 app.post(
+    "/api/auth/register",
+    async (req, res) => {
+        try {
+            const { username, password, name, role } = req.body;
+
+            if (!username || !password) {
+                return res.status(400).json({
+                    success: false,
+                    error: "اسم المستخدم وكلمة المرور مطلوبان"
+                });
+            }
+
+            const existing = db.prepare(`
+                SELECT id FROM users WHERE username = ?
+            `).get(username);
+
+            if (existing) {
+                return res.status(409).json({
+                    success: false,
+                    error: "اسم المستخدم موجود مسبقاً"
+                });
+            }
+
+            const hashedPassword = await Promise.resolve(hashPassword(password));
+
+            const result = db.prepare(`
+                INSERT INTO users (username, password_hash, name, role, status)
+                VALUES (?, ?, ?, ?, 'active')
+            `).run(username, hashedPassword, name || username, role || 'user');
+
+            try {
+                db.prepare(`
+                    INSERT INTO audit_logs (action, entity_type, entity_id, details)
+                    VALUES (?, ?, ?, ?)
+                `).run(
+                    "register",
+                    "user",
+                    Number(result.lastInsertRowid),
+                    safeJson({ username, role: role || 'user' })
+                );
+            } catch (auditError) {
+                console.error("REGISTER AUDIT ERROR:", auditError);
+            }
+
+            res.json({
+                success: true,
+                message: "تم إنشاء المستخدم بنجاح",
+                user: {
+                    id: result.lastInsertRowid,
+                    username,
+                    name: name || username,
+                    role: role || 'user'
+                }
+            });
+        } catch (error) {
+            console.error("REGISTER ERROR:", error);
+            res.status(500).json({
+                success: false,
+                error: error.message || "حدث خطأ أثناء إنشاء المستخدم"
+            });
+        }
+    }
+);
+
+
+app.post(
     "/api/auth/logout",
     authenticate,
     (req, res) => {
@@ -676,7 +745,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| AUTH ME - بتصحيح التكرار
+| AUTH ME
 |--------------------------------------------------------------------------
 */
 
@@ -757,33 +826,496 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| PROTECTED API MIDDLEWARE - تصحيح الترتيب
+| PROTECTED API MIDDLEWARE
 |--------------------------------------------------------------------------
 */
 
-// هذه الـ middleware تُطبق على جميع مسارات /api
 app.use(
     "/api",
     (req, res, next) => {
 
-        // استثناء مسار الصحة
         if (
             req.path === "/health"
         ) {
             return next();
         }
 
-        // استثناء مسارات المصادقة
         if (
             req.path.startsWith("/auth/")
         ) {
             return next();
         }
 
-        // تطبيق المصادقة على باقي المسارات
         return authenticate(req, res, next);
     }
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| NORMALIZE FUNCTIONS
+|--------------------------------------------------------------------------
+*/
+
+function normalizeItems(items) {
+
+    if (
+        !Array.isArray(items)
+    ) {
+
+        return [];
+
+    }
+
+    return items
+        .map(
+            item => {
+
+                if (!item) {
+
+                    return null;
+
+                }
+
+                return {
+
+                    name:
+                        cleanString(
+                            item.name
+                        ),
+
+                    qty:
+                        toNumber(
+                            item.qty
+                        ),
+
+                    price:
+                        toNumber(
+                            item.price
+                        ),
+
+                    unit:
+                        cleanString(
+                            item.unit
+                        ) ||
+                        "قطعة"
+
+                };
+
+            }
+        )
+        .filter(Boolean);
+
+}
+
+
+function normalizeTransaction(parsed) {
+
+    if (
+        !parsed ||
+        typeof parsed !== "object"
+    ) {
+
+        throw new Error(
+            "بيانات المعاملة غير صحيحة"
+        );
+
+    }
+
+    const transaction = {
+
+        intent:
+            cleanString(
+                parsed.intent
+            ) ||
+            "unknown",
+
+        customer:
+            cleanString(
+                parsed.customer
+            ),
+
+        customer_phone:
+            cleanString(
+                parsed.customer_phone
+            ),
+
+        supplier:
+            cleanString(
+                parsed.supplier
+            ),
+
+        supplier_phone:
+            cleanString(
+                parsed.supplier_phone
+            ),
+
+        type:
+            parsed.type === "credit"
+                ? "credit"
+                : "cash",
+
+        due_days:
+            parsed.due_days === null ||
+            parsed.due_days === undefined
+                ? null
+                : toNumber(
+                    parsed.due_days,
+                    null
+                ),
+
+        due_date:
+            cleanString(
+                parsed.due_date
+            ),
+
+        items:
+            normalizeItems(
+                parsed.items
+            ),
+
+        amount:
+            toNumber(
+                parsed.amount
+            ),
+
+        paid:
+            toNumber(
+                parsed.paid
+            ),
+
+        discount:
+            toNumber(
+                parsed.discount
+            ),
+
+        tax:
+            toNumber(
+                parsed.tax
+            ),
+
+        total:
+            toNumber(
+                parsed.total
+            ),
+
+        description:
+            cleanString(
+                parsed.description
+            ),
+
+        payment_method:
+            cleanString(
+                parsed.payment_method
+            ) ||
+            "cash",
+
+        ready:
+            Boolean(
+                parsed.ready
+            ),
+
+        needs_confirmation:
+            parsed.needs_confirmation !==
+            false,
+
+        original_text:
+            cleanString(
+                parsed.original_text
+            )
+
+    };
+
+    const subtotal =
+        transaction.items.reduce(
+            (
+                sum,
+                item
+            ) => {
+
+                return (
+                    sum +
+                    (
+                        Number(item.qty) *
+                        Number(item.price)
+                    )
+                );
+
+            },
+            0
+        );
+
+    transaction.subtotal = subtotal;
+
+    transaction.total =
+        subtotal -
+        transaction.discount +
+        transaction.tax;
+
+    if (
+        transaction.type === "cash"
+    ) {
+
+        transaction.due_days = null;
+        transaction.due_date = null;
+
+    }
+
+    return transaction;
+
+}
+
+
+function validateTransaction(transaction) {
+
+    const errors = [];
+
+    const supportedIntents = [
+
+        "sales_invoice",
+        "purchase_invoice",
+        "payment",
+        "receipt",
+        "expense",
+        "income",
+        "stock_adjustment"
+
+    ];
+
+    if (
+        !supportedIntents.includes(
+            transaction.intent
+        )
+    ) {
+
+        errors.push(
+            "نوع العملية غير مدعوم"
+        );
+
+    }
+
+    if (
+        transaction.intent ===
+        "sales_invoice"
+    ) {
+
+        if (
+            !transaction.customer
+        ) {
+
+            errors.push(
+                "اسم العميل مطلوب"
+            );
+
+        }
+
+        if (
+            !transaction.items.length
+        ) {
+
+            errors.push(
+                "يجب إضافة صنف واحد على الأقل"
+            );
+
+        }
+
+    }
+
+    if (
+        transaction.intent ===
+        "purchase_invoice"
+    ) {
+
+        if (
+            !transaction.supplier
+        ) {
+
+            errors.push(
+                "اسم المورد مطلوب"
+            );
+
+        }
+
+        if (
+            !transaction.items.length
+        ) {
+
+            errors.push(
+                "يجب إضافة صنف واحد على الأقل"
+            );
+
+        }
+
+    }
+
+    for (
+        const item
+        of transaction.items
+    ) {
+
+        if (
+            !item.name
+        ) {
+
+            errors.push(
+                "اسم الصنف مطلوب"
+            );
+
+        }
+
+        if (
+            !Number.isFinite(
+                item.qty
+            ) ||
+            item.qty <= 0
+        ) {
+
+            errors.push(
+                `الكمية غير صحيحة للصنف: ${
+                    item.name ||
+                    "غير معروف"
+                }`
+            );
+
+        }
+
+        if (
+            !Number.isFinite(
+                item.price
+            ) ||
+            item.price < 0
+        ) {
+
+            errors.push(
+                `السعر غير صحيح للصنف: ${
+                    item.name ||
+                    "غير معروف"
+                }`
+            );
+
+        }
+
+    }
+
+    if (
+        [
+            "payment",
+            "receipt",
+            "expense",
+            "income"
+        ].includes(
+            transaction.intent
+        )
+    ) {
+
+        if (
+            !Number.isFinite(
+                transaction.amount
+            ) ||
+            transaction.amount <= 0
+        ) {
+
+            errors.push(
+                "المبلغ مطلوب ويجب أن يكون أكبر من صفر"
+            );
+
+        }
+
+    }
+
+    if (
+        !Number.isFinite(
+            transaction.discount
+        ) ||
+        transaction.discount < 0
+    ) {
+
+        errors.push(
+            "الخصم غير صحيح"
+        );
+
+    }
+
+    if (
+        !Number.isFinite(
+            transaction.tax
+        ) ||
+        transaction.tax < 0
+    ) {
+
+        errors.push(
+            "الضريبة غير صحيحة"
+        );
+
+    }
+
+    if (
+        transaction.intent ===
+        "sales_invoice"
+    ) {
+
+        if (
+            !Number.isFinite(
+                transaction.total
+            ) ||
+            transaction.total < 0
+        ) {
+
+            errors.push(
+                "إجمالي الفاتورة غير صحيح"
+            );
+
+        }
+
+    }
+
+    return errors;
+
+}
+
+
+function calculateDueDate(transaction) {
+
+    if (
+        transaction.type !==
+        "credit"
+    ) {
+
+        return null;
+
+    }
+
+    if (
+        transaction.due_date
+    ) {
+
+        return transaction.due_date;
+
+    }
+
+    if (
+        transaction.due_days === null
+    ) {
+
+        return null;
+
+    }
+
+    const date =
+        new Date();
+
+    date.setDate(
+        date.getDate() +
+        Number(
+            transaction.due_days
+        )
+    );
+
+    return date
+        .toISOString()
+        .slice(0, 10);
+
+}
 
 
 /*
@@ -897,538 +1429,6 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| NORMALIZE FUNCTIONS
-|--------------------------------------------------------------------------
-*/
-
-function normalizeItems(items) {
-
-    if (
-        !Array.isArray(items)
-    ) {
-
-        return [];
-
-    }
-
-
-    return items
-
-        .map(
-            item => {
-
-                if (!item) {
-
-                    return null;
-
-                }
-
-
-                return {
-
-                    name:
-                        cleanString(
-                            item.name
-                        ),
-
-                    qty:
-                        toNumber(
-                            item.qty
-                        ),
-
-                    price:
-                        toNumber(
-                            item.price
-                        ),
-
-                    unit:
-                        cleanString(
-                            item.unit
-                        ) ||
-                        "قطعة"
-
-                };
-
-            }
-        )
-
-        .filter(Boolean);
-
-}
-
-
-function normalizeTransaction(
-    parsed
-) {
-
-    if (
-        !parsed ||
-        typeof parsed !== "object"
-    ) {
-
-        throw new Error(
-            "بيانات المعاملة غير صحيحة"
-        );
-
-    }
-
-
-    const transaction = {
-
-        intent:
-            cleanString(
-                parsed.intent
-            ) ||
-            "unknown",
-
-        customer:
-            cleanString(
-                parsed.customer
-            ),
-
-        customer_phone:
-            cleanString(
-                parsed.customer_phone
-            ),
-
-        supplier:
-            cleanString(
-                parsed.supplier
-            ),
-
-        supplier_phone:
-            cleanString(
-                parsed.supplier_phone
-            ),
-
-        type:
-            parsed.type === "credit"
-                ? "credit"
-                : "cash",
-
-        due_days:
-            parsed.due_days === null ||
-            parsed.due_days === undefined
-                ? null
-                : toNumber(
-                    parsed.due_days,
-                    null
-                ),
-
-        due_date:
-            cleanString(
-                parsed.due_date
-            ),
-
-        items:
-            normalizeItems(
-                parsed.items
-            ),
-
-        amount:
-            toNumber(
-                parsed.amount
-            ),
-
-        paid:
-            toNumber(
-                parsed.paid
-            ),
-
-        discount:
-            toNumber(
-                parsed.discount
-            ),
-
-        tax:
-            toNumber(
-                parsed.tax
-            ),
-
-        total:
-            toNumber(
-                parsed.total
-            ),
-
-        description:
-            cleanString(
-                parsed.description
-            ),
-
-        payment_method:
-            cleanString(
-                parsed.payment_method
-            ) ||
-            "cash",
-
-        ready:
-            Boolean(
-                parsed.ready
-            ),
-
-        needs_confirmation:
-            parsed.needs_confirmation !==
-            false,
-
-        original_text:
-            cleanString(
-                parsed.original_text
-            )
-
-    };
-
-
-
-
-    const subtotal =
-        transaction.items.reduce(
-            (
-                sum,
-                item
-            ) => {
-
-                return (
-                    sum +
-                    (
-                        Number(item.qty) *
-                        Number(item.price)
-                    )
-                );
-
-            },
-            0
-        );
-
-
-    transaction.subtotal =
-        subtotal;
-
-
-
-
-    transaction.total =
-        subtotal -
-        transaction.discount +
-        transaction.tax;
-
-
-
-
-    if (
-        transaction.type === "cash"
-    ) {
-
-        transaction.due_days =
-            null;
-
-        transaction.due_date =
-            null;
-
-    }
-
-
-    return transaction;
-
-}
-
-
-
-
-function validateTransaction(
-    transaction
-) {
-
-    const errors = [];
-
-
-
-    const supportedIntents = [
-
-        "sales_invoice",
-
-        "purchase_invoice",
-
-        "payment",
-
-        "receipt",
-
-        "expense",
-
-        "income",
-
-        "stock_adjustment"
-
-    ];
-
-
-    if (
-        !supportedIntents.includes(
-            transaction.intent
-        )
-    ) {
-
-        errors.push(
-            "نوع العملية غير مدعوم"
-        );
-
-    }
-
-
-    if (
-        transaction.intent ===
-        "sales_invoice"
-    ) {
-
-        if (
-            !transaction.customer
-        ) {
-
-            errors.push(
-                "اسم العميل مطلوب"
-            );
-
-        }
-
-
-        if (
-            !transaction.items.length
-        ) {
-
-            errors.push(
-                "يجب إضافة صنف واحد على الأقل"
-            );
-
-        }
-
-    }
-
-
-
-    if (
-        transaction.intent ===
-        "purchase_invoice"
-    ) {
-
-        if (
-            !transaction.supplier
-        ) {
-
-            errors.push(
-                "اسم المورد مطلوب"
-            );
-
-        }
-
-
-        if (
-            !transaction.items.length
-        ) {
-
-            errors.push(
-                "يجب إضافة صنف واحد على الأقل"
-            );
-
-        }
-
-    }
-
-
-
-
-    for (
-        const item
-        of transaction.items
-    ) {
-
-        if (
-            !item.name
-        ) {
-
-            errors.push(
-                "اسم الصنف مطلوب"
-            );
-
-        }
-
-
-        if (
-            !Number.isFinite(
-                item.qty
-            ) ||
-            item.qty <= 0
-        ) {
-
-            errors.push(
-                `الكمية غير صحيحة للصنف: ${
-                    item.name ||
-                    "غير معروف"
-                }`
-            );
-
-        }
-
-
-        if (
-            !Number.isFinite(
-                item.price
-            ) ||
-            item.price < 0
-        ) {
-
-            errors.push(
-                `السعر غير صحيح للصنف: ${
-                    item.name ||
-                    "غير معروف"
-                }`
-            );
-
-        }
-
-    }
-
-
-
-    if (
-        [
-            "payment",
-            "receipt",
-            "expense",
-            "income"
-        ].includes(
-            transaction.intent
-        )
-    ) {
-
-        if (
-            !Number.isFinite(
-                transaction.amount
-            ) ||
-            transaction.amount <= 0
-        ) {
-
-            errors.push(
-                "المبلغ مطلوب ويجب أن يكون أكبر من صفر"
-            );
-
-        }
-
-    }
-
-
-
-
-    if (
-        !Number.isFinite(
-            transaction.discount
-        ) ||
-        transaction.discount < 0
-    ) {
-
-        errors.push(
-            "الخصم غير صحيح"
-        );
-
-    }
-
-
-
-
-    if (
-        !Number.isFinite(
-            transaction.tax
-        ) ||
-        transaction.tax < 0
-    ) {
-
-        errors.push(
-            "الضريبة غير صحيحة"
-        );
-
-    }
-
-
-
-
-    if (
-        transaction.intent ===
-        "sales_invoice"
-    ) {
-
-        if (
-            !Number.isFinite(
-                transaction.total
-            ) ||
-            transaction.total < 0
-        ) {
-
-            errors.push(
-                "إجمالي الفاتورة غير صحيح"
-            );
-
-        }
-
-    }
-
-
-    return errors;
-
-}
-
-
-
-function calculateDueDate(
-    transaction
-) {
-
-    if (
-        transaction.type !==
-        "credit"
-    ) {
-
-        return null;
-
-    }
-
-
-    if (
-        transaction.due_date
-    ) {
-
-        return transaction.due_date;
-
-    }
-
-
-    if (
-        transaction.due_days === null
-    ) {
-
-        return null;
-
-    }
-
-
-    const date =
-        new Date();
-
-
-    date.setDate(
-        date.getDate() +
-        Number(
-            transaction.due_days
-        )
-    );
-
-
-    return date
-        .toISOString()
-        .slice(0, 10);
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
 | AI ROUTES
 |--------------------------------------------------------------------------
 */
@@ -1443,7 +1443,6 @@ app.post(
                 cleanString(
                     req.body.text
                 );
-
 
             if (!text) {
 
@@ -1460,7 +1459,6 @@ app.post(
 
             }
 
-
             const parsed =
                 await Promise.resolve(
                     parseTransaction(
@@ -1468,35 +1466,28 @@ app.post(
                     )
                 );
 
-
             const normalized =
                 normalizeTransaction(
                     parsed
                 );
 
-
             normalized.original_text =
                 normalized.original_text ||
                 text;
-
 
             const errors =
                 validateTransaction(
                     normalized
                 );
 
-
             normalized.validation_errors =
                 errors;
-
 
             normalized.ready =
                 errors.length === 0;
 
-
             normalized.needs_confirmation =
                 true;
-
 
             res.json({
 
@@ -1514,7 +1505,6 @@ app.post(
                 "AI PARSE ERROR:",
                 error
             );
-
 
             res
                 .status(400)
@@ -1629,18 +1619,15 @@ app.post(
 
             }
 
-
             const parsed =
                 normalizeTransaction(
                     req.body.parsed
                 );
 
-
             const errors =
                 validateTransaction(
                     parsed
                 );
-
 
             if (errors.length > 0) {
 
@@ -1658,7 +1645,6 @@ app.post(
                     });
 
             }
-
 
             if (
                 parsed.intent !==
@@ -1678,12 +1664,10 @@ app.post(
 
             }
 
-
             const dueDate =
                 calculateDueDate(
                     parsed
                 );
-
 
             const invoice =
                 createInvoice({
@@ -1711,15 +1695,12 @@ app.post(
 
                 });
 
-
             let payment = null;
-
 
             const paidAmount =
                 Number(
                     parsed.paid || 0
                 );
-
 
             if (
                 paidAmount > 0
@@ -1735,7 +1716,6 @@ app.post(
                     );
 
                 }
-
 
                 payment =
                     recordPayment({
@@ -1759,9 +1739,7 @@ app.post(
 
             }
 
-
             let pdfUrl = null;
-
 
             try {
 
@@ -1769,7 +1747,6 @@ app.post(
                     JSON.parse(
                         invoice.items_json
                     );
-
 
                 const pdfPath =
                     await generateInvoicePDF(
@@ -1781,7 +1758,6 @@ app.post(
                         INVOICES
 
                     );
-
 
                 db.prepare(`
                     UPDATE invoices
@@ -1797,7 +1773,6 @@ app.post(
 
                 );
 
-
                 pdfUrl =
                     `/invoices/${invoice.inv_no}.pdf`;
 
@@ -1810,7 +1785,6 @@ app.post(
                 );
 
             }
-
 
             db.prepare(`
                 INSERT INTO audit_logs
@@ -1894,7 +1868,6 @@ app.post(
                 error
             );
 
-
             res
                 .status(400)
                 .json({
@@ -1929,7 +1902,6 @@ app.get(
                     req.params.id
                 );
 
-
             if (
                 !Number.isInteger(id)
             ) {
@@ -1947,7 +1919,6 @@ app.get(
 
             }
 
-
             const invoice =
                 db.prepare(`
                     SELECT *
@@ -1955,7 +1926,6 @@ app.get(
                     WHERE id = ?
                     LIMIT 1
                 `).get(id);
-
 
             if (!invoice) {
 
@@ -1972,9 +1942,7 @@ app.get(
 
             }
 
-
             let items = [];
-
 
             try {
 
@@ -1990,6 +1958,8 @@ app.get(
 
             }
 
+            // إضافة معلومات الشركة للفاتورة
+            const company = getCompanyInfo();
 
             res.json({
 
@@ -1999,7 +1969,9 @@ app.get(
 
                     ...invoice,
 
-                    items
+                    items,
+
+                    company
 
                 }
 
@@ -2012,7 +1984,6 @@ app.get(
                 "GET INVOICE ERROR:",
                 error
             );
-
 
             res
                 .status(500)
@@ -2054,7 +2025,6 @@ app.get(
 
                 );
 
-
             const invoices =
                 db.prepare(`
                     SELECT
@@ -2069,12 +2039,18 @@ app.get(
                     limit
                 );
 
+            // إضافة معلومات الشركة لكل فاتورة
+            const company = getCompanyInfo();
+            const invoicesWithCompany = invoices.map(inv => ({
+                ...inv,
+                company
+            }));
 
             res.json({
 
                 success: true,
 
-                invoices
+                invoices: invoicesWithCompany
 
             });
 
@@ -2085,7 +2061,6 @@ app.get(
                 "INVOICES ERROR:",
                 error
             );
-
 
             res
                 .status(500)
@@ -2115,7 +2090,6 @@ app.post(
                     req.params.id
                 );
 
-
             if (
                 !Number.isInteger(invoiceId) ||
                 invoiceId <= 0
@@ -2134,7 +2108,6 @@ app.post(
 
             }
 
-
             const invoice =
                 db.prepare(`
                     SELECT *
@@ -2144,7 +2117,6 @@ app.post(
                 `).get(
                     invoiceId
                 );
-
 
             if (!invoice) {
 
@@ -2160,7 +2132,6 @@ app.post(
                     });
 
             }
-
 
             if (
                 invoice.status ===
@@ -2180,9 +2151,7 @@ app.post(
 
             }
 
-
             let items = [];
-
 
             try {
 
@@ -2199,10 +2168,8 @@ app.post(
 
             }
 
-
             const cancelInvoice =
                 db.transaction(() => {
-
 
                     for (
                         const item
@@ -2214,12 +2181,10 @@ app.post(
                                 item.name
                             );
 
-
                         const quantity =
                             toNumber(
                                 item.qty
                             );
-
 
                         if (
                             !productName ||
@@ -2230,7 +2195,6 @@ app.post(
 
                         }
 
-
                         const product =
                             db.prepare(`
                                 SELECT *
@@ -2240,7 +2204,6 @@ app.post(
                             `).get(
                                 productName
                             );
-
 
                         if (product) {
 
@@ -2258,7 +2221,6 @@ app.post(
                                 )
 
                             );
-
 
                             db.prepare(`
                                 INSERT INTO stock_movements
@@ -2290,7 +2252,6 @@ app.post(
 
                     }
 
-
                     db.prepare(`
                         UPDATE invoices
                         SET
@@ -2299,7 +2260,6 @@ app.post(
                     `).run(
                         invoiceId
                     );
-
 
                     db.prepare(`
                         INSERT INTO audit_logs
@@ -2351,9 +2311,7 @@ app.post(
 
                 });
 
-
             cancelInvoice();
-
 
             const updatedInvoice =
                 db.prepare(`
@@ -2364,7 +2322,6 @@ app.post(
                 `).get(
                     invoiceId
                 );
-
 
             res.json({
 
@@ -2386,9 +2343,159 @@ app.post(
                 error
             );
 
-
             res
                 .status(400)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| INVOICE PDF DOWNLOAD
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/invoices/:id/pdf",
+    async (req, res) => {
+
+        try {
+
+            const id =
+                Number(
+                    req.params.id
+                );
+
+            if (
+                !Number.isInteger(id)
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+
+                        success: false,
+
+                        error:
+                            "رقم الفاتورة غير صحيح"
+
+                    });
+
+            }
+
+            const invoice =
+                db.prepare(`
+                    SELECT *
+                    FROM invoices
+                    WHERE id = ?
+                    LIMIT 1
+                `).get(id);
+
+            if (!invoice) {
+
+                return res
+                    .status(404)
+                    .json({
+
+                        success: false,
+
+                        error:
+                            "الفاتورة غير موجودة"
+
+                    });
+
+            }
+
+            let items = [];
+
+            try {
+
+                items =
+                    JSON.parse(
+                        invoice.items_json
+                    );
+
+            }
+            catch {
+
+                items = [];
+
+            }
+
+            const pdfPath =
+                invoice.pdf_path ||
+                path.join(
+                    INVOICES,
+                    `${invoice.inv_no}.pdf`
+                );
+
+            if (
+                !fs.existsSync(pdfPath)
+            ) {
+
+                // إعادة إنشاء PDF إذا لم يكن موجوداً
+                const newPdfPath =
+                    await generateInvoicePDF(
+
+                        invoice,
+
+                        items,
+
+                        INVOICES
+
+                    );
+
+                db.prepare(`
+                    UPDATE invoices
+                    SET pdf_path = ?
+                    WHERE id = ?
+                `).run(
+
+                    String(newPdfPath),
+
+                    Number(
+                        invoice.id
+                    )
+
+                );
+
+                return res
+                    .status(200)
+                    .download(
+                        newPdfPath,
+                        `فاتورة-${invoice.inv_no}.pdf`
+                    );
+
+            }
+
+            res
+                .status(200)
+                .download(
+                    pdfPath,
+                    `فاتورة-${invoice.inv_no}.pdf`
+                );
+
+        }
+        catch (error) {
+
+            console.error(
+                "PDF DOWNLOAD ERROR:",
+                error
+            );
+
+            res
+                .status(500)
                 .json({
 
                     success: false,
@@ -2412,7 +2519,8 @@ app.post(
 
 app.post(
     "/api/payments",
-    (req, res) => {
+    authenticate,
+    async (req, res) => {
 
         try {
 
@@ -2421,12 +2529,10 @@ app.post(
                     req.body.invoiceId
                 );
 
-
             const amount =
                 toNumber(
                     req.body.amount
                 );
-
 
             const method =
                 cleanString(
@@ -2434,12 +2540,10 @@ app.post(
                 ) ||
                 "cash";
 
-
             const reference =
                 cleanString(
                     req.body.reference
                 );
-
 
             if (
                 !Number.isInteger(
@@ -2461,7 +2565,6 @@ app.post(
 
             }
 
-
             if (
                 !Number.isFinite(
                     amount
@@ -2482,7 +2585,6 @@ app.post(
 
             }
 
-
             const invoice =
                 db.prepare(`
                     SELECT *
@@ -2492,7 +2594,6 @@ app.post(
                 `).get(
                     invoiceId
                 );
-
 
             if (!invoice) {
 
@@ -2508,7 +2609,6 @@ app.post(
                     });
 
             }
-
 
             if (
                 invoice.status ===
@@ -2528,7 +2628,6 @@ app.post(
 
             }
 
-
             const remaining =
                 Math.max(
 
@@ -2542,7 +2641,6 @@ app.post(
                     0
 
                 );
-
 
             if (
                 amount >
@@ -2564,7 +2662,6 @@ app.post(
 
             }
 
-
             const updatedInvoice =
                 recordPayment({
 
@@ -2577,7 +2674,6 @@ app.post(
                     reference
 
                 });
-
 
             try {
 
@@ -2630,7 +2726,6 @@ app.post(
 
             }
 
-
             res.json({
 
                 success: true,
@@ -2660,7 +2755,6 @@ app.post(
                 "PAYMENT ERROR:",
                 error
             );
-
 
             res
                 .status(400)
@@ -2696,7 +2790,6 @@ app.get(
                     req.params.name
                 );
 
-
             if (!name) {
 
                 return res
@@ -2712,12 +2805,10 @@ app.get(
 
             }
 
-
             const result =
                 customerStatement(
                     name
                 );
-
 
             res.json({
 
@@ -2734,7 +2825,6 @@ app.get(
                 "CUSTOMER STATEMENT ERROR:",
                 error
             );
-
 
             res
                 .status(500)
@@ -2784,7 +2874,6 @@ app.get(
                     ORDER BY c.name ASC
                 `).all();
 
-
             res.json({
 
                 success: true,
@@ -2820,6 +2909,7 @@ app.get(
 
 app.post(
     "/api/customers",
+    authenticate,
     (req, res) => {
 
         try {
@@ -2844,7 +2934,6 @@ app.post(
                     req.body.notes
                 );
 
-
             if (!name) {
 
                 return res
@@ -2860,7 +2949,6 @@ app.post(
 
             }
 
-
             const existing =
                 db.prepare(`
                     SELECT id
@@ -2868,7 +2956,6 @@ app.post(
                     WHERE name = ?
                     LIMIT 1
                 `).get(name);
-
 
             if (existing) {
 
@@ -2887,7 +2974,6 @@ app.post(
                     });
 
             }
-
 
             const result =
                 db.prepare(`
@@ -2908,7 +2994,6 @@ app.post(
 
                 );
 
-
             const customer =
                 db.prepare(`
                     SELECT *
@@ -2919,7 +3004,6 @@ app.post(
                         result.lastInsertRowid
                     )
                 );
-
 
             db.prepare(`
                 INSERT INTO audit_logs
@@ -2954,7 +3038,6 @@ app.post(
                 })
 
             );
-
 
             res.json({
 
@@ -3003,7 +3086,6 @@ app.get(
                     req.params.id
                 );
 
-
             if (
                 !Number.isInteger(id) ||
                 id <= 0
@@ -3022,7 +3104,6 @@ app.get(
 
             }
 
-
             const customer =
                 db.prepare(`
                     SELECT *
@@ -3030,7 +3111,6 @@ app.get(
                     WHERE id = ?
                     LIMIT 1
                 `).get(id);
-
 
             if (!customer) {
 
@@ -3046,7 +3126,6 @@ app.get(
                     });
 
             }
-
 
             const summary =
                 db.prepare(`
@@ -3078,7 +3157,6 @@ app.get(
                         status != 'cancelled'
                 `).get(id);
 
-
             const payments =
                 db.prepare(`
                     SELECT
@@ -3097,7 +3175,6 @@ app.get(
                     LIMIT 500
                 `).all(id);
 
-
             const invoices =
                 db.prepare(`
                     SELECT
@@ -3112,7 +3189,6 @@ app.get(
 
                     LIMIT 500
                 `).all(id);
-
 
             res.json({
 
@@ -3155,6 +3231,7 @@ app.get(
 
 app.put(
     "/api/customers/:id",
+    authenticate,
     (req, res) => {
 
         try {
@@ -3163,7 +3240,6 @@ app.put(
                 Number(
                     req.params.id
                 );
-
 
             if (
                 !Number.isInteger(id) ||
@@ -3176,14 +3252,12 @@ app.put(
 
             }
 
-
             const customer =
                 db.prepare(`
                     SELECT *
                     FROM customers
                     WHERE id = ?
                 `).get(id);
-
 
             if (!customer) {
 
@@ -3192,7 +3266,6 @@ app.put(
                 );
 
             }
-
 
             const name =
                 cleanString(
@@ -3215,7 +3288,6 @@ app.put(
                     req.body.notes
                 );
 
-
             db.prepare(`
                 UPDATE customers
 
@@ -3236,14 +3308,12 @@ app.put(
 
             );
 
-
             const updated =
                 db.prepare(`
                     SELECT *
                     FROM customers
                     WHERE id = ?
                 `).get(id);
-
 
             res.json({
 
@@ -3319,7 +3389,6 @@ app.get(
                     ORDER BY s.name ASC
                 `).all();
 
-
             res.json({
 
                 success: true,
@@ -3339,7 +3408,6 @@ app.get(
                         FROM suppliers
                         ORDER BY name ASC
                     `).all();
-
 
                 res.json({
 
@@ -3373,6 +3441,7 @@ app.get(
 
 app.post(
     "/api/suppliers",
+    authenticate,
     (req, res) => {
 
         try {
@@ -3397,7 +3466,6 @@ app.post(
                     req.body.notes
                 );
 
-
             if (!name) {
 
                 return res
@@ -3412,7 +3480,6 @@ app.post(
                     });
 
             }
-
 
             const result =
                 db.prepare(`
@@ -3433,7 +3500,6 @@ app.post(
 
                 );
 
-
             const supplier =
                 db.prepare(`
                     SELECT *
@@ -3444,7 +3510,6 @@ app.post(
                         result.lastInsertRowid
                     )
                 );
-
 
             res.json({
 
@@ -3501,7 +3566,6 @@ app.get(
                     ORDER BY name ASC
                 `).all();
 
-
             res.json({
 
                 success: true,
@@ -3537,6 +3601,7 @@ app.get(
 
 app.post(
     "/api/products",
+    authenticate,
     (req, res) => {
 
         try {
@@ -3567,7 +3632,6 @@ app.post(
                     req.body.stock
                 );
 
-
             if (!name) {
 
                 return res
@@ -3583,7 +3647,6 @@ app.post(
 
             }
 
-
             if (stock < 0) {
 
                 return res
@@ -3598,7 +3661,6 @@ app.post(
                     });
 
             }
-
 
             const result =
                 db.prepare(`
@@ -3621,7 +3683,6 @@ app.post(
 
                 );
 
-
             const product =
                 db.prepare(`
                     SELECT *
@@ -3632,7 +3693,6 @@ app.post(
                         result.lastInsertRowid
                     )
                 );
-
 
             if (stock > 0) {
 
@@ -3665,7 +3725,6 @@ app.post(
                 );
 
             }
-
 
             res.json({
 
@@ -3705,6 +3764,7 @@ app.post(
 
 app.post(
     "/api/products/:id/stock",
+    authenticate,
     (req, res) => {
 
         try {
@@ -3719,7 +3779,6 @@ app.post(
                     req.body.quantity
                 );
 
-
             if (
                 !Number.isInteger(id) ||
                 id <= 0
@@ -3730,7 +3789,6 @@ app.post(
                 );
 
             }
-
 
             if (
                 !Number.isFinite(quantity) ||
@@ -3743,14 +3801,12 @@ app.post(
 
             }
 
-
             const product =
                 db.prepare(`
                     SELECT *
                     FROM products
                     WHERE id = ?
                 `).get(id);
-
 
             if (!product) {
 
@@ -3760,11 +3816,9 @@ app.post(
 
             }
 
-
             const newStock =
                 Number(product.stock) +
                 quantity;
-
 
             if (newStock < 0) {
 
@@ -3773,7 +3827,6 @@ app.post(
                 );
 
             }
-
 
             db.transaction(() => {
 
@@ -3790,7 +3843,6 @@ app.post(
                     id
 
                 );
-
 
                 db.prepare(`
                     INSERT INTO stock_movements
@@ -3817,7 +3869,6 @@ app.post(
                     null
 
                 );
-
 
                 db.prepare(`
                     INSERT INTO audit_logs
@@ -3862,14 +3913,12 @@ app.post(
 
             })();
 
-
             const updated =
                 db.prepare(`
                     SELECT *
                     FROM products
                     WHERE id = ?
                 `).get(id);
-
 
             res.json({
 
@@ -3940,7 +3989,6 @@ app.get(
                 .get()
                 .total;
 
-
             const receivables =
                 db.prepare(`
                     SELECT
@@ -3968,7 +4016,6 @@ app.get(
                 .get()
                 .total;
 
-
             const customers =
                 db.prepare(`
                     SELECT
@@ -3978,7 +4025,6 @@ app.get(
                 .get()
                 .n;
 
-
             const products =
                 db.prepare(`
                     SELECT
@@ -3987,7 +4033,6 @@ app.get(
                 `)
                 .get()
                 .n;
-
 
             const invoices =
                 db.prepare(`
@@ -4003,7 +4048,6 @@ app.get(
                 .get()
                 .n;
 
-
             const payments =
                 db.prepare(`
                     SELECT
@@ -4016,7 +4060,6 @@ app.get(
                 `)
                 .get()
                 .total;
-
 
             const inventory =
                 db.prepare(`
@@ -4033,7 +4076,6 @@ app.get(
                 `)
                 .get()
                 .total;
-
 
             res.json({
 
@@ -4069,6 +4111,103 @@ app.get(
 
             res
                 .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| COMPANY INFO ROUTES - NEW
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/company/info",
+    (req, res) => {
+
+        try {
+
+            const company =
+                loadCompanyInfo();
+
+            res.json({
+
+                success: true,
+
+                company
+
+            });
+
+        }
+        catch (error) {
+
+            console.error(
+                "COMPANY INFO ERROR:",
+                error
+            );
+
+            res
+                .status(500)
+                .json({
+
+                    success: false,
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+app.put(
+    "/api/company/info",
+    authenticate,
+    (req, res) => {
+
+        try {
+
+            const data = req.body;
+
+            const updated =
+                updateCompanyInfo(data);
+
+            res.json({
+
+                success: true,
+
+                message:
+                    "تم تحديث معلومات الشركة بنجاح",
+
+                company:
+                    updated
+
+            });
+
+        }
+        catch (error) {
+
+            console.error(
+                "UPDATE COMPANY INFO ERROR:",
+                error
+            );
+
+            res
+                .status(400)
                 .json({
 
                     success: false,
@@ -4134,7 +4273,6 @@ app.get(
                 `)
                 .all();
 
-
             res.json({
 
                 success: true,
@@ -4198,7 +4336,6 @@ app.get(
                 `)
                 .all();
 
-
             const totals =
                 rows.reduce(
 
@@ -4227,7 +4364,6 @@ app.get(
                     }
 
                 );
-
 
             res.json({
 
@@ -4288,7 +4424,6 @@ app.get(
                 `)
                 .get()
                 .total;
-
 
             res.json({
 
@@ -4355,7 +4490,6 @@ app.post(
                     });
 
             }
-
 
             res.json({
 
@@ -4430,7 +4564,6 @@ app.get(
                 `)
                 .all();
 
-
             res.json({
 
                 success: true,
@@ -4471,12 +4604,10 @@ app.post(
                 ) ||
                 "WhatsApp";
 
-
             const phone =
                 cleanString(
                     req.body.phone
                 );
-
 
             const result =
                 db.prepare(`
@@ -4500,7 +4631,6 @@ app.post(
                     "gateway"
 
                 );
-
 
             res.json({
 
@@ -4550,18 +4680,15 @@ app.post(
                     req.body.account_id
                 );
 
-
             const phone =
                 cleanString(
                     req.body.phone
                 );
 
-
             const body =
                 cleanString(
                     req.body.body
                 );
-
 
             if (
                 !Number.isInteger(
@@ -4575,7 +4702,6 @@ app.post(
 
             }
 
-
             if (!body) {
 
                 throw new Error(
@@ -4583,7 +4709,6 @@ app.post(
                 );
 
             }
-
 
             const account =
                 db.prepare(`
@@ -4595,7 +4720,6 @@ app.post(
                     accountId
                 );
 
-
             if (!account) {
 
                 throw new Error(
@@ -4604,7 +4728,6 @@ app.post(
 
             }
 
-
             const result =
                 await Promise.resolve(
                     parseTransaction(
@@ -4612,31 +4735,25 @@ app.post(
                     )
                 );
 
-
             const normalized =
                 normalizeTransaction(
                     result
                 );
 
-
             normalized.original_text =
                 normalized.original_text ||
                 body;
-
 
             const validationErrors =
                 validateTransaction(
                     normalized
                 );
 
-
             normalized.validation_errors =
                 validationErrors;
 
-
             normalized.ready =
                 validationErrors.length === 0;
-
 
             const messageResult =
                 db.prepare(`
@@ -4666,7 +4783,6 @@ app.post(
 
                 );
 
-
             res.json({
 
                 success: true,
@@ -4689,7 +4805,6 @@ app.post(
                 "WHATSAPP MESSAGE ERROR:",
                 error
             );
-
 
             res
                 .status(400)
@@ -4731,7 +4846,6 @@ app.get(
                     LIMIT 500
                 `)
                 .all();
-
 
             res.json({
 
@@ -4778,7 +4892,6 @@ app.get(
                     req.params.key
                 );
 
-
             const setting =
                 db.prepare(`
                     SELECT *
@@ -4790,7 +4903,6 @@ app.get(
                 .get(
                     key
                 );
-
 
             res.json({
 
@@ -4823,6 +4935,7 @@ app.get(
 
 app.post(
     "/api/settings",
+    authenticate,
     (req, res) => {
 
         try {
@@ -4832,10 +4945,8 @@ app.post(
                     req.body.key
                 );
 
-
             const value =
                 req.body.value;
-
 
             if (!key) {
 
@@ -4845,12 +4956,10 @@ app.post(
 
             }
 
-
             const safeValue =
                 typeof value === "string"
                     ? value
                     : safeJson(value);
-
 
             db.prepare(`
                 INSERT INTO settings
@@ -4874,7 +4983,6 @@ app.post(
                 )
 
             );
-
 
             res.json({
 
@@ -4947,7 +5055,6 @@ app.use(
             error
         );
 
-
         if (
             res.headersSent
         ) {
@@ -4957,7 +5064,6 @@ app.use(
             );
 
         }
-
 
         res
             .status(500)
@@ -4993,7 +5099,6 @@ app.use(
 
         }
 
-
         if (
             req.path.startsWith(
                 "/invoices"
@@ -5003,7 +5108,6 @@ app.use(
             return next();
 
         }
-
 
         res.sendFile(
             path.join(
@@ -5021,6 +5125,9 @@ app.use(
 | START SERVER
 |--------------------------------------------------------------------------
 */
+
+// تحميل معلومات الشركة عند بدء التشغيل
+loadCompanyInfo();
 
 app.listen(
     PORT,
@@ -5049,6 +5156,11 @@ app.listen(
 
         console.log(
             `🌐 Port: ${PORT}`
+        );
+
+        const company = getCompanyInfo();
+        console.log(
+            `🏢 ${company.name}`
         );
 
         console.log(
