@@ -1,3 +1,24 @@
+// src/db/init.js - أضف هذا في بداية الدالة
+function initializeDatabase() {
+    console.log("🔄 جاري تهيئة قاعدة البيانات...");
+
+    try {
+        // ✅ إضافة عمود status إذا كان مفقوداً
+        const statusExists = db.prepare(`
+            SELECT name FROM pragma_table_info('users') WHERE name = 'status'
+        `).get();
+
+        if (!statusExists) {
+            db.exec(`
+                ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'
+            `);
+            console.log("✅ تم إضافة عمود status إلى جدول users");
+        }
+
+        // ... باقي الكود
+    }
+}
+
 // src/db/init.js
 const db = require("./index");
 
