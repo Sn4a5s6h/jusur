@@ -1,0 +1,112 @@
+/* public/invoice-template.css - تصميم الفاتورة للطباعة */
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    #printArea, #printArea * {
+        visibility: visible;
+    }
+    
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        direction: rtl;
+        font-family: 'Arial', sans-serif;
+        padding: 20px;
+    }
+    
+    .invoice-header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .invoice-header h1 {
+        font-size: 24px;
+        margin: 0;
+    }
+    
+    .invoice-header h2 {
+        font-size: 18px;
+        margin: 5px 0;
+    }
+    
+    .invoice-header p {
+        margin: 3px 0;
+        font-size: 12px;
+    }
+    
+    .invoice-info {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+        padding: 10px;
+        background: #f8f8f8;
+        border-radius: 5px;
+    }
+    
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+    }
+    
+    .invoice-table th {
+        background: #333;
+        color: #fff;
+        padding: 8px;
+        border: 1px solid #000;
+        text-align: center;
+    }
+    
+    .invoice-table td {
+        padding: 6px;
+        border: 1px solid #000;
+        text-align: center;
+    }
+    
+    .invoice-totals {
+        margin-top: 15px;
+        padding: 10px;
+        border-top: 2px solid #000;
+        text-align: left;
+    }
+    
+    .invoice-amount-words {
+        margin: 20px 0;
+        padding: 10px;
+        border: 1px dashed #000;
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    
+    .invoice-signatures {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #ccc;
+    }
+    
+    .signature-line {
+        text-align: center;
+        width: 120px;
+    }
+    
+    .signature-line .line {
+        border-bottom: 1px solid #000;
+        height: 30px;
+        margin-bottom: 5px;
+    }
+    
+    .signature-line .label {
+        font-size: 10px;
+        color: #666;
+    }
+}
