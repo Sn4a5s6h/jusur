@@ -1,23 +1,41 @@
 {
   "name": "jusoor-accounting",
-  "version": "3.1.0",
-  "description": "Jusoor AI Accounting ERP - نظام جسور المحاسبي المتكامل بالذكاء الاصطناعي",
+  "version": "4.0.0",
+  "description": "🌉 Jusoor Accounting - نظام محاسبي مدعوم بالذكاء الاصطناعي",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0 <22.0.0"
   },
+  "keywords": [
+    "accounting",
+    "ai",
+    "invoicing",
+    "business",
+    "arabic",
+    "finance",
+    "ERP"
+  ],
+  "author": "Jusoor Team",
+  "license": "MIT",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^11.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.1",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2",
-    "pdfkit": "^0.17.1"
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.15",
+    "pdfkit": "^0.15.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }
