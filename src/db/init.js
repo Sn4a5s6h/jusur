@@ -1,4 +1,4 @@
-// db/init.js
+// src/db/init.js
 const db = require("./index");
 
 /*
