@@ -41,7 +41,7 @@ const {
 // ============================================
 // MIDDLEWARE Y SERVICIOS - desde la raíz del proyecto
 // ============================================
-const { initializeDatabase } = require("../db/init");
+const { initializeDatabase } = require("./db/init");
 const { validate, schemas } = require("../middleware/validate");
 const { authorize, authorizeRole } = require("../middleware/rbac");
 const { authLimiter, apiLimiter, sensitiveLimiter } = require("../middleware/rateLimit");
