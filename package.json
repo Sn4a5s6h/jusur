@@ -1,6 +1,6 @@
 {
   "name": "jusoor-accounting",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "🌉 Jusoor Accounting - نظام محاسبي مدعوم بالذكاء الاصطناعي",
   "main": "src/server.js",
   "scripts": {
@@ -24,6 +24,7 @@
   "author": "Jusoor Team",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
