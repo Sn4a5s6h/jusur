@@ -6,38 +6,38 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-const db = require("./src/db");
+const db = require("./db");
 
 const {
     parseTransaction
-} = require("./src/ai/engine");
+} = require("./ai/engine");
 
 const {
     createInvoice,
     recordPayment,
     customerStatement
-} = require("./src/accounting");
+} = require("./accounting");
 
 const {
     generateInvoicePDF
-} = require("./src/pdf");
+} = require("./pdf");
 
 const {
     hashPassword,
     verifyPassword,
     createToken,
     verifyToken
-} = require("./auth/auth");
+} = require("../auth/auth");
 
 // ============================================
 // MIDDLEWARE - NEW
 // ============================================
-const { initializeDatabase } = require("./src/db/init");
-const { validate, schemas } = require("./src/middleware/validate");
-const { authorize, authorizeRole } = require("./src/middleware/rbac");
-const { authLimiter, apiLimiter, sensitiveLimiter } = require("./src/middleware/rateLimit");
-const { cleanupUploads, cleanupInvoices } = require("./src/services/cleanup");
-const { sendInvoiceEmail, sendPaymentConfirmation } = require("./src/services/email");
+const { initializeDatabase } = require("./db/init");
+const { validate, schemas } = require("./middleware/validate");
+const { authorize, authorizeRole } = require("./middleware/rbac");
+const { authLimiter, apiLimiter, sensitiveLimiter } = require("./middleware/rateLimit");
+const { cleanupUploads, cleanupInvoices } = require("./services/cleanup");
+const { sendInvoiceEmail, sendPaymentConfirmation } = require("./services/email");
 
 /*
 |--------------------------------------------------------------------------
@@ -51,7 +51,7 @@ const PORT =
     Number(process.env.PORT) || 3001;
 
 const ROOT =
-    path.join(__dirname);
+    path.join(__dirname, "..");
 
 const PUBLIC_DIR =
     path.join(ROOT, "public");
@@ -2436,7 +2436,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| PAYMENT ROUTES
+| PAYMENT ROUTES - FIXED (async)
 |--------------------------------------------------------------------------
 */
 
@@ -2444,7 +2444,7 @@ app.post(
     "/api/payments",
     authenticate,
     validate(schemas.payment),
-    (req, res) => {
+    async (req, res) => { // ✅ تم إضافة async هنا
 
         try {
 
@@ -2496,7 +2496,8 @@ app.post(
                 amount <= 0
             ) {
 
-                return res                    .status(400)
+                return res
+                    .status(400)
                     .json({
 
                         success: false,
@@ -2649,7 +2650,7 @@ app.post(
 
             }
 
-            // إرسال تأكيد الدفع عبر البريد
+            // ✅ إرسال تأكيد الدفع عبر البريد - الآن يعمل بشكل صحيح
             try {
                 const customer = db.prepare(`
                     SELECT phone FROM customers WHERE id = ?
