@@ -475,7 +475,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 /*
 |--------------------------------------------------------------------------
-| INVOICES
+| INVOICES - MODIFIED WITH COMPANY FIELDS
 |--------------------------------------------------------------------------
 */
 
@@ -488,6 +488,8 @@ CREATE TABLE IF NOT EXISTS invoices (
     customer_id INTEGER,
 
     customer_name TEXT NOT NULL,
+
+    customer_phone TEXT,
 
     type TEXT NOT NULL DEFAULT 'cash',
 
@@ -509,6 +511,8 @@ CREATE TABLE IF NOT EXISTS invoices (
 
     pdf_path TEXT,
 
+    notes TEXT,
+
     company_id INTEGER,
 
     fiscal_year_id INTEGER,
@@ -516,6 +520,15 @@ CREATE TABLE IF NOT EXISTS invoices (
     user_id INTEGER,
 
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    -- ✅ NEW COMPANY FIELDS
+    company_name TEXT,
+
+    company_address TEXT,
+
+    company_phone TEXT,
+
+    company_currency TEXT DEFAULT 'YER',
 
     FOREIGN KEY(customer_id)
         REFERENCES customers(id),
@@ -1108,6 +1121,43 @@ const migrations = [
         "invoices",
         "user_id",
         "INTEGER"
+    ],
+
+    // ✅ NEW: إضافة أعمدة الشركة للفواتير
+    [
+        "invoices",
+        "customer_phone",
+        "TEXT"
+    ],
+
+    [
+        "invoices",
+        "notes",
+        "TEXT"
+    ],
+
+    [
+        "invoices",
+        "company_name",
+        "TEXT"
+    ],
+
+    [
+        "invoices",
+        "company_address",
+        "TEXT"
+    ],
+
+    [
+        "invoices",
+        "company_phone",
+        "TEXT"
+    ],
+
+    [
+        "invoices",
+        "company_currency",
+        "TEXT DEFAULT 'YER'"
     ],
 
     [
@@ -1834,9 +1884,9 @@ if (!company) {
 
         `).run(
 
-            "شركة جسور",
+            "محلات الغانم للتجارة العامة",
 
-            "شركة جسور",
+            "محلات الغانم للتجارة العامة",
 
             "YER",
 
@@ -2075,6 +2125,38 @@ if (
 
     insertAccounts();
 
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SAVE COMPANY INFO TO SETTINGS
+|--------------------------------------------------------------------------
+*/
+
+try {
+    const companyInfo = {
+        name: 'محلات الغانم للتجارة العامة',
+        name_en: 'ALGANIM STORS FOR TRADING',
+        address: 'صنعاء - شعوب - الصياح',
+        phone: '777463289',
+        description: 'لبيع جميع انواع البقوليات والبهارات والمكسرات جملة - تجزئة',
+        currency: 'YER'
+    };
+
+    const existing = db.prepare(`
+        SELECT value FROM settings WHERE key = 'company_info'
+    `).get();
+
+    if (!existing) {
+        db.prepare(`
+            INSERT INTO settings (key, value)
+            VALUES (?, ?)
+        `).run('company_info', JSON.stringify(companyInfo));
+        console.log("✅ تم حفظ معلومات الشركة في الإعدادات");
+    }
+} catch (error) {
+    console.error("COMPANY INFO ERROR:", error.message);
 }
 
 
