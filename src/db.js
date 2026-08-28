@@ -5,7 +5,22 @@ const path = require("path");
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| JUSOOR ACCOUNTING - DATABASE
+|--------------------------------------------------------------------------
+| Compatible with:
+| - src/server.js
+| - src/accounting.js
+| - src/auth/auth.js
+| - Existing SQLite databases
+|
+| IMPORTANT:
+| This file does NOT delete existing data.
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| DATABASE PATH
 |--------------------------------------------------------------------------
 */
 
@@ -15,15 +30,25 @@ const DB_PATH =
 
 const db = new Database(DB_PATH);
 
+
 /*
 |--------------------------------------------------------------------------
 | SQLITE SETTINGS
 |--------------------------------------------------------------------------
 */
 
-db.pragma("journal_mode = WAL");
+try {
+    db.pragma("journal_mode = WAL");
+} catch (error) {
+    console.warn(
+        "DB WAL WARNING:",
+        error.message
+    );
+}
+
 db.pragma("foreign_keys = ON");
 db.pragma("busy_timeout = 5000");
+
 
 /*
 |--------------------------------------------------------------------------
@@ -31,31 +56,45 @@ db.pragma("busy_timeout = 5000");
 |--------------------------------------------------------------------------
 */
 
+function quoteIdentifier(name) {
+    return `"${String(name).replace(/"/g, '""')}"`;
+}
+
+
 function tableExists(tableName) {
+
     const row = db.prepare(`
         SELECT name
         FROM sqlite_master
         WHERE type = 'table'
-        AND name = ?
+          AND name = ?
+        LIMIT 1
     `).get(tableName);
 
     return Boolean(row);
 }
 
 
-function columnExists(tableName, columnName) {
+function columnExists(
+    tableName,
+    columnName
+) {
 
     if (!tableExists(tableName)) {
         return false;
     }
 
+    const table =
+        quoteIdentifier(tableName);
+
     const columns =
         db.prepare(
-            `PRAGMA table_info(${tableName})`
+            `PRAGMA table_info(${table})`
         ).all();
 
     return columns.some(
-        column => column.name === columnName
+        column =>
+            column.name === columnName
     );
 }
 
@@ -66,41 +105,73 @@ function addColumn(
     definition
 ) {
 
+    if (!tableExists(tableName)) {
+        return false;
+    }
+
     if (
-        tableExists(tableName) &&
-        !columnExists(
+        columnExists(
             tableName,
             columnName
         )
     ) {
-
-        db.exec(`
-            ALTER TABLE ${tableName}
-            ADD COLUMN ${columnName} ${definition}
-        `);
-
+        return false;
     }
 
+    const table =
+        quoteIdentifier(tableName);
+
+    const column =
+        quoteIdentifier(columnName);
+
+    db.exec(`
+        ALTER TABLE ${table}
+        ADD COLUMN ${column} ${definition}
+    `);
+
+    return true;
+}
+
+
+function safeAddColumn(
+    table,
+    column,
+    definition
+) {
+
+    try {
+
+        addColumn(
+            table,
+            column,
+            definition
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            `DB MIGRATION ERROR: ${table}.${column}`,
+            error.message
+        );
+
+    }
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| CORE TABLES
+| BASE TABLES
 |--------------------------------------------------------------------------
-|
-| هذه الجداول الجديدة لا تؤثر على البيانات القديمة.
-|
 */
 
-
-db.exec(`
 /*
 |--------------------------------------------------------------------------
 | COMPANIES
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS companies (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,6 +201,7 @@ CREATE TABLE IF NOT EXISTS companies (
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 
 );
+`);
 
 
 /*
@@ -138,6 +210,7 @@ CREATE TABLE IF NOT EXISTS companies (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS financial_years (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,14 +237,33 @@ CREATE TABLE IF NOT EXISTS financial_years (
         REFERENCES companies(id)
 
 );
+`);
 
 
 /*
 |--------------------------------------------------------------------------
 | USERS
 |--------------------------------------------------------------------------
+|
+| server.js requires:
+|
+| id
+| username
+| password_hash
+| name
+| role
+| status
+| created_at
+|
+| Older versions used:
+| full_name
+| active
+|
+| Both are preserved.
+|--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS users (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -180,9 +272,13 @@ CREATE TABLE IF NOT EXISTS users (
 
     password_hash TEXT NOT NULL,
 
+    name TEXT,
+
     full_name TEXT,
 
     role TEXT NOT NULL DEFAULT 'user',
+
+    status TEXT NOT NULL DEFAULT 'active',
 
     active INTEGER NOT NULL DEFAULT 1,
 
@@ -196,6 +292,7 @@ CREATE TABLE IF NOT EXISTS users (
         REFERENCES companies(id)
 
 );
+`);
 
 
 /*
@@ -204,6 +301,7 @@ CREATE TABLE IF NOT EXISTS users (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS sessions (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -231,6 +329,44 @@ CREATE TABLE IF NOT EXISTS sessions (
         REFERENCES financial_years(id)
 
 );
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMERS
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS customers (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    name TEXT NOT NULL UNIQUE,
+
+    phone TEXT,
+
+    account_id INTEGER,
+
+    opening_balance REAL DEFAULT 0,
+
+    balance_type TEXT DEFAULT 'debit',
+
+    address TEXT,
+
+    email TEXT,
+
+    tax_number TEXT,
+
+    notes TEXT,
+
+    active INTEGER DEFAULT 1,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+
+);
+`);
 
 
 /*
@@ -239,6 +375,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS suppliers (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -253,6 +390,8 @@ CREATE TABLE IF NOT EXISTS suppliers (
 
     tax_number TEXT,
 
+    notes TEXT,
+
     account_id INTEGER,
 
     opening_balance REAL DEFAULT 0,
@@ -264,14 +403,58 @@ CREATE TABLE IF NOT EXISTS suppliers (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 
 );
+`);
 
 
 /*
 |--------------------------------------------------------------------------
-| ACCOUNTS / CHART OF ACCOUNTS
+| PRODUCTS
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
+CREATE TABLE IF NOT EXISTS products (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    name TEXT NOT NULL UNIQUE,
+
+    unit TEXT DEFAULT 'قطعة',
+
+    sale_price REAL DEFAULT 0,
+
+    cost_price REAL DEFAULT 0,
+
+    stock REAL DEFAULT 0,
+
+    minimum_stock REAL DEFAULT 0,
+
+    barcode TEXT,
+
+    sku TEXT,
+
+    category TEXT,
+
+    supplier_id INTEGER,
+
+    active INTEGER DEFAULT 1,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(supplier_id)
+        REFERENCES suppliers(id)
+
+);
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| ACCOUNTS
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
 CREATE TABLE IF NOT EXISTS accounts (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -293,6 +476,206 @@ CREATE TABLE IF NOT EXISTS accounts (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 
 );
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| INVOICES
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS invoices (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    inv_no TEXT NOT NULL UNIQUE,
+
+    customer_id INTEGER,
+
+    customer_name TEXT NOT NULL,
+
+    customer_phone TEXT,
+
+    type TEXT NOT NULL DEFAULT 'cash',
+
+    due_date TEXT,
+
+    subtotal REAL NOT NULL DEFAULT 0,
+
+    discount REAL NOT NULL DEFAULT 0,
+
+    tax REAL NOT NULL DEFAULT 0,
+
+    total REAL NOT NULL DEFAULT 0,
+
+    paid REAL NOT NULL DEFAULT 0,
+
+    status TEXT NOT NULL DEFAULT 'draft',
+
+    items_json TEXT NOT NULL DEFAULT '[]',
+
+    pdf_path TEXT,
+
+    notes TEXT,
+
+    user_id INTEGER,
+
+    company_id INTEGER,
+
+    financial_year_id INTEGER,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(customer_id)
+        REFERENCES customers(id)
+
+);
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| PAYMENTS
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS payments (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    customer_id INTEGER,
+
+    invoice_id INTEGER,
+
+    amount REAL NOT NULL,
+
+    method TEXT DEFAULT 'cash',
+
+    reference TEXT,
+
+    description TEXT,
+
+    payment_date TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    user_id INTEGER,
+
+    company_id INTEGER,
+
+    financial_year_id INTEGER,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(customer_id)
+        REFERENCES customers(id),
+
+    FOREIGN KEY(invoice_id)
+        REFERENCES invoices(id)
+
+);
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| JOURNAL ENTRIES
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS journal_entries (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    reference_type TEXT,
+
+    reference_id INTEGER,
+
+    description TEXT,
+
+    entry_date TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    user_id INTEGER,
+
+    company_id INTEGER,
+
+    financial_year_id INTEGER,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(user_id)
+        REFERENCES users(id),
+
+    FOREIGN KEY(company_id)
+        REFERENCES companies(id),
+
+    FOREIGN KEY(financial_year_id)
+        REFERENCES financial_years(id)
+
+);
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| JOURNAL LINES
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS journal_lines (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    journal_id INTEGER NOT NULL,
+
+    account_code TEXT NOT NULL,
+
+    account_name TEXT NOT NULL,
+
+    debit REAL DEFAULT 0,
+
+    credit REAL DEFAULT 0,
+
+    FOREIGN KEY(journal_id)
+        REFERENCES journal_entries(id)
+
+);
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| STOCK MOVEMENTS
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS stock_movements (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    product_id INTEGER,
+
+    quantity REAL NOT NULL,
+
+    movement_type TEXT NOT NULL,
+
+    reference_type TEXT,
+
+    reference_id INTEGER,
+
+    unit_cost REAL DEFAULT 0,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(product_id)
+        REFERENCES products(id)
+
+);
+`);
 
 
 /*
@@ -301,6 +684,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS purchases (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -354,6 +738,7 @@ CREATE TABLE IF NOT EXISTS purchases (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
@@ -362,6 +747,7 @@ CREATE TABLE IF NOT EXISTS purchases (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS purchase_items (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -388,6 +774,7 @@ CREATE TABLE IF NOT EXISTS purchase_items (
         REFERENCES products(id)
 
 );
+`);
 
 
 /*
@@ -396,6 +783,7 @@ CREATE TABLE IF NOT EXISTS purchase_items (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS expenses (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -432,6 +820,7 @@ CREATE TABLE IF NOT EXISTS expenses (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
@@ -440,6 +829,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS receipts (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -481,14 +871,16 @@ CREATE TABLE IF NOT EXISTS receipts (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
 |--------------------------------------------------------------------------
-| PAYABLE PAYMENTS
+| SUPPLIER PAYMENTS
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS supplier_payments (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -531,6 +923,7 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
@@ -539,6 +932,7 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS cash_transactions (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -573,14 +967,16 @@ CREATE TABLE IF NOT EXISTS cash_transactions (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
 |--------------------------------------------------------------------------
-| INVENTORY OPENING BALANCES
+| INVENTORY OPENING
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS inventory_opening (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -602,18 +998,48 @@ CREATE TABLE IF NOT EXISTS inventory_opening (
         REFERENCES financial_years(id)
 
 );
+`);
+
+
+/*
+|--------------------------------------------------------------------------
+| BANK TRANSACTIONS
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS bank_transactions (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    amount REAL NOT NULL,
+
+    description TEXT,
+
+    transaction_date TEXT,
+
+    reference TEXT,
+
+    matched_invoice_id INTEGER,
+
+    status TEXT DEFAULT 'unmatched',
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(matched_invoice_id)
+        REFERENCES invoices(id)
+
+);
+`);
 
 
 /*
 |--------------------------------------------------------------------------
 | AI TRANSACTIONS
 |--------------------------------------------------------------------------
-|
-| حفظ كل العمليات التي أدخلها المستخدم للمساعد الذكي.
-| لا يتم حذف النص الأصلي.
-|
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS ai_transactions (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -650,14 +1076,16 @@ CREATE TABLE IF NOT EXISTS ai_transactions (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
 |--------------------------------------------------------------------------
-| DOCUMENT SEQUENCES
+| SEQUENCES
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS sequences (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -685,14 +1113,16 @@ CREATE TABLE IF NOT EXISTS sequences (
         REFERENCES financial_years(id)
 
 );
+`);
 
 
 /*
 |--------------------------------------------------------------------------
-| AUDIT LOG
+| AUDIT LOGS
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS audit_logs (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -730,309 +1160,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 /*
 |--------------------------------------------------------------------------
-| EXISTING TABLES
-|--------------------------------------------------------------------------
-|
-| نحافظ على الجداول الموجودة في المشروع الحالي.
-|
-*/
-
-
-db.exec(`
-/*
-|--------------------------------------------------------------------------
-| CUSTOMERS
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS customers (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    name TEXT NOT NULL UNIQUE,
-
-    phone TEXT,
-
-    account_id INTEGER,
-
-    opening_balance REAL DEFAULT 0,
-
-    balance_type TEXT DEFAULT 'debit',
-
-    address TEXT,
-
-    email TEXT,
-
-    tax_number TEXT,
-
-    active INTEGER DEFAULT 1,
-
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| PRODUCTS
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS products (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    name TEXT NOT NULL UNIQUE,
-
-    unit TEXT DEFAULT 'قطعة',
-
-    sale_price REAL DEFAULT 0,
-
-    cost_price REAL DEFAULT 0,
-
-    stock REAL DEFAULT 0,
-
-    minimum_stock REAL DEFAULT 0,
-
-    barcode TEXT,
-
-    sku TEXT,
-
-    category TEXT,
-
-    supplier_id INTEGER,
-
-    active INTEGER DEFAULT 1,
-
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY(supplier_id)
-        REFERENCES suppliers(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| INVOICES
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS invoices (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    inv_no TEXT NOT NULL UNIQUE,
-
-    customer_id INTEGER,
-
-    customer_name TEXT NOT NULL,
-
-    customer_phone TEXT,
-
-    type TEXT NOT NULL DEFAULT 'cash',
-
-    due_date TEXT,
-
-    subtotal REAL NOT NULL DEFAULT 0,
-
-    discount REAL NOT NULL DEFAULT 0,
-
-    tax REAL NOT NULL DEFAULT 0,
-
-    total REAL NOT NULL DEFAULT 0,
-
-    paid REAL NOT NULL DEFAULT 0,
-
-    status TEXT NOT NULL DEFAULT 'draft',
-
-    items_json TEXT NOT NULL DEFAULT '[]',
-
-    pdf_path TEXT,
-
-    notes TEXT,
-
-    user_id INTEGER,
-
-    company_id INTEGER,
-
-    financial_year_id INTEGER,
-
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY(customer_id)
-        REFERENCES customers(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| PAYMENTS
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS payments (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    customer_id INTEGER,
-
-    invoice_id INTEGER,
-
-    amount REAL NOT NULL,
-
-    method TEXT DEFAULT 'cash',
-
-    reference TEXT,
-
-    description TEXT,
-
-    payment_date TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    user_id INTEGER,
-
-    company_id INTEGER,
-
-    financial_year_id INTEGER,
-
-    FOREIGN KEY(customer_id)
-        REFERENCES customers(id),
-
-    FOREIGN KEY(invoice_id)
-        REFERENCES invoices(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| JOURNAL ENTRIES
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS journal_entries (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    reference_type TEXT,
-
-    reference_id INTEGER,
-
-    description TEXT,
-
-    entry_date TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    user_id INTEGER,
-
-    company_id INTEGER,
-
-    financial_year_id INTEGER,
-
-    FOREIGN KEY(user_id)
-        REFERENCES users(id),
-
-    FOREIGN KEY(company_id)
-        REFERENCES companies(id),
-
-    FOREIGN KEY(financial_year_id)
-        REFERENCES financial_years(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| JOURNAL LINES
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS journal_lines (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    journal_id INTEGER NOT NULL,
-
-    account_code TEXT NOT NULL,
-
-    account_name TEXT NOT NULL,
-
-    debit REAL DEFAULT 0,
-
-    credit REAL DEFAULT 0,
-
-    FOREIGN KEY(journal_id)
-        REFERENCES journal_entries(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| STOCK MOVEMENTS
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS stock_movements (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    product_id INTEGER,
-
-    quantity REAL NOT NULL,
-
-    movement_type TEXT NOT NULL,
-
-    reference_type TEXT,
-
-    reference_id INTEGER,
-
-    unit_cost REAL DEFAULT 0,
-
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY(product_id)
-        REFERENCES products(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| BANK TRANSACTIONS
-|--------------------------------------------------------------------------
-*/
-
-CREATE TABLE IF NOT EXISTS bank_transactions (
-
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-    amount REAL NOT NULL,
-
-    description TEXT,
-
-    transaction_date TEXT,
-
-    reference TEXT,
-
-    matched_invoice_id INTEGER,
-
-    status TEXT DEFAULT 'unmatched',
-
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY(matched_invoice_id)
-        REFERENCES invoices(id)
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
 | WHATSAPP ACCOUNTS
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS whatsapp_accounts (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1050,6 +1182,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_accounts (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 
 );
+`);
 
 
 /*
@@ -1058,6 +1191,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_accounts (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS whatsapp_messages (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1078,6 +1212,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
         REFERENCES whatsapp_accounts(id)
 
 );
+`);
 
 
 /*
@@ -1086,6 +1221,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
 |--------------------------------------------------------------------------
 */
 
+db.exec(`
 CREATE TABLE IF NOT EXISTS settings (
 
     key TEXT PRIMARY KEY,
@@ -1093,332 +1229,154 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT
 
 );
-
 `);
 
 
 /*
 |--------------------------------------------------------------------------
-| SAFE MIGRATION
+| COMPATIBILITY MIGRATIONS
 |--------------------------------------------------------------------------
 |
-| هذه الإضافات مهمة جداً لأنها تسمح بتشغيل النسخة الجديدة
-| فوق قاعدة البيانات القديمة بدون حذف البيانات.
+| These migrations are the important part.
 |
+| They repair databases created by previous versions.
+| No DROP TABLE.
+| No DELETE.
+| No data reset.
+|--------------------------------------------------------------------------
 */
 
 
-const migrations = [
+/*
+|--------------------------------------------------------------------------
+| USERS - CRITICAL FIX
+|--------------------------------------------------------------------------
+*/
 
-    ["customers", "opening_balance", "REAL DEFAULT 0"],
-    ["customers", "balance_type", "TEXT DEFAULT 'debit'"],
-    ["customers", "address", "TEXT"],
-    ["customers", "email", "TEXT"],
-    ["customers", "tax_number", "TEXT"],
-    ["customers", "active", "INTEGER DEFAULT 1"],
+safeAddColumn(
+    "users",
+    "name",
+    "TEXT"
+);
 
-    ["products", "minimum_stock", "REAL DEFAULT 0"],
-    ["products", "barcode", "TEXT"],
-    ["products", "sku", "TEXT"],
-    ["products", "category", "TEXT"],
-    ["products", "supplier_id", "INTEGER"],
-    ["products", "active", "INTEGER DEFAULT 1"],
+safeAddColumn(
+    "users",
+    "full_name",
+    "TEXT"
+);
 
-    ["invoices", "customer_phone", "TEXT"],
-    ["invoices", "notes", "TEXT"],
-    ["invoices", "user_id", "INTEGER"],
-    ["invoices", "company_id", "INTEGER"],
-    ["invoices", "financial_year_id", "INTEGER"],
+safeAddColumn(
+    "users",
+    "status",
+    "TEXT DEFAULT 'active'"
+);
 
-    ["payments", "description", "TEXT"],
-    ["payments", "user_id", "INTEGER"],
-    ["payments", "company_id", "INTEGER"],
-    ["payments", "financial_year_id", "INTEGER"],
+safeAddColumn(
+    "users",
+    "active",
+    "INTEGER DEFAULT 1"
+);
 
-    ["journal_entries", "user_id", "INTEGER"],
-    ["journal_entries", "company_id", "INTEGER"],
-    ["journal_entries", "financial_year_id", "INTEGER"],
+safeAddColumn(
+    "users",
+    "role",
+    "TEXT DEFAULT 'user'"
+);
 
-    ["stock_movements", "unit_cost", "REAL DEFAULT 0"],
+safeAddColumn(
+    "users",
+    "company_id",
+    "INTEGER"
+);
 
-    ["audit_logs", "user_id", "INTEGER"],
-    ["audit_logs", "company_id", "INTEGER"],
-    ["audit_logs", "financial_year_id", "INTEGER"],
-    ["audit_logs", "ip_address", "TEXT"]
+safeAddColumn(
+    "users",
+    "created_at",
+    "TEXT"
+);
 
-];
+safeAddColumn(
+    "users",
+    "last_login_at",
+    "TEXT"
+);
 
 
-for (
-    const [
-        table,
-        column,
-        definition
-    ]
-    of migrations
-) {
+/*
+|--------------------------------------------------------------------------
+| USERS - DATA NORMALIZATION
+|--------------------------------------------------------------------------
+|
+| If old database has full_name but no name,
+| copy full_name -> name.
+|
+| If old database has active but no status,
+| convert:
+|
+| active = 1 => active
+| active = 0 => inactive
+|--------------------------------------------------------------------------
+*/
 
-    try {
+try {
 
-        addColumn(
-            table,
-            column,
-            definition
-        );
+    if (
+        columnExists("users", "name") &&
+        columnExists("users", "full_name")
+    ) {
 
-    }
-    catch (error) {
-
-        console.error(
-            `DB MIGRATION ERROR: ${table}.${column}`,
-            error.message
-        );
+        db.prepare(`
+            UPDATE users
+            SET name = full_name
+            WHERE
+                (
+                    name IS NULL
+                    OR TRIM(name) = ''
+                )
+                AND full_name IS NOT NULL
+        `).run();
 
     }
 
 }
+catch (error) {
+
+    console.error(
+        "USER NAME MIGRATION ERROR:",
+        error.message
+    );
+
+}
 
 
-/*
-|--------------------------------------------------------------------------
-| INDEXES
-|--------------------------------------------------------------------------
-|
-| تسريع البحث والتقارير بدون التأثير على البيانات.
-|
-*/
+try {
 
+    if (
+        columnExists("users", "status") &&
+        columnExists("users", "active")
+    ) {
 
-db.exec(`
-CREATE INDEX IF NOT EXISTS
-idx_customers_name
-ON customers(name);
-
-CREATE INDEX IF NOT EXISTS
-idx_products_name
-ON products(name);
-
-CREATE INDEX IF NOT EXISTS
-idx_products_barcode
-ON products(barcode);
-
-CREATE INDEX IF NOT EXISTS
-idx_invoices_customer
-ON invoices(customer_id);
-
-CREATE INDEX IF NOT EXISTS
-idx_invoices_date
-ON invoices(created_at);
-
-CREATE INDEX IF NOT EXISTS
-idx_invoices_status
-ON invoices(status);
-
-CREATE INDEX IF NOT EXISTS
-idx_payments_customer
-ON payments(customer_id);
-
-CREATE INDEX IF NOT EXISTS
-idx_payments_invoice
-ON payments(invoice_id);
-
-CREATE INDEX IF NOT EXISTS
-idx_journal_entries_date
-ON journal_entries(entry_date);
-
-CREATE INDEX IF NOT EXISTS
-idx_journal_lines_account
-ON journal_lines(account_code);
-
-CREATE INDEX IF NOT EXISTS
-idx_stock_product
-ON stock_movements(product_id);
-
-CREATE INDEX IF NOT EXISTS
-idx_audit_logs_date
-ON audit_logs(created_at);
-
-CREATE INDEX IF NOT EXISTS
-idx_ai_transactions_date
-ON ai_transactions(created_at);
-
-CREATE INDEX IF NOT EXISTS
-idx_sessions_token
-ON sessions(token_hash);
-
-CREATE INDEX IF NOT EXISTS
-idx_sessions_user
-ON sessions(user_id);
-
-CREATE INDEX IF NOT EXISTS
-idx_purchases_supplier
-ON purchases(supplier_id);
-
-CREATE INDEX IF NOT EXISTS
-idx_expenses_date
-ON expenses(expense_date);
-
-CREATE INDEX IF NOT EXISTS
-idx_receipts_customer
-ON receipts(customer_id);
-
-`);
-
-
-/*
-|--------------------------------------------------------------------------
-| DEFAULT ACCOUNTING CHART
-|--------------------------------------------------------------------------
-|
-| الحسابات الأساسية للنظام.
-|
-*/
-
-
-const defaultAccounts = [
-
-    ["1000", "الأصول", "asset", null, 1],
-    ["1100", "الصندوق", "asset", "1000", 2],
-    ["1110", "البنك", "asset", "1000", 2],
-    ["1200", "العملاء", "asset", "1000", 2],
-    ["1300", "المخزون", "asset", "1000", 2],
-
-    ["2000", "الخصوم", "liability", null, 1],
-    ["2100", "الموردون", "liability", "2000", 2],
-
-    ["3000", "حقوق الملكية", "equity", null, 1],
-    ["3100", "رأس المال", "equity", "3000", 2],
-    ["3200", "الأرباح المحتجزة", "equity", "3000", 2],
-
-    ["4000", "الإيرادات", "revenue", null, 1],
-    ["4100", "المبيعات", "revenue", "4000", 2],
-    ["4200", "إيرادات أخرى", "revenue", "4000", 2],
-
-    ["5000", "المصروفات", "expense", null, 1],
-    ["5100", "تكلفة المبيعات", "expense", "5000", 2],
-    ["5200", "المصروفات التشغيلية", "expense", "5000", 2],
-    ["5300", "الرواتب والأجور", "expense", "5000", 2],
-    ["5400", "الإيجارات", "expense", "5000", 2],
-    ["5500", "الكهرباء والمياه", "expense", "5000", 2]
-
-];
-
-
-const insertAccount =
-    db.prepare(`
-        INSERT OR IGNORE INTO accounts
-        (
-            code,
-            name,
-            account_type,
-            parent_code,
-            level,
-            is_system
-        )
-        VALUES (?, ?, ?, ?, ?, 1)
-    `);
-
-
-const insertAccounts =
-    db.transaction(() => {
-
-        for (
-            const account
-            of defaultAccounts
-        ) {
-
-            insertAccount.run(
-                ...account
-            );
-
-        }
-
-    });
-
-
-insertAccounts();
-
-
-/*
-|--------------------------------------------------------------------------
-| DEFAULT COMPANY
-|--------------------------------------------------------------------------
-|
-| لا ننشئ مستخدمًا افتراضيًا هنا.
-| سيتم إنشاء المستخدم الأول من نظام الإعداد/login.
-|
-*/
-
-
-const companyCount =
-    db.prepare(`
-        SELECT COUNT(*) AS count
-        FROM companies
-    `).get().count;
-
-
-if (
-    Number(companyCount) === 0
-) {
-
-    const result =
         db.prepare(`
-            INSERT INTO companies
-            (
-                name,
-                legal_name,
-                currency,
-                active
-            )
-            VALUES (?, ?, ?, 1)
-        `).run(
-            "شركة جسور",
-            "شركة جسور للخدمات والاستشارات والتنمية",
-            "YER"
-        );
+            UPDATE users
+            SET status =
+                CASE
+                    WHEN active = 0
+                        THEN 'inactive'
+                    ELSE 'active'
+                END
+            WHERE
+                status IS NULL
+                OR TRIM(status) = ''
+        `).run();
 
+    }
 
-    const companyId =
-        Number(
-            result.lastInsertRowid
-        );
+}
+catch (error) {
 
-
-    const currentYear =
-        new Date()
-            .getFullYear();
-
-
-    const startDate =
-        `${currentYear}-01-01`;
-
-    const endDate =
-        `${currentYear}-12-31`;
-
-
-    db.prepare(`
-        INSERT INTO financial_years
-        (
-            company_id,
-            name,
-            start_date,
-            end_date,
-            status,
-            is_current
-        )
-        VALUES (?, ?, ?, ?, 'open', 1)
-    `).run(
-
-        companyId,
-
-        String(
-            currentYear
-        ),
-
-        startDate,
-
-        endDate
-
+    console.error(
+        "USER STATUS MIGRATION ERROR:",
+        error.message
     );
 
 }
@@ -1426,204 +1384,372 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| ENSURE CURRENT FINANCIAL YEAR
+| CUSTOMER MIGRATIONS
 |--------------------------------------------------------------------------
 */
 
-const company =
-    db.prepare(`
-        SELECT *
-        FROM companies
-        WHERE active = 1
-        ORDER BY id
-        LIMIT 1
-    `).get();
+safeAddColumn(
+    "customers",
+    "opening_balance",
+    "REAL DEFAULT 0"
+);
 
+safeAddColumn(
+    "customers",
+    "balance_type",
+    "TEXT DEFAULT 'debit'"
+);
 
-if (company) {
+safeAddColumn(
+    "customers",
+    "address",
+    "TEXT"
+);
 
-    const year =
-        db.prepare(`
-            SELECT *
-            FROM financial_years
-            WHERE company_id = ?
-            AND is_current = 1
-            ORDER BY id DESC
-            LIMIT 1
-        `).get(
-            company.id
-        );
+safeAddColumn(
+    "customers",
+    "email",
+    "TEXT"
+);
 
+safeAddColumn(
+    "customers",
+    "tax_number",
+    "TEXT"
+);
 
-    if (!year) {
+safeAddColumn(
+    "customers",
+    "notes",
+    "TEXT"
+);
 
-        const currentYear =
-            new Date()
-                .getFullYear();
-
-
-        db.prepare(`
-            INSERT OR IGNORE INTO financial_years
-            (
-                company_id,
-                name,
-                start_date,
-                end_date,
-                status,
-                is_current
-            )
-            VALUES (?, ?, ?, ?, 'open', 1)
-        `).run(
-
-            company.id,
-
-            String(
-                currentYear
-            ),
-
-            `${currentYear}-01-01`,
-
-            `${currentYear}-12-31`
-
-        );
-
-    }
-
-}
+safeAddColumn(
+    "customers",
+    "active",
+    "INTEGER DEFAULT 1"
+);
 
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT SETTINGS
+| SUPPLIER MIGRATIONS
 |--------------------------------------------------------------------------
 */
 
-const defaultSettings = [
+safeAddColumn(
+    "suppliers",
+    "phone",
+    "TEXT"
+);
 
-    [
-        "system_name",
-        "Jusoor Accounting"
-    ],
+safeAddColumn(
+    "suppliers",
+    "email",
+    "TEXT"
+);
 
-    [
-        "system_name_ar",
-        "نظام جسور المحاسبي"
-    ],
+safeAddColumn(
+    "suppliers",
+    "address",
+    "TEXT"
+);
 
-    [
-        "currency",
-        "YER"
-    ],
+safeAddColumn(
+    "suppliers",
+    "tax_number",
+    "TEXT"
+);
 
-    [
-        "currency_name",
-        "ريال يمني"
-    ],
+safeAddColumn(
+    "suppliers",
+    "notes",
+    "TEXT"
+);
 
-    [
-        "invoice_prefix",
-        "INV"
-    ],
+safeAddColumn(
+    "suppliers",
+    "account_id",
+    "INTEGER"
+);
 
-    [
-        "purchase_prefix",
-        "PUR"
-    ],
+safeAddColumn(
+    "suppliers",
+    "opening_balance",
+    "REAL DEFAULT 0"
+);
 
-    [
-        "receipt_prefix",
-        "REC"
-    ],
+safeAddColumn(
+    "suppliers",
+    "balance_type",
+    "TEXT DEFAULT 'credit'"
+);
 
-    [
-        "expense_prefix",
-        "EXP"
-    ],
-
-    [
-        "supplier_payment_prefix",
-        "PAY"
-    ],
-
-    [
-        "date_format",
-        "YYYY-MM-DD"
-    ],
-
-    [
-        "ai_enabled",
-        "true"
-    ]
-
-];
-
-
-const insertSetting =
-    db.prepare(`
-        INSERT OR IGNORE INTO settings
-        (
-            key,
-            value
-        )
-        VALUES (?, ?)
-    `);
-
-
-for (
-    const [
-        key,
-        value
-    ]
-    of defaultSettings
-) {
-
-    insertSetting.run(
-        key,
-        value
-    );
-
-}
+safeAddColumn(
+    "suppliers",
+    "active",
+    "INTEGER DEFAULT 1"
+);
 
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE INFO
+| PRODUCT MIGRATIONS
 |--------------------------------------------------------------------------
 */
 
-function getDatabaseInfo() {
+safeAddColumn(
+    "products",
+    "minimum_stock",
+    "REAL DEFAULT 0"
+);
 
-    const tables =
-        db.prepare(`
-            SELECT name
-            FROM sqlite_master
-            WHERE type = 'table'
-            ORDER BY name
-        `).all();
+safeAddColumn(
+    "products",
+    "barcode",
+    "TEXT"
+);
 
+safeAddColumn(
+    "products",
+    "sku",
+    "TEXT"
+);
 
-    return {
+safeAddColumn(
+    "products",
+    "category",
+    "TEXT"
+);
 
-        path:
-            DB_PATH,
+safeAddColumn(
+    "products",
+    "supplier_id",
+    "INTEGER"
+);
 
-        tables:
-            tables.map(
-                row => row.name
-            )
-
-    };
-
-}
+safeAddColumn(
+    "products",
+    "active",
+    "INTEGER DEFAULT 1"
+);
 
 
 /*
 |--------------------------------------------------------------------------
-| EXPORT
+| INVOICE MIGRATIONS
 |--------------------------------------------------------------------------
 */
 
-module.exports = db;
+safeAddColumn(
+    "invoices",
+    "customer_phone",
+    "TEXT"
+);
 
-module.exports.getDatabaseInfo =
-    getDatabaseInfo;
+safeAddColumn(
+    "invoices",
+    "notes",
+    "TEXT"
+);
+
+safeAddColumn(
+    "invoices",
+    "pdf_path",
+    "TEXT"
+);
+
+safeAddColumn(
+    "invoices",
+    "user_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "invoices",
+    "company_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "invoices",
+    "financial_year_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "invoices",
+    "status",
+    "TEXT DEFAULT 'draft'"
+);
+
+safeAddColumn(
+    "invoices",
+    "items_json",
+    "TEXT DEFAULT '[]'"
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| PAYMENT MIGRATIONS
+|--------------------------------------------------------------------------
+*/
+
+safeAddColumn(
+    "payments",
+    "reference",
+    "TEXT"
+);
+
+safeAddColumn(
+    "payments",
+    "description",
+    "TEXT"
+);
+
+safeAddColumn(
+    "payments",
+    "payment_date",
+    "TEXT DEFAULT CURRENT_TIMESTAMP"
+);
+
+safeAddColumn(
+    "payments",
+    "user_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "payments",
+    "company_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "payments",
+    "financial_year_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "payments",
+    "created_at",
+    "TEXT DEFAULT CURRENT_TIMESTAMP"
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| JOURNAL MIGRATIONS
+|--------------------------------------------------------------------------
+*/
+
+safeAddColumn(
+    "journal_entries",
+    "reference_type",
+    "TEXT"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "reference_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "description",
+    "TEXT"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "entry_date",
+    "TEXT DEFAULT CURRENT_TIMESTAMP"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "user_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "company_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "financial_year_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "journal_entries",
+    "created_at",
+    "TEXT DEFAULT CURRENT_TIMESTAMP"
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| STOCK MIGRATIONS
+|--------------------------------------------------------------------------
+*/
+
+safeAddColumn(
+    "stock_movements",
+    "unit_cost",
+    "REAL DEFAULT 0"
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| AUDIT MIGRATIONS
+|--------------------------------------------------------------------------
+*/
+
+safeAddColumn(
+    "audit_logs",
+    "user_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "audit_logs",
+    "company_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "audit_logs",
+    "financial_year_id",
+    "INTEGER"
+);
+
+safeAddColumn(
+    "audit_logs",
+    "ip_address",
+    "TEXT"
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| PURCHASE MIGRATIONS
+|--------------------------------------------------------------------------
+*/
+
+safeAddColumn(
+    "purchases",
+    "supplier_name",
+    "TEXT"
+);
+
+safeAddColumn(
+    "purchases",
+   
