@@ -1,24 +1,11 @@
 services:
   - type: web
     name: jusoor-accounting
-    runtime: node
-    plan: free
-
-    buildCommand: npm install
+    env: node
+    buildCommand: npm install && npm rebuild better-sqlite3 --force
     startCommand: npm start
-
     envVars:
       - key: NODE_VERSION
-        value: 20.19.5
-
-      - key: PORT
-        value: 3001
-
-      - key: OPENAI_API_KEY
-        sync: false
-
-      - key: PUBLIC_BASE_URL
-        sync: false
-
-      - key: DB_PATH
-        value: jusoor.db
+        value: 20.18.0
+      - key: NODE_ENV
+        value: production
