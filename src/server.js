@@ -922,6 +922,44 @@ function normalizeTransaction(parsed) {
 
     }
 
+    // ============================================
+    // تنظيف اسم العميل
+    // ============================================
+    let customerName = cleanString(parsed.customer);
+    
+    if (customerName) {
+        // إزالة "للعميل" أو "لعميل" أو "العميل" من البداية
+        customerName = customerName.replace(/^(للعميل|لعميل|العميل)\s*/i, '');
+        
+        // إزالة الأرقام والكميات والوحدات
+        customerName = customerName.replace(/\s*[-–—]\s*\d+\s*/g, '');
+        customerName = customerName.replace(/\s*\d+\s*(كرتون|كيس|علبة|قطعة|حبة|كيلو|لتر|جرام|طن|متر|لتر|مل|ك|جم|ل|ملغ)/gi, '');
+        customerName = customerName.replace(/\s*\d+/g, '');
+        
+        // إزالة كلمات زائدة (أسماء المنتجات الشائعة)
+        const productWords = [
+            'مياه', 'حليب', 'اسمنت', 'دقيق', 'سكر', 'زيت', 'ارز', 'عدس', 'فول', 
+            'تمر', 'قهوة', 'شاي', 'بهارات', 'مكسرات', 'كرتون', 'علبة', 'كيس',
+            'تنكة', 'صندوق', 'طرد', 'ربطة', 'حزمة', 'باكيت', 'بكرة', 'لفة'
+        ];
+        const productPattern = new RegExp(`\\s*(${productWords.join('|')})\\s*`, 'gi');
+        customerName = customerName.replace(productPattern, ' ');
+        
+        // إزالة كلمة "بسعر" وما بعدها
+        customerName = customerName.replace(/\s*بسعر\s+[\d\s,]+.*$/i, '');
+        
+        // إزالة كلمة "ريال" وما بعدها
+        customerName = customerName.replace(/\s*ريال.*$/i, '');
+        
+        // تنظيف المسافات الزائدة
+        customerName = customerName.replace(/\s+/g, ' ').trim();
+        
+        // إذا كان الاسم فارغاً أو يحتوي على أرقام فقط، استخدم القيمة الأصلية
+        if (!customerName || /^\d+$/.test(customerName)) {
+            customerName = cleanString(parsed.customer);
+        }
+    }
+
     const transaction = {
 
         intent:
@@ -931,9 +969,7 @@ function normalizeTransaction(parsed) {
             "unknown",
 
         customer:
-            cleanString(
-                parsed.customer
-            ),
+            customerName || cleanString(parsed.customer),
 
         customer_phone:
             cleanString(
