@@ -1,8 +1,7 @@
-// db/init.js
-const db = require("./db");
+const db = require('./index');
 
 function initializeDatabase() {
-    console.log("🔄 جاري تهيئة قاعدة البيانات...");
+    console.log('🔄 جاري تهيئة قاعدة البيانات...');
 
     // جدول المستخدمين
     db.prepare(`
@@ -170,24 +169,25 @@ function initializeDatabase() {
         )
     `).run();
 
-    // إنشاء مستخدم افتراضي إذا لم يوجد
+    // إنشاء مستخدم افتراضي
     const adminExists = db.prepare(`
         SELECT id FROM users WHERE username = 'admin'
     `).get();
 
     if (!adminExists) {
-        const { hashPassword } = require("../auth/auth");
-        const hashed = hashPassword("admin123");
+        // استخدام bcrypt لتشفير كلمة المرور
+        const bcrypt = require('bcryptjs');
+        const hashed = bcrypt.hashSync('admin123', 12);
         
         db.prepare(`
             INSERT INTO users (username, password_hash, name, role, status)
             VALUES (?, ?, ?, ?, ?)
-        `).run("admin", hashed, "مدير النظام", "admin", "active");
+        `).run('admin', hashed, 'مدير النظام', 'admin', 'active');
         
-        console.log("✅ تم إنشاء مستخدم افتراضي: admin / admin123");
+        console.log('✅ تم إنشاء مستخدم افتراضي: admin / admin123');
     }
 
-    console.log("✅ تم تهيئة قاعدة البيانات بنجاح");
+    console.log('✅ تم تهيئة قاعدة البيانات بنجاح');
     return true;
 }
 
