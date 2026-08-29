@@ -473,6 +473,9 @@
         <section id="settings">
             <h2><i class="fas fa-cog"></i> الإعدادات</h2>
             
+            <!-- ==========================================
+            معلومات الشركة
+            ========================================== -->
             <div class="settings-group">
                 <h3><i class="fas fa-building"></i> معلومات الشركة</h3>
                 <div class="form-row">
@@ -488,6 +491,9 @@
                 </button>
             </div>
             
+            <!-- ==========================================
+            إعدادات البريد الإلكتروني
+            ========================================== -->
             <div class="settings-group">
                 <h3><i class="fas fa-envelope"></i> إعدادات البريد الإلكتروني (SMTP)</h3>
                 <div class="form-row">
@@ -510,6 +516,115 @@
                     <i class="fas fa-save"></i> حفظ الإعدادات
                 </button>
             </div>
+
+            <!-- ==========================================
+            إدارة البيانات المحلية - NEW
+            ========================================== -->
+            <div class="settings-group">
+                <h3><i class="fas fa-database"></i> إدارة البيانات المحلية</h3>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="exportData()">
+                        <i class="fas fa-file-export"></i> تصدير البيانات
+                    </button>
+                    <button class="btn btn-success" onclick="document.getElementById('importFile').click()">
+                        <i class="fas fa-file-import"></i> استيراد البيانات
+                    </button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" 
+                           onchange="importData(this.files[0])">
+                    <button class="btn btn-danger" onclick="if(confirm('هل أنت متأكد من مسح جميع البيانات المحلية؟')) { clearAllLocalData(); showToast('تم مسح البيانات المحلية', 'info'); }">
+                        <i class="fas fa-trash"></i> مسح البيانات المحلية
+                    </button>
+                </div>
+                <p class="text-muted" style="font-size:12px; margin-top:10px;">
+                    <i class="fas fa-info-circle"></i> يتم حفظ البيانات محلياً في متصفحك. يمكنك تصديرها واستيرادها عند الحاجة.
+                </p>
+            </div>
+
+            <!-- ==========================================
+            الدليل المحاسبي والعملات - NEW
+            ========================================== -->
+            <div class="settings-group">
+                <h3><i class="fas fa-book"></i> الدليل المحاسبي والعملات</h3>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="showSection('chartOfAccounts')">
+                        <i class="fas fa-sitemap"></i> شجرة الحسابات
+                    </button>
+                    <button class="btn btn-info" onclick="showSection('currencies')">
+                        <i class="fas fa-money-bill-wave"></i> إدارة العملات
+                    </button>
+                </div>
+                <p class="text-muted" style="font-size:12px; margin-top:10px;">
+                    <i class="fas fa-info-circle"></i> إدارة شجرة الحسابات والعملات المتعددة للنظام.
+                </p>
+            </div>
+        </section>
+
+        <!-- ==========================================
+        شجرة الحسابات (Chart of Accounts) - NEW
+        ========================================== -->
+        <section id="chartOfAccounts" style="display:none;">
+            <h2><i class="fas fa-sitemap"></i> شجرة الحسابات</h2>
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                <button class="btn btn-success" onclick="showAddAccountModal()">
+                    <i class="fas fa-plus"></i> إضافة حساب جديد
+                </button>
+                <button class="btn btn-primary" onclick="loadAccounts()">
+                    <i class="fas fa-sync"></i> تحديث
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>اسم الحساب</th>
+                            <th>النوع</th>
+                            <th>المستوى</th>
+                            <th>العملة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsList">
+                        <tr><td colspan="6" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==========================================
+        العملات (Currencies) - NEW
+        ========================================== -->
+        <section id="currencies" style="display:none;">
+            <h2><i class="fas fa-money-bill-wave"></i> إدارة العملات</h2>
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                <button class="btn btn-success" onclick="showAddCurrencyModal()">
+                    <i class="fas fa-plus"></i> إضافة عملة جديدة
+                </button>
+                <button class="btn btn-primary" onclick="loadCurrencies()">
+                    <i class="fas fa-sync"></i> تحديث
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>الاسم</th>
+                            <th>الرمز</th>
+                            <th>سعر الصرف</th>
+                            <th>أساسية</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="currenciesList">
+                        <tr><td colspan="6" class="text-center text-muted">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
     </main>
@@ -528,7 +643,9 @@
     كود التهيئة والتشغيل
     ============================================ -->
     <script>
+        // ============================================
         // تهيئة التطبيق عند تحميل الصفحة
+        // ============================================
         document.addEventListener('DOMContentLoaded', function() {
             // التحقق من وجود توكن في localStorage
             const savedToken = localStorage.getItem('token');
@@ -547,6 +664,8 @@
                     loadSuppliers();
                     loadAudit();
                     loadSettings();
+                    loadAccounts();
+                    loadCurrencies();
                     
                     // تحديث التاريخ
                     document.getElementById('dashboardDate').textContent = 
@@ -571,13 +690,14 @@
         function handleLogin() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
+            const remember = document.getElementById('rememberMe')?.checked || true;
             
             if (!username || !password) {
                 showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'warning');
                 return;
             }
             
-            login(username, password);
+            login(username, password, remember);
         }
 
         function handleRegister() {
@@ -924,6 +1044,218 @@
         }
 
         // ============================================
+        // دوال إدارة الحسابات والعملات - NEW
+        // ============================================
+
+        // تحميل الحسابات
+        async function loadAccounts() {
+            try {
+                const response = await fetch(`${API_BASE}/accounts`, {
+                    headers: getHeaders()
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const tbody = document.getElementById('accountsList');
+                    if (!data.accounts || data.accounts.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">لا يوجد حسابات</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.accounts.map(a => `
+                        <tr>
+                            <td>${a.code}</td>
+                            <td>${a.name}</td>
+                            <td>${a.type}</td>
+                            <td>${a.level || 1}</td>
+                            <td>${a.currency_symbol || '-'}</td>
+                            <td>
+                                <button onclick="editAccount(${a.id})" class="btn-sm btn-warning">✏️</button>
+                                <button onclick="deleteAccount(${a.id})" class="btn-sm btn-danger">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Load accounts error:', error);
+                showToast('حدث خطأ في تحميل الحسابات', 'error');
+            }
+        }
+
+        // تحميل العملات
+        async function loadCurrencies() {
+            try {
+                const response = await fetch(`${API_BASE}/currencies`, {
+                    headers: getHeaders()
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const tbody = document.getElementById('currenciesList');
+                    if (!data.currencies || data.currencies.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">لا يوجد عملات</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.currencies.map(c => `
+                        <tr>
+                            <td><strong>${c.code}</strong></td>
+                            <td>${c.name}</td>
+                            <td>${c.symbol || '-'}</td>
+                            <td>${c.exchange_rate || 1}</td>
+                            <td>${c.is_base ? '✅' : ''}</td>
+                            <td>
+                                <button onclick="editCurrency(${c.id})" class="btn-sm btn-warning">✏️</button>
+                                <button onclick="deleteCurrency(${c.id})" class="btn-sm btn-danger">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Load currencies error:', error);
+                showToast('حدث خطأ في تحميل العملات', 'error');
+            }
+        }
+
+        // عرض نموذج إضافة حساب
+        function showAddAccountModal() {
+            showModal(`
+                <h3><i class="fas fa-plus"></i> إضافة حساب جديد</h3>
+                <form id="addAccountForm" onsubmit="event.preventDefault(); addAccount();">
+                    <div class="form-group" style="flex-direction:column; box-shadow:none; padding:0;">
+                        <input type="text" id="accCode" placeholder="كود الحساب" required>
+                        <input type="text" id="accName" placeholder="اسم الحساب" required>
+                        <select id="accType">
+                            <option value="asset">أصل</option>
+                            <option value="liability">خصم</option>
+                            <option value="equity">حقوق ملكية</option>
+                            <option value="revenue">إيراد</option>
+                            <option value="expense">مصروف</option>
+                        </select>
+                        <input type="number" id="accParentId" placeholder="معرف الأب (اختياري)">
+                        <button type="submit" class="btn btn-success">إضافة</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        // إضافة حساب
+        async function addAccount() {
+            const data = {
+                code: document.getElementById('accCode').value.trim(),
+                name: document.getElementById('accName').value.trim(),
+                type: document.getElementById('accType').value,
+                parent_id: document.getElementById('accParentId').value || null
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/accounts`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('تم إضافة الحساب بنجاح ✅', 'success');
+                    document.querySelector('.modal-overlay')?.remove();
+                    loadAccounts();
+                } else {
+                    showToast(result.error || 'فشل إضافة الحساب', 'error');
+                }
+            } catch (error) {
+                console.error('Add account error:', error);
+                showToast('حدث خطأ أثناء إضافة الحساب', 'error');
+            }
+        }
+
+        // عرض نموذج إضافة عملة
+        function showAddCurrencyModal() {
+            showModal(`
+                <h3><i class="fas fa-plus"></i> إضافة عملة جديدة</h3>
+                <form id="addCurrencyForm" onsubmit="event.preventDefault(); addCurrency();">
+                    <div class="form-group" style="flex-direction:column; box-shadow:none; padding:0;">
+                        <input type="text" id="curCode" placeholder="كود العملة (مثل: USD)" required>
+                        <input type="text" id="curName" placeholder="اسم العملة" required>
+                        <input type="text" id="curSymbol" placeholder="الرمز (مثل: $)">
+                        <input type="number" id="curRate" placeholder="سعر الصرف مقابل العملة الأساسية" step="0.001">
+                        <label>
+                            <input type="checkbox" id="curIsBase"> عملة أساسية
+                        </label>
+                        <button type="submit" class="btn btn-success">إضافة</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        // إضافة عملة
+        async function addCurrency() {
+            const data = {
+                code: document.getElementById('curCode').value.trim().toUpperCase(),
+                name: document.getElementById('curName').value.trim(),
+                symbol: document.getElementById('curSymbol').value.trim(),
+                exchange_rate: parseFloat(document.getElementById('curRate').value) || 1,
+                is_base: document.getElementById('curIsBase').checked
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/currencies`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('تم إضافة العملة بنجاح ✅', 'success');
+                    document.querySelector('.modal-overlay')?.remove();
+                    loadCurrencies();
+                } else {
+                    showToast(result.error || 'فشل إضافة العملة', 'error');
+                }
+            } catch (error) {
+                console.error('Add currency error:', error);
+                showToast('حدث خطأ أثناء إضافة العملة', 'error');
+            }
+        }
+
+        // حذف حساب
+        async function deleteAccount(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الحساب؟')) return;
+            try {
+                const response = await fetch(`${API_BASE}/accounts/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('تم حذف الحساب بنجاح ✅', 'success');
+                    loadAccounts();
+                } else {
+                    showToast(result.error || 'فشل حذف الحساب', 'error');
+                }
+            } catch (error) {
+                console.error('Delete account error:', error);
+                showToast('حدث خطأ أثناء حذف الحساب', 'error');
+            }
+        }
+
+        // حذف عملة
+        async function deleteCurrency(id) {
+            if (!confirm('هل أنت متأكد من حذف هذه العملة؟')) return;
+            try {
+                const response = await fetch(`${API_BASE}/currencies/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('تم حذف العملة بنجاح ✅', 'success');
+                    loadCurrencies();
+                } else {
+                    showToast(result.error || 'فشل حذف العملة', 'error');
+                }
+            } catch (error) {
+                console.error('Delete currency error:', error);
+                showToast('حدث خطأ أثناء حذف العملة', 'error');
+            }
+        }
+
+        // ============================================
         // دوال مساعدة إضافية
         // ============================================
 
@@ -948,6 +1280,14 @@
         window.showModal = showModal;
         window.showToast = showToast;
         window.recordPayment = recordPayment;
+        window.loadAccounts = loadAccounts;
+        window.loadCurrencies = loadCurrencies;
+        window.showAddAccountModal = showAddAccountModal;
+        window.showAddCurrencyModal = showAddCurrencyModal;
+        window.addAccount = addAccount;
+        window.addCurrency = addCurrency;
+        window.deleteAccount = deleteAccount;
+        window.deleteCurrency = deleteCurrency;
         
         console.log('🌉 Jusoor Accounting v4.0 - تم التحميل بنجاح');
     </script>
