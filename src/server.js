@@ -5,6 +5,7 @@ const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 const db = require("./db");
 
@@ -2549,6 +2550,146 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
+| INVOICE EMAIL ROUTE - NEW
+|--------------------------------------------------------------------------
+*/
+
+// إعداد الناقل للبريد الإلكتروني
+let transporter = null;
+
+function getTransporter() {
+    if (!transporter) {
+        transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: false,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+    }
+    return transporter;
+}
+
+app.post("/api/invoices/:id/email", authenticate, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: "رقم الفاتورة غير صحيح"
+            });
+        }
+
+        // جلب الفاتورة مع معلومات العميل
+        const invoice = db.prepare(`
+            SELECT 
+                i.*, 
+                c.name as customer_name, 
+                c.phone as customer_phone,
+                c.email as customer_email
+            FROM invoices i
+            LEFT JOIN customers c ON c.id = i.customer_id
+            WHERE i.id = ?
+        `).get(id);
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                error: "الفاتورة غير موجودة"
+            });
+        }
+
+        // جلب البريد الإلكتروني من الطلب أو من العميل
+        const email = req.body.email || invoice.customer_email || invoice.customer_phone;
+        
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({
+                success: false,
+                error: "البريد الإلكتروني مطلوب أو غير صحيح"
+            });
+        }
+
+        // جلب مسار PDF
+        const pdfPath = invoice.pdf_path || path.join(INVOICES, `${invoice.inv_no}.pdf`);
+        
+        if (!fs.existsSync(pdfPath)) {
+            return res.status(404).json({
+                success: false,
+                error: "ملف PDF غير موجود. يرجى إنشاء الفاتورة أولاً"
+            });
+        }
+
+        // إعداد البريد الإلكتروني
+        const transporter = getTransporter();
+        const company = getCompanyInfo();
+
+        const mailOptions = {
+            from: process.env.SMTP_FROM || `"${company.name}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: `فاتورة رقم ${invoice.inv_no}`,
+            html: `
+                <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h2 style="color: #2c3e50; text-align: center;">${company.name}</h2>
+                    <p style="text-align: center; color: #7f8c8d; font-size: 14px;">${company.address}</p>
+                    <p style="text-align: center; color: #7f8c8d; font-size: 14px;">تلفون: ${company.phone}</p>
+                    <hr style="border: 1px solid #e0e0e0;">
+                    <p>السيد/السيدة <strong>${invoice.customer_name || 'العميل'}</strong>،</p>
+                    <p>نشكركم على تعاملكم معنا. نرفق لكم فاتورتكم رقم <strong>${invoice.inv_no}</strong>.</p>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                        <p><strong>الإجمالي:</strong> ${Number(invoice.total).toLocaleString()} ريال يمني</p>
+                        <p><strong>المدفوع:</strong> ${Number(invoice.paid).toLocaleString()} ريال يمني</p>
+                        <p><strong>المتبقي:</strong> ${Number(invoice.total - invoice.paid).toLocaleString()} ريال يمني</p>
+                    </div>
+                    <hr style="border: 1px solid #e0e0e0;">
+                    <p style="text-align: center; color: #7f8c8d; font-size: 12px;">
+                        هذا البريد إلكتروني آلي، يرجى عدم الرد عليه.
+                    </p>
+                </div>
+            `,
+            attachments: [{
+                filename: `فاتورة-${invoice.inv_no}.pdf`,
+                path: pdfPath
+            }]
+        };
+
+        // إرسال البريد
+        await transporter.sendMail(mailOptions);
+
+        // تسجيل في سجل التدقيق
+        db.prepare(`
+            INSERT INTO audit_logs (action, entity_type, entity_id, details)
+            VALUES (?, ?, ?, ?)
+        `).run(
+            "email",
+            "invoice",
+            id,
+            safeJson({
+                inv_no: invoice.inv_no,
+                email,
+                user_id: req.user ? req.user.id : null
+            })
+        );
+
+        res.json({
+            success: true,
+            message: `تم إرسال الفاتورة ${invoice.inv_no} إلى ${email}`
+        });
+
+    } catch (error) {
+        console.error("EMAIL ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message || "حدث خطأ أثناء إرسال البريد"
+        });
+    }
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | PAYMENT ROUTES
 |--------------------------------------------------------------------------
 */
@@ -3995,7 +4136,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| PURCHASE INVOICES ROUTES - NEW
+| PURCHASE INVOICES ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -4327,6 +4468,260 @@ app.post("/api/purchases/:id/cancel", authenticate, (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
+| REPORTS ROUTES - NEW
+|--------------------------------------------------------------------------
+*/
+
+// تقرير المبيعات
+app.get("/api/reports/sales", authenticate, (req, res) => {
+    try {
+        const { start_date, end_date, period } = req.query;
+
+        let dateFormat = '%Y-%m-%d';
+        let groupBy = 'day';
+
+        if (period === 'month') {
+            dateFormat = '%Y-%m';
+            groupBy = 'month';
+        } else if (period === 'year') {
+            dateFormat = '%Y';
+            groupBy = 'year';
+        }
+
+        let query = `
+            SELECT
+                strftime('${dateFormat}', created_at) as date,
+                COUNT(*) as count,
+                COALESCE(SUM(total), 0) as total,
+                COALESCE(SUM(paid), 0) as paid,
+                COALESCE(SUM(total - paid), 0) as balance
+            FROM invoices
+            WHERE status != 'cancelled'
+        `;
+
+        const params = [];
+        if (start_date) {
+            query += ` AND DATE(created_at) >= ?`;
+            params.push(start_date);
+        }
+        if (end_date) {
+            query += ` AND DATE(created_at) <= ?`;
+            params.push(end_date);
+        }
+
+        query += ` GROUP BY date ORDER BY date DESC LIMIT 100`;
+
+        const sales = db.prepare(query).all(...params);
+
+        // إجماليات
+        let totalsQuery = `
+            SELECT
+                COALESCE(SUM(total), 0) as total,
+                COALESCE(SUM(paid), 0) as paid,
+                COALESCE(SUM(total - paid), 0) as balance,
+                COUNT(*) as count
+            FROM invoices
+            WHERE status != 'cancelled'
+        `;
+        
+        const totals = db.prepare(totalsQuery).get();
+
+        res.json({
+            success: true,
+            sales,
+            totals,
+            period: groupBy,
+            start_date: start_date || null,
+            end_date: end_date || null
+        });
+
+    } catch (error) {
+        console.error("SALES REPORT ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// تقرير أرصدة العملاء
+app.get("/api/reports/customer-balances", authenticate, (req, res) => {
+    try {
+        const customers = db.prepare(`
+            SELECT
+                c.id,
+                c.name,
+                c.phone,
+                COUNT(i.id) as invoice_count,
+                COALESCE(SUM(i.total), 0) as total_sales,
+                COALESCE(SUM(i.paid), 0) as total_paid,
+                COALESCE(SUM(i.total - i.paid), 0) as balance
+            FROM customers c
+            LEFT JOIN invoices i ON i.customer_id = c.id AND i.status != 'cancelled'
+            GROUP BY c.id
+            HAVING balance > 0 OR total_sales > 0
+            ORDER BY balance DESC
+        `).all();
+
+        const totalBalance = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+
+        res.json({
+            success: true,
+            customers,
+            totalBalance,
+            count: customers.length
+        });
+
+    } catch (error) {
+        console.error("CUSTOMER BALANCES ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// تقرير أفضل المنتجات مبيعاً
+app.get("/api/reports/top-products", authenticate, (req, res) => {
+    try {
+        const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+        const invoices = db.prepare(`
+            SELECT items_json
+            FROM invoices
+            WHERE status != 'cancelled'
+            AND items_json IS NOT NULL
+            ORDER BY id DESC
+            LIMIT 1000
+        `).all();
+
+        const productSales = {};
+
+        invoices.forEach(inv => {
+            try {
+                const items = JSON.parse(inv.items_json || '[]');
+                items.forEach(item => {
+                    const name = item.name || 'غير معروف';
+                    const qty = Number(item.qty) || 0;
+                    const price = Number(item.price) || 0;
+
+                    if (!productSales[name]) {
+                        productSales[name] = { name, quantity: 0, revenue: 0 };
+                    }
+                    productSales[name].quantity += qty;
+                    productSales[name].revenue += (qty * price);
+                });
+            } catch {
+                // تجاهل الفواتير التي لا يمكن قراءة items_json
+            }
+        });
+
+        const sorted = Object.values(productSales)
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, limit);
+
+        res.json({
+            success: true,
+            products: sorted,
+            total_products: Object.keys(productSales).length
+        });
+
+    } catch (error) {
+        console.error("TOP PRODUCTS ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// تقرير ميزان المراجعة
+app.get("/api/reports/trial-balance", authenticate, (req, res) => {
+    try {
+        const rows = db.prepare(`
+            SELECT
+                account_code,
+                account_name,
+                COALESCE(SUM(debit), 0) AS debit,
+                COALESCE(SUM(credit), 0) AS credit
+            FROM journal_lines
+            GROUP BY account_code, account_name
+            ORDER BY account_code
+        `).all();
+
+        const totals = rows.reduce(
+            (result, row) => {
+                result.debit += Number(row.debit);
+                result.credit += Number(row.credit);
+                return result;
+            },
+            { debit: 0, credit: 0 }
+        );
+
+        res.json({
+            success: true,
+            accounts: rows,
+            totals,
+            balanced: Math.abs(totals.debit - totals.credit) < 0.001
+        });
+
+    } catch (error) {
+        console.error("TRIAL BALANCE ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// تقرير الأرباح
+app.get("/api/reports/profit", authenticate, (req, res) => {
+    try {
+        const sales = db.prepare(`
+            SELECT
+                COALESCE(SUM(total), 0) AS total
+            FROM invoices
+            WHERE status != 'cancelled'
+        `).get().total || 0;
+
+        const purchases = db.prepare(`
+            SELECT
+                COALESCE(SUM(total), 0) AS total
+            FROM purchase_invoices
+            WHERE status != 'cancelled'
+        `).get().total || 0;
+
+        const expenses = db.prepare(`
+            SELECT
+                COALESCE(SUM(amount), 0) AS total
+            FROM expenses
+        `).get().total || 0;
+
+        const grossProfit = Number(sales) - Number(purchases);
+        const netProfit = grossProfit - Number(expenses);
+
+        res.json({
+            success: true,
+            revenue: Number(sales),
+            cost_of_goods_sold: Number(purchases),
+            gross_profit: grossProfit,
+            expenses: Number(expenses),
+            net_profit: netProfit,
+            note: "محرك تكلفة المخزون FIFO / Average Cost سيتم تفعيله في المرحلة التالية"
+        });
+
+    } catch (error) {
+        console.error("PROFIT REPORT ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | DASHBOARD
 |--------------------------------------------------------------------------
 */
@@ -4496,7 +4891,7 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| COMPANY INFO ROUTES - NEW
+| COMPANY INFO ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -4593,7 +4988,7 @@ app.put(
 
 /*
 |--------------------------------------------------------------------------
-| JOURNAL & REPORTS
+| JOURNAL
 |--------------------------------------------------------------------------
 */
 
@@ -4646,168 +5041,6 @@ app.get(
                 success: true,
 
                 entries
-
-            });
-
-        }
-        catch (error) {
-
-            res
-                .status(500)
-                .json({
-
-                    success: false,
-
-                    error:
-                        error.message
-
-                });
-
-        }
-
-    }
-);
-
-
-app.get(
-    "/api/reports/trial-balance",
-    (req, res) => {
-
-        try {
-
-            const rows =
-                db.prepare(`
-                    SELECT
-
-                        account_code,
-
-                        account_name,
-
-                        COALESCE(
-                            SUM(debit),
-                            0
-                        ) AS debit,
-
-                        COALESCE(
-                            SUM(credit),
-                            0
-                        ) AS credit
-
-                    FROM journal_lines
-
-                    GROUP BY
-                        account_code,
-                        account_name
-
-                    ORDER BY
-                        account_code
-                `)
-                .all();
-
-            const totals =
-                rows.reduce(
-
-                    (
-                        result,
-                        row
-                    ) => {
-
-                        result.debit +=
-                            Number(
-                                row.debit
-                            );
-
-                        result.credit +=
-                            Number(
-                                row.credit
-                            );
-
-                        return result;
-
-                    },
-
-                    {
-                        debit: 0,
-                        credit: 0
-                    }
-
-                );
-
-            res.json({
-
-                success: true,
-
-                accounts:
-                    rows,
-
-                totals,
-
-                balanced:
-                    Math.abs(
-                        totals.debit -
-                        totals.credit
-                    ) < 0.001
-
-            });
-
-        }
-        catch (error) {
-
-            res
-                .status(500)
-                .json({
-
-                    success: false,
-
-                    error:
-                        error.message
-
-                });
-
-        }
-
-    }
-);
-
-
-app.get(
-    "/api/reports/profit",
-    (req, res) => {
-
-        try {
-
-            const sales =
-                db.prepare(`
-                    SELECT
-                        COALESCE(
-                            SUM(total),
-                            0
-                        ) AS total
-
-                    FROM invoices
-
-                    WHERE
-                        status !=
-                        'cancelled'
-                `)
-                .get()
-                .total;
-
-            res.json({
-
-                success: true,
-
-                revenue:
-                    Number(sales),
-
-                cost_of_goods_sold:
-                    0,
-
-                gross_profit:
-                    Number(sales),
-
-                note:
-                    "محرك تكلفة المخزون FIFO / Average Cost سيتم تفعيله في المرحلة التالية"
 
             });
 
