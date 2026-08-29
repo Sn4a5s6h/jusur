@@ -3995,6 +3995,338 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
+| PURCHASE INVOICES ROUTES - NEW
+|--------------------------------------------------------------------------
+*/
+
+// إنشاء فاتورة شراء
+app.post("/api/purchases", authenticate, async (req, res) => {
+    try {
+        const { supplier, items, type, due_date, discount, tax } = req.body;
+
+        // التحقق من البيانات
+        if (!supplier) {
+            return res.status(400).json({
+                success: false,
+                error: "اسم المورد مطلوب"
+            });
+        }
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: "يجب إضافة صنف واحد على الأقل"
+            });
+        }
+
+        // الحصول على المورد (أو إنشاؤه)
+        let supplierId = null;
+        let supplierRecord = db.prepare(`
+            SELECT id FROM suppliers WHERE name = ?
+        `).get(supplier);
+
+        if (!supplierRecord) {
+            const result = db.prepare(`
+                INSERT INTO suppliers (name) VALUES (?)
+            `).run(supplier);
+            supplierId = result.lastInsertRowid;
+        } else {
+            supplierId = supplierRecord.id;
+        }
+
+        // حساب الإجمالي
+        let subtotal = 0;
+        const itemsWithPrice = items.map(item => {
+            const itemPrice = Number(item.price) || 0;
+            const itemQty = Number(item.qty) || 0;
+            subtotal += (itemQty * itemPrice);
+            return {
+                ...item,
+                price: itemPrice,
+                qty: itemQty
+            };
+        });
+
+        const total = subtotal - (Number(discount) || 0) + (Number(tax) || 0);
+
+        // إنشاء رقم الفاتورة
+        const invNo = `P-${Date.now()}`;
+        
+        // إدراج الفاتورة
+        const result = db.prepare(`
+            INSERT INTO purchase_invoices (
+                invoice_no,
+                supplier_id,
+                supplier_name,
+                type,
+                due_date,
+                subtotal,
+                discount,
+                tax,
+                total,
+                status,
+                items_json,
+                user_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            invNo,
+            supplierId,
+            supplier,
+            type || 'cash',
+            due_date || null,
+            subtotal,
+            Number(discount) || 0,
+            Number(tax) || 0,
+            total,
+            'active',
+            JSON.stringify(itemsWithPrice),
+            req.user ? req.user.id : null
+        );
+
+        // تحديث المخزون
+        itemsWithPrice.forEach(item => {
+            const product = db.prepare(`
+                SELECT id, stock FROM products WHERE name = ?
+            `).get(item.name);
+
+            if (product) {
+                // تحديث المخزون وسعر الشراء
+                db.prepare(`
+                    UPDATE products
+                    SET stock = stock + ?,
+                        cost_price = ?
+                    WHERE id = ?
+                `).run(item.qty, item.price, product.id);
+            } else {
+                // إنشاء منتج جديد
+                const newProduct = db.prepare(`
+                    INSERT INTO products (name, unit, sale_price, cost_price, stock)
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(
+                    item.name,
+                    item.unit || 'قطعة',
+                    item.price * 1.2,
+                    item.price,
+                    item.qty
+                );
+            }
+        });
+
+        // تسجيل في سجل التدقيق
+        db.prepare(`
+            INSERT INTO audit_logs (action, entity_type, entity_id, details)
+            VALUES (?, ?, ?, ?)
+        `).run(
+            "purchase",
+            "purchase_invoice",
+            Number(result.lastInsertRowid),
+            safeJson({
+                inv_no: invNo,
+                supplier,
+                total,
+                user_id: req.user ? req.user.id : null
+            })
+        );
+
+        res.json({
+            success: true,
+            message: "تم إنشاء فاتورة الشراء بنجاح",
+            invoice: {
+                id: result.lastInsertRowid,
+                inv_no: invNo,
+                supplier,
+                total,
+                items: itemsWithPrice
+            }
+        });
+
+    } catch (error) {
+        console.error("PURCHASE ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// جلب جميع فواتير الشراء
+app.get("/api/purchases", authenticate, (req, res) => {
+    try {
+        const invoices = db.prepare(`
+            SELECT
+                p.*,
+                s.name AS supplier_name
+            FROM purchase_invoices p
+            LEFT JOIN suppliers s ON s.id = p.supplier_id
+            ORDER BY p.id DESC
+            LIMIT 100
+        `).all();
+
+        res.json({
+            success: true,
+            invoices
+        });
+
+    } catch (error) {
+        console.error("PURCHASES LIST ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// جلب فاتورة شراء محددة
+app.get("/api/purchases/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: "معرف الفاتورة غير صحيح"
+            });
+        }
+
+        const invoice = db.prepare(`
+            SELECT
+                p.*,
+                s.name AS supplier_name
+            FROM purchase_invoices p
+            LEFT JOIN suppliers s ON s.id = p.supplier_id
+            WHERE p.id = ?
+        `).get(id);
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                error: "الفاتورة غير موجودة"
+            });
+        }
+
+        let items = [];
+        try {
+            items = JSON.parse(invoice.items_json || '[]');
+        } catch {
+            items = [];
+        }
+
+        res.json({
+            success: true,
+            invoice: {
+                ...invoice,
+                items
+            }
+        });
+
+    } catch (error) {
+        console.error("PURCHASE DETAIL ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// إلغاء فاتورة شراء
+app.post("/api/purchases/:id/cancel", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: "معرف الفاتورة غير صحيح"
+            });
+        }
+
+        const invoice = db.prepare(`
+            SELECT * FROM purchase_invoices WHERE id = ?
+        `).get(id);
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                error: "الفاتورة غير موجودة"
+            });
+        }
+
+        if (invoice.status === 'cancelled') {
+            return res.json({
+                success: true,
+                message: "الفاتورة ملغاة مسبقاً",
+                invoice
+            });
+        }
+
+        // استرجاع المخزون
+        let items = [];
+        try {
+            items = JSON.parse(invoice.items_json || '[]');
+        } catch {
+            items = [];
+        }
+
+        db.transaction(() => {
+            // استرجاع المخزون
+            items.forEach(item => {
+                const product = db.prepare(`
+                    SELECT id FROM products WHERE name = ?
+                `).get(item.name);
+
+                if (product) {
+                    db.prepare(`
+                        UPDATE products
+                        SET stock = stock - ?
+                        WHERE id = ?
+                    `).run(item.qty, product.id);
+                }
+            });
+
+            // تحديث حالة الفاتورة
+            db.prepare(`
+                UPDATE purchase_invoices
+                SET status = 'cancelled'
+                WHERE id = ?
+            `).run(id);
+
+            // تسجيل في سجل التدقيق
+            db.prepare(`
+                INSERT INTO audit_logs (action, entity_type, entity_id, details)
+                VALUES (?, ?, ?, ?)
+            `).run(
+                "cancel_purchase",
+                "purchase_invoice",
+                id,
+                safeJson({
+                    inv_no: invoice.invoice_no,
+                    reason: req.body.reason || "إلغاء فاتورة شراء"
+                })
+            );
+        });
+
+        const updatedInvoice = db.prepare(`
+            SELECT * FROM purchase_invoices WHERE id = ?
+        `).get(id);
+
+        res.json({
+            success: true,
+            message: "تم إلغاء فاتورة الشراء واسترجاع المخزون بنجاح",
+            invoice: updatedInvoice
+        });
+
+    } catch (error) {
+        console.error("CANCEL PURCHASE ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | DASHBOARD
 |--------------------------------------------------------------------------
 */
