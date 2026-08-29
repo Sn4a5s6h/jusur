@@ -433,6 +433,35 @@ CREATE TABLE IF NOT EXISTS products (
 
 /*
 |--------------------------------------------------------------------------
+| CURRENCIES
+|--------------------------------------------------------------------------
+*/
+
+CREATE TABLE IF NOT EXISTS currencies (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    code TEXT NOT NULL UNIQUE,
+
+    name TEXT NOT NULL,
+
+    symbol TEXT,
+
+    exchange_rate REAL DEFAULT 1,
+
+    is_base INTEGER NOT NULL DEFAULT 0,
+
+    is_active INTEGER NOT NULL DEFAULT 1,
+
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+
+);
+
+
+/*
+|--------------------------------------------------------------------------
 | ACCOUNTS / CHART OF ACCOUNTS
 |--------------------------------------------------------------------------
 */
@@ -455,6 +484,8 @@ CREATE TABLE IF NOT EXISTS accounts (
 
     is_active INTEGER NOT NULL DEFAULT 1,
 
+    currency_id INTEGER,
+
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY(company_id)
@@ -463,6 +494,10 @@ CREATE TABLE IF NOT EXISTS accounts (
 
     FOREIGN KEY(parent_id)
         REFERENCES accounts(id)
+        ON DELETE SET NULL,
+
+    FOREIGN KEY(currency_id)
+        REFERENCES currencies(id)
         ON DELETE SET NULL,
 
     UNIQUE(
@@ -1158,6 +1193,13 @@ const migrations = [
         "invoices",
         "company_currency",
         "TEXT DEFAULT 'YER'"
+    ],
+
+    // ✅ NEW: إضافة عمود العملة للحسابات
+    [
+        "accounts",
+        "currency_id",
+        "INTEGER"
     ],
 
     [
@@ -1982,6 +2024,47 @@ if (!fiscalYear) {
 
 /*
 |--------------------------------------------------------------------------
+| DEFAULT CURRENCIES
+|--------------------------------------------------------------------------
+*/
+
+try {
+    const currencyCount = db.prepare(`
+        SELECT COUNT(*) AS count FROM currencies
+    `).get().count;
+    
+    if (currencyCount === 0) {
+        const defaultCurrencies = [
+            { code: 'YER', name: 'ريال يمني', symbol: '﷼', exchange_rate: 1, is_base: 1 },
+            { code: 'USD', name: 'دولار أمريكي', symbol: '$', exchange_rate: 0.004, is_base: 0 },
+            { code: 'SAR', name: 'ريال سعودي', symbol: '﷼', exchange_rate: 0.015, is_base: 0 },
+            { code: 'AED', name: 'درهم إماراتي', symbol: 'د.إ', exchange_rate: 0.015, is_base: 0 },
+        ];
+        
+        const insertCurrency = db.prepare(`
+            INSERT INTO currencies (code, name, symbol, exchange_rate, is_base, is_active)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        for (const currency of defaultCurrencies) {
+            insertCurrency.run(
+                currency.code,
+                currency.name,
+                currency.symbol,
+                currency.exchange_rate,
+                currency.is_base,
+                1
+            );
+        }
+        console.log('✅ تم إنشاء العملات الافتراضية');
+    }
+} catch (error) {
+    console.error('CURRENCY INIT ERROR:', error.message);
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | DEFAULT CHART OF ACCOUNTS
 |--------------------------------------------------------------------------
 */
@@ -2000,84 +2083,128 @@ if (
     Number(accountCount) === 0
 ) {
 
+    // جلب العملة الأساسية
+    const baseCurrency = db.prepare(`
+        SELECT id FROM currencies WHERE is_base = 1 LIMIT 1
+    `).get();
+
     const defaultAccounts = [
 
         [
             "1000",
             "الأصول",
-            "asset"
+            "asset",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "1100",
             "الصندوق",
-            "asset"
+            "asset",
+            "1000",
+            2,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "1200",
             "البنك",
-            "asset"
+            "asset",
+            "1000",
+            2,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "1300",
             "العملاء",
-            "asset"
+            "asset",
+            "1000",
+            2,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "1400",
             "المخزون",
-            "asset"
+            "asset",
+            "1000",
+            2,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "2000",
             "الخصوم",
-            "liability"
+            "liability",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "2100",
             "الموردون",
-            "liability"
+            "liability",
+            "2000",
+            2,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "3000",
             "حقوق الملكية",
-            "equity"
+            "equity",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "4000",
             "المبيعات",
-            "revenue"
+            "revenue",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "5000",
             "تكلفة المبيعات",
-            "expense"
+            "expense",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "5100",
             "المصروفات",
-            "expense"
+            "expense",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "5200",
             "المصروفات الإدارية",
-            "expense"
+            "expense",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ],
 
         [
             "5300",
             "المصروفات التشغيلية",
-            "expense"
+            "expense",
+            null,
+            1,
+            baseCurrency ? baseCurrency.id : null
         ]
 
     ];
@@ -2091,12 +2218,17 @@ if (
                 company_id,
                 code,
                 name,
-                account_type
+                account_type,
+                parent_id,
+                level,
+                currency_id
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
 
         `);
 
+    // خريطة لتخزين معرفات الحسابات حسب الكود
+    const accountMap = {};
 
     const insertAccounts =
         db.transaction(() => {
@@ -2106,17 +2238,23 @@ if (
                 of defaultAccounts
             ) {
 
-                insertAccount.run(
+                const parentCode = account[3];
+                let parentId = null;
+                if (parentCode) {
+                    parentId = accountMap[parentCode] || null;
+                }
 
+                const result = insertAccount.run(
                     company.id,
-
                     account[0],
-
                     account[1],
-
-                    account[2]
-
+                    account[2],
+                    parentId,
+                    account[4],
+                    account[5]
                 );
+
+                accountMap[account[0]] = result.lastInsertRowid;
 
             }
 
