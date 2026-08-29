@@ -19,7 +19,22 @@ const {
     customerStatement,
     getCompanyInfo,
     updateCompanyInfo,
-    loadCompanyInfo
+    loadCompanyInfo,
+    // دوال العملات
+    getCurrencies,
+    getCurrency,
+    createCurrency,
+    updateCurrency,
+    deleteCurrency,
+    // دوال الحسابات
+    getAccounts,
+    getAccountsTree,
+    getAccount,
+    getAccountByCode,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    getAccountBalance
 } = require("./accounting");
 
 const {
@@ -2550,7 +2565,7 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| INVOICE EMAIL ROUTE - NEW
+| INVOICE EMAIL ROUTE
 |--------------------------------------------------------------------------
 */
 
@@ -4468,7 +4483,7 @@ app.post("/api/purchases/:id/cancel", authenticate, (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| REPORTS ROUTES - NEW
+| REPORTS ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -4984,6 +4999,238 @@ app.put(
 
     }
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRENCIES ROUTES - العملات
+|--------------------------------------------------------------------------
+*/
+
+// جلب جميع العملات
+app.get("/api/currencies", authenticate, (req, res) => {
+    try {
+        const currencies = getCurrencies();
+        res.json({
+            success: true,
+            currencies
+        });
+    } catch (error) {
+        console.error("CURRENCIES ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// جلب عملة محددة
+app.get("/api/currencies/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const currency = getCurrency(id);
+        
+        if (!currency) {
+            return res.status(404).json({
+                success: false,
+                error: "العملة غير موجودة"
+            });
+        }
+        
+        res.json({
+            success: true,
+            currency
+        });
+    } catch (error) {
+        console.error("CURRENCY ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// إنشاء عملة جديدة
+app.post("/api/currencies", authenticate, (req, res) => {
+    try {
+        const currency = createCurrency(req.body);
+        res.json({
+            success: true,
+            message: "تم إنشاء العملة بنجاح",
+            currency
+        });
+    } catch (error) {
+        console.error("CREATE CURRENCY ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// تحديث عملة
+app.put("/api/currencies/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const currency = updateCurrency(id, req.body);
+        res.json({
+            success: true,
+            message: "تم تحديث العملة بنجاح",
+            currency
+        });
+    } catch (error) {
+        console.error("UPDATE CURRENCY ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// حذف عملة
+app.delete("/api/currencies/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        deleteCurrency(id);
+        res.json({
+            success: true,
+            message: "تم حذف العملة بنجاح"
+        });
+    } catch (error) {
+        console.error("DELETE CURRENCY ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| CHART OF ACCOUNTS ROUTES - شجرة الحسابات
+|--------------------------------------------------------------------------
+*/
+
+// جلب جميع الحسابات
+app.get("/api/accounts", authenticate, (req, res) => {
+    try {
+        const tree = req.query.tree === 'true';
+        const accounts = tree ? getAccountsTree() : getAccounts();
+        
+        res.json({
+            success: true,
+            accounts
+        });
+    } catch (error) {
+        console.error("ACCOUNTS ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// جلب حساب محدد
+app.get("/api/accounts/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const account = getAccount(id);
+        
+        if (!account) {
+            return res.status(404).json({
+                success: false,
+                error: "الحساب غير موجود"
+            });
+        }
+        
+        res.json({
+            success: true,
+            account
+        });
+    } catch (error) {
+        console.error("ACCOUNT ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// إنشاء حساب جديد
+app.post("/api/accounts", authenticate, (req, res) => {
+    try {
+        const account = createAccount(req.body);
+        res.json({
+            success: true,
+            message: "تم إنشاء الحساب بنجاح",
+            account
+        });
+    } catch (error) {
+        console.error("CREATE ACCOUNT ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// تحديث حساب
+app.put("/api/accounts/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const account = updateAccount(id, req.body);
+        res.json({
+            success: true,
+            message: "تم تحديث الحساب بنجاح",
+            account
+        });
+    } catch (error) {
+        console.error("UPDATE ACCOUNT ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// حذف حساب
+app.delete("/api/accounts/:id", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        deleteAccount(id);
+        res.json({
+            success: true,
+            message: "تم حذف الحساب بنجاح"
+        });
+    } catch (error) {
+        console.error("DELETE ACCOUNT ERROR:", error);
+        res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// جلب رصيد حساب
+app.get("/api/accounts/:id/balance", authenticate, (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const fiscal_year_id = Number(req.query.fiscal_year_id) || null;
+        const balance = getAccountBalance(id, fiscal_year_id);
+        
+        res.json({
+            success: true,
+            balance
+        });
+    } catch (error) {
+        console.error("ACCOUNT BALANCE ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 
 
 /*
