@@ -6,10 +6,137 @@ let authToken = null;
 let currentParsed = null;
 
 // ============================================
-// المصادقة
+// LOCAL STORAGE - التخزين المحلي
 // ============================================
 
-async function login(username, password) {
+const STORAGE_KEYS = {
+    TOKEN: 'jusoor_token',
+    USER: 'jusoor_user',
+    INVOICES: 'jusoor_invoices',
+    CUSTOMERS: 'jusoor_customers',
+    PRODUCTS: 'jusoor_products',
+    SUPPLIERS: 'jusoor_suppliers',
+    PURCHASES: 'jusoor_purchases',
+    SETTINGS: 'jusoor_settings',
+    REMEMBER_ME: 'jusoor_remember_me'
+};
+
+// حفظ البيانات في LocalStorage
+function saveToLocalStorage(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+        return true;
+    } catch (error) {
+        console.error('Save to localStorage error:', error);
+        return false;
+    }
+}
+
+// جلب البيانات من LocalStorage
+function getFromLocalStorage(key) {
+    try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Get from localStorage error:', error);
+        return null;
+    }
+}
+
+// حذف بيانات من LocalStorage
+function removeFromLocalStorage(key) {
+    try {
+        localStorage.removeItem(key);
+        return true;
+    } catch (error) {
+        console.error('Remove from localStorage error:', error);
+        return false;
+    }
+}
+
+// مسح جميع بيانات التطبيق
+function clearAllLocalData() {
+    Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+    });
+    console.log('🗑️ تم مسح جميع البيانات المحلية');
+    showToast('تم مسح جميع البيانات المحلية', 'info');
+}
+
+// ============================================
+// حفظ جلسة المستخدم (تذكرني)
+// ============================================
+
+function saveUserSession(user, token, remember = true) {
+    if (remember) {
+        saveToLocalStorage(STORAGE_KEYS.USER, user);
+        saveToLocalStorage(STORAGE_KEYS.TOKEN, token);
+        saveToLocalStorage(STORAGE_KEYS.REMEMBER_ME, true);
+    }
+}
+
+function getUserSession() {
+    const user = getFromLocalStorage(STORAGE_KEYS.USER);
+    const token = getFromLocalStorage(STORAGE_KEYS.TOKEN);
+    const remember = getFromLocalStorage(STORAGE_KEYS.REMEMBER_ME);
+    return { user, token, remember };
+}
+
+function clearUserSession() {
+    removeFromLocalStorage(STORAGE_KEYS.USER);
+    removeFromLocalStorage(STORAGE_KEYS.TOKEN);
+    removeFromLocalStorage(STORAGE_KEYS.REMEMBER_ME);
+}
+
+// ============================================
+// حفظ المعاملات محلياً
+// ============================================
+
+function saveInvoicesLocally(invoices) {
+    return saveToLocalStorage(STORAGE_KEYS.INVOICES, invoices);
+}
+
+function getInvoicesLocally() {
+    return getFromLocalStorage(STORAGE_KEYS.INVOICES) || [];
+}
+
+function saveCustomersLocally(customers) {
+    return saveToLocalStorage(STORAGE_KEYS.CUSTOMERS, customers);
+}
+
+function getCustomersLocally() {
+    return getFromLocalStorage(STORAGE_KEYS.CUSTOMERS) || [];
+}
+
+function saveProductsLocally(products) {
+    return saveToLocalStorage(STORAGE_KEYS.PRODUCTS, products);
+}
+
+function getProductsLocally() {
+    return getFromLocalStorage(STORAGE_KEYS.PRODUCTS) || [];
+}
+
+function saveSuppliersLocally(suppliers) {
+    return saveToLocalStorage(STORAGE_KEYS.SUPPLIERS, suppliers);
+}
+
+function getSuppliersLocally() {
+    return getFromLocalStorage(STORAGE_KEYS.SUPPLIERS) || [];
+}
+
+function savePurchasesLocally(purchases) {
+    return saveToLocalStorage(STORAGE_KEYS.PURCHASES, purchases);
+}
+
+function getPurchasesLocally() {
+    return getFromLocalStorage(STORAGE_KEYS.PURCHASES) || [];
+}
+
+// ============================================
+// دالة تسجيل الدخول (معدلة)
+// ============================================
+
+async function login(username, password, remember = true) {
     try {
         const response = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
@@ -17,20 +144,18 @@ async function login(username, password) {
             body: JSON.stringify({ username, password })
         });
         const data = await response.json();
+        
         if (data.success) {
             authToken = data.token;
             currentUser = data.user;
-            localStorage.setItem('token', authToken);
-            localStorage.setItem('user', JSON.stringify(currentUser));
+            
+            // ✅ حفظ الجلسة محلياً
+            saveUserSession(currentUser, authToken, remember);
+            
             showApp();
-            loadDashboard();
-            loadCustomers();
-            loadProducts();
-            loadInvoices();
-            loadPurchases();
-            loadSuppliers();
-            loadAudit();
-            loadSettings();
+            await loadAllData();
+            
+            showToast('تم تسجيل الدخول بنجاح ✅', 'success');
         } else {
             showToast(data.error || 'فشل تسجيل الدخول', 'error');
         }
@@ -61,8 +186,7 @@ async function register(username, password, name) {
 }
 
 function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearUserSession();
     currentUser = null;
     authToken = null;
     showLogin();
@@ -74,6 +198,221 @@ function getHeaders() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`
     };
+}
+
+// ============================================
+// تحميل جميع البيانات وتخزينها محلياً
+// ============================================
+
+async function loadAllData() {
+    try {
+        // تحميل وحفظ الفواتير
+        const invoicesRes = await fetch(`${API_BASE}/invoices`, {
+            headers: getHeaders()
+        });
+        const invoicesData = await invoicesRes.json();
+        if (invoicesData.success) {
+            saveInvoicesLocally(invoicesData.invoices);
+        }
+
+        // تحميل وحفظ العملاء
+        const customersRes = await fetch(`${API_BASE}/customers`, {
+            headers: getHeaders()
+        });
+        const customersData = await customersRes.json();
+        if (customersData.success) {
+            saveCustomersLocally(customersData.customers);
+        }
+
+        // تحميل وحفظ المنتجات
+        const productsRes = await fetch(`${API_BASE}/products`, {
+            headers: getHeaders()
+        });
+        const productsData = await productsRes.json();
+        if (productsData.success) {
+            saveProductsLocally(productsData.products);
+        }
+
+        // تحميل وحفظ الموردين
+        const suppliersRes = await fetch(`${API_BASE}/suppliers`, {
+            headers: getHeaders()
+        });
+        const suppliersData = await suppliersRes.json();
+        if (suppliersData.success) {
+            saveSuppliersLocally(suppliersData.suppliers);
+        }
+
+        // تحميل وحفظ فواتير الشراء
+        const purchasesRes = await fetch(`${API_BASE}/purchases`, {
+            headers: getHeaders()
+        });
+        const purchasesData = await purchasesRes.json();
+        if (purchasesData.success) {
+            savePurchasesLocally(purchasesData.invoices);
+        }
+
+        // تحديث لوحة التحكم
+        await loadDashboard();
+
+        console.log('✅ تم حفظ جميع البيانات محلياً');
+    } catch (error) {
+        console.error('Load all data error:', error);
+        // استخدام البيانات المحلية في حالة فشل الخادم
+        loadFromLocalBackup();
+    }
+}
+
+// ============================================
+// تحميل البيانات من النسخة الاحتياطية المحلية
+// ============================================
+
+function loadFromLocalBackup() {
+    const invoices = getInvoicesLocally();
+    const customers = getCustomersLocally();
+    const products = getProductsLocally();
+    const suppliers = getSuppliersLocally();
+    const purchases = getPurchasesLocally();
+
+    if (invoices.length > 0) {
+        renderInvoices(invoices);
+        console.log(`📄 تم تحميل ${invoices.length} فاتورة من النسخة المحلية`);
+    }
+
+    if (customers.length > 0) {
+        renderCustomers(customers);
+        console.log(`👤 تم تحميل ${customers.length} عميل من النسخة المحلية`);
+    }
+
+    if (products.length > 0) {
+        renderProducts(products);
+        console.log(`📦 تم تحميل ${products.length} منتج من النسخة المحلية`);
+    }
+
+    if (suppliers.length > 0) {
+        renderSuppliers(suppliers);
+        console.log(`🚚 تم تحميل ${suppliers.length} مورد من النسخة المحلية`);
+    }
+
+    if (purchases.length > 0) {
+        renderPurchases(purchases);
+        console.log(`📥 تم تحميل ${purchases.length} فاتورة شراء من النسخة المحلية`);
+    }
+
+    showToast('تم تحميل البيانات من النسخة الاحتياطية المحلية', 'info');
+}
+
+// ============================================
+// دوال العرض للنسخة المحلية
+// ============================================
+
+function renderCustomers(customers) {
+    const tbody = document.getElementById('customersList');
+    if (!tbody) return;
+    
+    if (!customers || customers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا يوجد عملاء</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = customers.map(c => `
+        <tr>
+            <td><strong>${c.name}</strong></td>
+            <td>${c.phone || '-'}</td>
+            <td>${c.address || '-'}</td>
+            <td>${c.balance || 0}</td>
+            <td>
+                <button onclick="viewCustomer(${c.id})" class="btn-sm btn-info">👁️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderProducts(products) {
+    const tbody = document.getElementById('productsList');
+    if (!tbody) return;
+    
+    if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">لا يوجد منتجات</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = products.map(p => `
+        <tr>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.unit || 'قطعة'}</td>
+            <td>${p.sale_price || 0}</td>
+            <td>${p.cost_price || 0}</td>
+            <td>${p.stock || 0}</td>
+            <td>
+                <button onclick="adjustStock(${p.id})" class="btn-sm btn-primary">📦</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderSuppliers(suppliers) {
+    const tbody = document.getElementById('suppliersList');
+    if (!tbody) return;
+    
+    if (!suppliers || suppliers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">لا يوجد موردين</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = suppliers.map(s => `
+        <tr>
+            <td><strong>${s.name}</strong></td>
+            <td>${s.phone || '-'}</td>
+            <td>${s.address || '-'}</td>
+            <td>${s.balance || 0}</td>
+        </tr>
+    `).join('');
+}
+
+function renderInvoices(invoices) {
+    const tbody = document.getElementById('invoicesList');
+    if (!tbody) return;
+    
+    if (!invoices || invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">لا يوجد فواتير</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = invoices.map(i => `
+        <tr>
+            <td><strong>${i.inv_no}</strong></td>
+            <td>${i.customer_name || '-'}</td>
+            <td>${i.total || 0}</td>
+            <td>${i.paid || 0}</td>
+            <td><span class="status ${i.status}">${i.status}</span></td>
+            <td>${new Date(i.created_at).toLocaleDateString('ar')}</td>
+            <td>
+                <button onclick="viewInvoice(${i.id})" class="btn-sm btn-info">👁️</button>
+                ${i.status !== 'cancelled' ? `<button onclick="cancelInvoice(${i.id})" class="btn-sm btn-danger">🗑️</button>` : ''}
+                ${i.pdf_path ? `<button onclick="downloadPDF('${i.inv_no}')" class="btn-sm btn-success">📄</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderPurchases(purchases) {
+    const tbody = document.getElementById('purchasesList');
+    if (!tbody) return;
+    
+    if (!purchases || purchases.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا يوجد فواتير شراء</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = purchases.map(i => `
+        <tr>
+            <td><strong>${i.inv_no}</strong></td>
+            <td>${i.supplier_name || '-'}</td>
+            <td>${i.total || 0}</td>
+            <td>${i.status}</td>
+            <td>${new Date(i.created_at).toLocaleDateString('ar')}</td>
+        </tr>
+    `).join('');
 }
 
 // ============================================
@@ -103,6 +442,14 @@ function showApp() {
     
     // ✅ إظهار القسم الافتراضي
     showSection('dashboard');
+    
+    // ✅ تحميل البيانات من النسخة المحلية أولاً (للسرعة)
+    loadFromLocalBackup();
+    
+    // ✅ ثم محاولة تحديث البيانات من الخادم
+    loadAllData().catch(() => {
+        console.log('⚠️ استخدام البيانات المحلية فقط');
+    });
 }
 
 function showSection(sectionId) {
@@ -172,13 +519,14 @@ function showToast(message, type = 'info') {
 function handleLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
+    const remember = document.getElementById('rememberMe')?.checked || true;
     
     if (!username || !password) {
         showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'warning');
         return;
     }
     
-    login(username, password);
+    login(username, password, remember);
 }
 
 function handleRegister() {
@@ -282,7 +630,26 @@ async function loadDashboard() {
         }
     } catch (error) {
         console.error('Dashboard error:', error);
+        // استخدام البيانات المحلية
+        updateDashboardFromLocal();
     }
+}
+
+function updateDashboardFromLocal() {
+    const invoices = getInvoicesLocally();
+    const customers = getCustomersLocally();
+    const products = getProductsLocally();
+    const payments = getFromLocalStorage(STORAGE_KEYS.PAYMENTS) || [];
+    
+    const totalSales = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    const totalReceivables = invoices.reduce((sum, inv) => sum + ((inv.total || 0) - (inv.paid || 0)), 0);
+    
+    document.getElementById('statSales').textContent = totalSales;
+    document.getElementById('statReceivables').textContent = totalReceivables;
+    document.getElementById('statCustomers').textContent = customers.length;
+    document.getElementById('statProducts').textContent = products.length;
+    document.getElementById('statInvoices').textContent = invoices.length;
+    document.getElementById('statPayments').textContent = payments.length;
 }
 
 // ============================================
@@ -338,6 +705,10 @@ function displayResult(parsed) {
     document.getElementById('aiCommitBtn').style.display = parsed.ready ? 'inline-block' : 'none';
 }
 
+// ============================================
+// حفظ المعاملة محلياً بعد الإضافة
+// ============================================
+
 async function commitTransaction(parsed) {
     try {
         const response = await fetch(`${API_BASE}/transactions/commit`, {
@@ -346,17 +717,67 @@ async function commitTransaction(parsed) {
             body: JSON.stringify({ parsed })
         });
         const data = await response.json();
+        
         if (data.success) {
+            // ✅ إضافة الفاتورة إلى التخزين المحلي
+            const localInvoices = getInvoicesLocally();
+            const newInvoice = {
+                ...data.invoice,
+                id: Date.now(),
+                created_at: new Date().toISOString()
+            };
+            localInvoices.unshift(newInvoice);
+            saveInvoicesLocally(localInvoices);
+
+            // ✅ إضافة العميل إذا كان جديداً
+            if (parsed.customer) {
+                const localCustomers = getCustomersLocally();
+                const existing = localCustomers.find(c => c.name === parsed.customer);
+                if (!existing) {
+                    localCustomers.unshift({
+                        id: Date.now() + 1,
+                        name: parsed.customer,
+                        phone: parsed.customer_phone || null,
+                        balance: 0
+                    });
+                    saveCustomersLocally(localCustomers);
+                }
+            }
+
+            // ✅ تحديث المنتجات محلياً
+            if (parsed.items) {
+                const localProducts = getProductsLocally();
+                parsed.items.forEach(item => {
+                    const existing = localProducts.find(p => p.name === item.name);
+                    if (existing) {
+                        existing.stock = (existing.stock || 0) - (item.qty || 0);
+                    } else {
+                        localProducts.push({
+                            id: Date.now() + 2,
+                            name: item.name,
+                            unit: item.unit || 'قطعة',
+                            sale_price: item.price || 0,
+                            stock: 0
+                        });
+                    }
+                });
+                saveProductsLocally(localProducts);
+            }
+
             showToast('تم حفظ المعاملة بنجاح ✅', 'success');
             document.getElementById('aiResult').innerHTML = `
                 <div style="background:#d4edda; padding:15px; border-radius:8px; color:#155724;">
-                    ✅ تم حفظ المعاملة بنجاح<br>
+                    ✅ تم حفظ المعاملة بنجاح (محلياً وعلى الخادم)<br>
                     رقم الفاتورة: ${data.invoice?.inv_no || 'N/A'}
                 </div>
             `;
             document.getElementById('aiCommitBtn').style.display = 'none';
+            
+            // تحديث الواجهة
             loadInvoices();
             loadDashboard();
+            loadCustomers();
+            loadProducts();
         } else {
             showToast(data.error || 'فشل حفظ المعاملة', 'error');
         }
@@ -377,25 +798,16 @@ async function loadCustomers() {
         });
         const data = await response.json();
         if (data.success) {
-            const tbody = document.getElementById('customersList');
-            if (!data.customers || data.customers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا يوجد عملاء</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.customers.map(c => `
-                <tr>
-                    <td><strong>${c.name}</strong></td>
-                    <td>${c.phone || '-'}</td>
-                    <td>${c.address || '-'}</td>
-                    <td>${c.balance || 0}</td>
-                    <td>
-                        <button onclick="viewCustomer(${c.id})" class="btn-sm btn-info">👁️</button>
-                    </td>
-                </tr>
-            `).join('');
+            renderCustomers(data.customers);
+            saveCustomersLocally(data.customers);
         }
     } catch (error) {
         console.error('Load customers error:', error);
+        // استخدام البيانات المحلية
+        const localCustomers = getCustomersLocally();
+        if (localCustomers.length > 0) {
+            renderCustomers(localCustomers);
+        }
     }
 }
 
@@ -408,6 +820,14 @@ async function addCustomer(name, phone, address) {
         });
         const data = await response.json();
         if (data.success) {
+            // إضافة للنسخة المحلية
+            const localCustomers = getCustomersLocally();
+            localCustomers.unshift({
+                ...data.customer,
+                balance: 0
+            });
+            saveCustomersLocally(localCustomers);
+            
             showToast('تم إضافة العميل بنجاح ✅', 'success');
             document.getElementById('customerForm').reset();
             loadCustomers();
@@ -432,22 +852,15 @@ async function loadSuppliers() {
         });
         const data = await response.json();
         if (data.success) {
-            const tbody = document.getElementById('suppliersList');
-            if (!data.suppliers || data.suppliers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">لا يوجد موردين</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.suppliers.map(s => `
-                <tr>
-                    <td><strong>${s.name}</strong></td>
-                    <td>${s.phone || '-'}</td>
-                    <td>${s.address || '-'}</td>
-                    <td>${s.balance || 0}</td>
-                </tr>
-            `).join('');
+            renderSuppliers(data.suppliers);
+            saveSuppliersLocally(data.suppliers);
         }
     } catch (error) {
         console.error('Load suppliers error:', error);
+        const localSuppliers = getSuppliersLocally();
+        if (localSuppliers.length > 0) {
+            renderSuppliers(localSuppliers);
+        }
     }
 }
 
@@ -460,6 +873,10 @@ async function addSupplier(name, phone, address) {
         });
         const data = await response.json();
         if (data.success) {
+            const localSuppliers = getSuppliersLocally();
+            localSuppliers.unshift(data.supplier);
+            saveSuppliersLocally(localSuppliers);
+            
             showToast('تم إضافة المورد بنجاح ✅', 'success');
             document.getElementById('supplierForm').reset();
             loadSuppliers();
@@ -483,26 +900,15 @@ async function loadProducts() {
         });
         const data = await response.json();
         if (data.success) {
-            const tbody = document.getElementById('productsList');
-            if (!data.products || data.products.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">لا يوجد منتجات</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.products.map(p => `
-                <tr>
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.unit || 'قطعة'}</td>
-                    <td>${p.sale_price || 0}</td>
-                    <td>${p.cost_price || 0}</td>
-                    <td>${p.stock || 0}</td>
-                    <td>
-                        <button onclick="adjustStock(${p.id})" class="btn-sm btn-primary">📦</button>
-                    </td>
-                </tr>
-            `).join('');
+            renderProducts(data.products);
+            saveProductsLocally(data.products);
         }
     } catch (error) {
         console.error('Load products error:', error);
+        const localProducts = getProductsLocally();
+        if (localProducts.length > 0) {
+            renderProducts(localProducts);
+        }
     }
 }
 
@@ -515,6 +921,10 @@ async function addProduct(name, unit, salePrice, costPrice, stock) {
         });
         const data = await response.json();
         if (data.success) {
+            const localProducts = getProductsLocally();
+            localProducts.unshift(data.product);
+            saveProductsLocally(localProducts);
+            
             showToast('تم إضافة المنتج بنجاح ✅', 'success');
             document.getElementById('productForm').reset();
             loadProducts();
@@ -546,6 +956,13 @@ window.adjustStock = function(id) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
+            // تحديث النسخة المحلية
+            const localProducts = getProductsLocally();
+            const product = localProducts.find(p => p.id === id);
+            if (product) {
+                product.stock = (product.stock || 0) + qty;
+                saveProductsLocally(localProducts);
+            }
             showToast('تم تحديث المخزون بنجاح ✅', 'success');
             loadProducts();
         } else {
@@ -569,29 +986,15 @@ async function loadInvoices() {
         });
         const data = await response.json();
         if (data.success) {
-            const tbody = document.getElementById('invoicesList');
-            if (!data.invoices || data.invoices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">لا يوجد فواتير</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.invoices.map(i => `
-                <tr>
-                    <td><strong>${i.inv_no}</strong></td>
-                    <td>${i.customer_name || '-'}</td>
-                    <td>${i.total || 0}</td>
-                    <td>${i.paid || 0}</td>
-                    <td><span class="status ${i.status}">${i.status}</span></td>
-                    <td>${new Date(i.created_at).toLocaleDateString('ar')}</td>
-                    <td>
-                        <button onclick="viewInvoice(${i.id})" class="btn-sm btn-info">👁️</button>
-                        ${i.status !== 'cancelled' ? `<button onclick="cancelInvoice(${i.id})" class="btn-sm btn-danger">🗑️</button>` : ''}
-                        ${i.pdf_path ? `<button onclick="downloadPDF('${i.inv_no}')" class="btn-sm btn-success">📄</button>` : ''}
-                    </td>
-                </tr>
-            `).join('');
+            renderInvoices(data.invoices);
+            saveInvoicesLocally(data.invoices);
         }
     } catch (error) {
         console.error('Load invoices error:', error);
+        const localInvoices = getInvoicesLocally();
+        if (localInvoices.length > 0) {
+            renderInvoices(localInvoices);
+        }
     }
 }
 
@@ -604,6 +1007,14 @@ async function cancelInvoice(id) {
         });
         const data = await response.json();
         if (data.success) {
+            // تحديث النسخة المحلية
+            const localInvoices = getInvoicesLocally();
+            const index = localInvoices.findIndex(inv => inv.id === id);
+            if (index !== -1) {
+                localInvoices[index].status = 'cancelled';
+                saveInvoicesLocally(localInvoices);
+            }
+            
             showToast('تم إلغاء الفاتورة بنجاح ✅', 'success');
             loadInvoices();
             loadProducts();
@@ -689,6 +1100,32 @@ async function submitPurchase() {
         });
         const data = await response.json();
         if (data.success) {
+            // تحديث النسخة المحلية
+            const localPurchases = getPurchasesLocally();
+            localPurchases.unshift({
+                ...data.invoice,
+                id: Date.now()
+            });
+            savePurchasesLocally(localPurchases);
+            
+            // تحديث المنتجات محلياً
+            const localProducts = getProductsLocally();
+            items.forEach(item => {
+                const product = localProducts.find(p => p.name === item.name);
+                if (product) {
+                    product.stock = (product.stock || 0) + (item.qty || 0);
+                } else {
+                    localProducts.push({
+                        id: Date.now() + 3,
+                        name: item.name,
+                        unit: item.unit || 'قطعة',
+                        sale_price: item.price * 1.2 || 0,
+                        stock: item.qty || 0
+                    });
+                }
+            });
+            saveProductsLocally(localProducts);
+            
             showToast('تم إنشاء فاتورة الشراء بنجاح ✅', 'success');
             document.getElementById('purchaseForm').reset();
             document.getElementById('purchaseItemsContainer').innerHTML = '';
@@ -711,23 +1148,15 @@ async function loadPurchases() {
         });
         const data = await response.json();
         if (data.success) {
-            const tbody = document.getElementById('purchasesList');
-            if (!data.invoices || data.invoices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا يوجد فواتير شراء</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.invoices.map(i => `
-                <tr>
-                    <td><strong>${i.inv_no}</strong></td>
-                    <td>${i.supplier_name || '-'}</td>
-                    <td>${i.total || 0}</td>
-                    <td>${i.status}</td>
-                    <td>${new Date(i.created_at).toLocaleDateString('ar')}</td>
-                </tr>
-            `).join('');
+            renderPurchases(data.invoices);
+            savePurchasesLocally(data.invoices);
         }
     } catch (error) {
         console.error('Load purchases error:', error);
+        const localPurchases = getPurchasesLocally();
+        if (localPurchases.length > 0) {
+            renderPurchases(localPurchases);
+        }
     }
 }
 
@@ -800,6 +1229,11 @@ async function saveSetting(key, value) {
         });
         const data = await response.json();
         if (data.success) {
+            // حفظ الإعدادات محلياً
+            const settings = getFromLocalStorage(STORAGE_KEYS.SETTINGS) || {};
+            settings[key] = value;
+            saveToLocalStorage(STORAGE_KEYS.SETTINGS, settings);
+            
             showToast('تم حفظ الإعداد بنجاح ✅', 'success');
         } else {
             showToast(data.error || 'فشل حفظ الإعداد', 'error');
@@ -811,7 +1245,24 @@ async function saveSetting(key, value) {
 }
 
 async function loadSettings() {
-    // يتم تحميل الإعدادات عند الحاجة
+    try {
+        const settings = getFromLocalStorage(STORAGE_KEYS.SETTINGS) || {};
+        
+        // تحميل الإعدادات المحلية
+        const companyName = document.getElementById('setting_company_name');
+        const companyPhone = document.getElementById('setting_company_phone');
+        const smtpHost = document.getElementById('setting_smtp_host');
+        const smtpPort = document.getElementById('setting_smtp_port');
+        const smtpUser = document.getElementById('setting_smtp_user');
+        
+        if (companyName) companyName.value = settings.company_name || '';
+        if (companyPhone) companyPhone.value = settings.company_phone || '';
+        if (smtpHost) smtpHost.value = settings.smtp_host || '';
+        if (smtpPort) smtpPort.value = settings.smtp_port || '';
+        if (smtpUser) smtpUser.value = settings.smtp_user || '';
+    } catch (error) {
+        console.error('Load settings error:', error);
+    }
 }
 
 async function saveSettings() {
@@ -846,6 +1297,19 @@ async function recordPayment(invoiceId, amount, method, reference) {
         });
         const data = await response.json();
         if (data.success) {
+            // تحديث النسخة المحلية
+            const localInvoices = getInvoicesLocally();
+            const invoice = localInvoices.find(inv => inv.id === invoiceId);
+            if (invoice) {
+                invoice.paid = (invoice.paid || 0) + amount;
+                if (invoice.paid >= invoice.total) {
+                    invoice.status = 'paid';
+                } else {
+                    invoice.status = 'partially_paid';
+                }
+                saveInvoicesLocally(localInvoices);
+            }
+            
             showToast('تم تسجيل الدفعة بنجاح ✅', 'success');
             loadInvoices();
         } else {
@@ -858,39 +1322,81 @@ async function recordPayment(invoiceId, amount, method, reference) {
 }
 
 // ============================================
+// دوال تصدير واستيراد البيانات
+// ============================================
+
+// تصدير البيانات إلى ملف JSON
+function exportData() {
+    const data = {
+        invoices: getInvoicesLocally(),
+        customers: getCustomersLocally(),
+        products: getProductsLocally(),
+        suppliers: getSuppliersLocally(),
+        purchases: getPurchasesLocally(),
+        exportedAt: new Date().toISOString(),
+        version: '4.0.0'
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jusoor_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('تم تصدير البيانات بنجاح 📤', 'success');
+}
+
+// استيراد البيانات من ملف JSON
+function importData(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (data.invoices) saveInvoicesLocally(data.invoices);
+            if (data.customers) saveCustomersLocally(data.customers);
+            if (data.products) saveProductsLocally(data.products);
+            if (data.suppliers) saveSuppliersLocally(data.suppliers);
+            if (data.purchases) savePurchasesLocally(data.purchases);
+            
+            showToast('تم استيراد البيانات بنجاح 📥', 'success');
+            location.reload();
+        } catch (error) {
+            console.error('Import error:', error);
+            showToast('خطأ في استيراد البيانات', 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// ============================================
 // التهيئة
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    // ✅ التحقق من الجلسة المحلية أولاً
+    const { user, token, remember } = getUserSession();
     
-    if (savedToken && savedUser) {
-        try {
-            authToken = savedToken;
-            currentUser = JSON.parse(savedUser);
-            showApp();
-            loadDashboard();
-            loadCustomers();
-            loadProducts();
-            loadInvoices();
-            loadPurchases();
-            loadSuppliers();
-            loadAudit();
-            loadSettings();
-            
-            // تحديث التاريخ
-            const dateEl = document.getElementById('dashboardDate');
-            if (dateEl) {
-                dateEl.textContent = new Date().toLocaleDateString('ar', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
-            }
-        } catch (e) {
-            console.error('Init error:', e);
-            showLogin();
+    if (user && token && remember) {
+        authToken = token;
+        currentUser = user;
+        showApp();
+        
+        // محاولة تحميل البيانات من الخادم، مع استخدام النسخة المحلية كاحتياطي
+        loadAllData().catch(() => {
+            loadFromLocalBackup();
+        });
+        
+        // تحديث التاريخ
+        const dateEl = document.getElementById('dashboardDate');
+        if (dateEl) {
+            dateEl.textContent = new Date().toLocaleDateString('ar', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
         }
     } else {
         showLogin();
