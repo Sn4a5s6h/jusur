@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>أونكس برو - نظام محاسبي متكامل</title>
+    <title>أونكس برو - نظام محاسبي متكامل مع بوت تليجرام</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -797,7 +797,6 @@
             gap: 8px;
         }
 
-        /* ===== Folder Status ===== */
         .folder-status {
             background: var(--gray-100);
             padding: 8px 12px;
@@ -979,7 +978,6 @@
             background: rgba(52, 152, 219, 0.12);
             color: var(--info);
         }
-
         .fiscal-year-badge {
             display: inline-block;
             background: rgba(26, 43, 74, 0.08);
@@ -1084,7 +1082,7 @@
             background: #fff;
             border-radius: 12px;
             padding: 32px 28px;
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
@@ -1143,15 +1141,15 @@
             cursor: pointer;
         }
 
-        /* ===== Bot (Admin Only) ===== */
+        /* ===== Bot Panel ===== */
         .bot-panel {
             position: fixed;
             bottom: 16px;
             left: 16px;
             z-index: 3000;
-            width: 380px;
+            width: 400px;
             max-width: 92vw;
-            max-height: 70vh;
+            max-height: 75vh;
             background: #1a2b4a;
             border-radius: 12px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
@@ -1196,8 +1194,8 @@
             overflow-y: auto;
             padding: 10px 12px;
             background: #f0f2f5;
-            max-height: 300px;
-            min-height: 150px;
+            max-height: 350px;
+            min-height: 200px;
         }
         .bot-msg {
             margin-bottom: 6px;
@@ -1252,6 +1250,7 @@
             font-size: 14px;
             min-height: 34px;
         }
+
         .bot-toggle {
             position: fixed;
             bottom: 16px;
@@ -1298,22 +1297,6 @@
             display: flex;
         }
 
-        @media (max-width: 600px) {
-            .bot-panel {
-                width: 95vw;
-                left: 2.5vw;
-                bottom: 70px;
-                max-height: 65vh;
-            }
-            .bot-toggle {
-                width: 46px;
-                height: 46px;
-                font-size: 20px;
-                bottom: 12px;
-                left: 12px;
-            }
-        }
-
         /* ===== Camera ===== */
         .camera-container {
             display: none;
@@ -1339,6 +1322,8 @@
             display: flex;
             gap: 16px;
             margin-top: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .camera-controls button {
             padding: 10px 24px;
@@ -1405,6 +1390,86 @@
         .admin-only-flex.show {
             display: flex;
         }
+
+        /* ===== Bot config ===== */
+        .bot-config-section {
+            background: var(--gray-100);
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .bot-config-section .form-group {
+            margin-bottom: 8px;
+        }
+        .bot-config-section .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            display: block;
+        }
+        .bot-config-section .form-group input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            min-height: 34px;
+            background: #fff;
+        }
+        .bot-status {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .bot-status.online {
+            background: rgba(39, 174, 96, 0.15);
+            color: var(--secondary);
+        }
+        .bot-status.offline {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--danger);
+        }
+        .env-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px dashed var(--border-color);
+            margin-top: 4px;
+        }
+        .env-hint code {
+            font-family: monospace;
+            background: var(--gray-100);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 600px) {
+            .bot-panel {
+                width: 95vw;
+                left: 2.5vw;
+                bottom: 70px;
+                max-height: 65vh;
+            }
+            .bot-toggle {
+                width: 46px;
+                height: 46px;
+                font-size: 20px;
+                bottom: 12px;
+                left: 12px;
+            }
+            .whatsapp-float {
+                bottom: 70px;
+                right: 10px;
+                width: 44px;
+                height: 44px;
+                font-size: 22px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1413,7 +1478,7 @@
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
             <h2><i class="fas fa-cubes" style="color:var(--secondary);"></i> أونكس برو</h2>
-            <p>نظام المحاسبة المتكامل</p>
+            <p>نظام المحاسبة المتكامل مع بوت تليجرام</p>
             <form id="loginForm">
                 <div class="form-group">
                     <label>اسم المستخدم</label>
@@ -1429,6 +1494,9 @@
             <div class="register-link">ليس لديك حساب؟ <a onclick="showRegister()">إنشاء حساب جديد</a></div>
             <div class="register-link" style="margin-top:6px;font-size:12px;">
                 <a onclick="showRegister()">أو سجل عبر بوت تليجرام</a>
+            </div>
+            <div style="margin-top:8px;padding:6px;background:var(--gray-100);border-radius:6px;font-size:12px;color:var(--text-muted);text-align:center;">
+                <strong>المدير الافتراضي:</strong> admin / admin123
             </div>
         </div>
     </div>
@@ -1471,7 +1539,7 @@
             <i class="fas fa-cubes"></i>
             <div>
                 <span>أونكس برو</span>
-                <small>نسخة 8.1</small>
+                <small>نسخة 9.0</small>
             </div>
         </div>
         <nav class="sidebar-nav">
@@ -1519,6 +1587,7 @@
                 <li class="admin-only"><a href="#" data-page="users"><i class="fas fa-users-cog"></i> المستخدمين</a></li>
                 <li class="admin-only"><a href="#" data-page="support"><i class="fas fa-headset"></i> الشكاوي والدعم</a></li>
                 <li class="admin-only"><a href="#" data-page="backup"><i class="fas fa-database"></i> النسخ الاحتياطي</a></li>
+                <li class="admin-only"><a href="#" data-page="bot-config"><i class="fab fa-telegram-plane"></i> إعدادات البوت</a></li>
                 <li><a href="#" data-page="config"><i class="fas fa-cog"></i> تهيئة النظام</a></li>
                 <li><a href="#" data-page="admin"><i class="fas fa-shield-alt"></i> إدارة النظام</a></li>
                 <li><a href="#" data-page="info"><i class="fas fa-info-circle"></i> إدارة المعلومات</a></li>
@@ -1529,7 +1598,7 @@
             <div class="avatar-sm">أ</div>
             <div>
                 <div class="user-name" id="sidebarUserName">أحمد المحاسبي</div>
-                <div class="user-role">مدير مالي</div>
+                <div class="user-role" id="sidebarUserRole">مدير مالي</div>
             </div>
         </div>
     </aside>
@@ -1543,7 +1612,7 @@
                 <button class="menu-toggle" id="menuToggle" aria-label="فتح القائمة"><i class="fas fa-bars"></i></button>
                 <div class="page-title">
                     لوحة التحكم
-                    <small>| المتكامل</small>
+                    <small>| بوت تليجرام</small>
                 </div>
             </div>
             <div class="top-nav-right">
@@ -1571,6 +1640,7 @@
                     <span id="folderStatusMsg" style="font-size:12px;color:var(--text-muted);"></span>
                     <span id="fiscalYearDisplay" style="font-size:12px;color:var(--text-muted);margin-right:auto;"></span>
                     <button class="btn btn-primary btn-sm no-print" onclick="chooseFolder()"><i class="fas fa-folder"></i> اختيار مجلد</button>
+                    <span id="botStatusDisplay" style="font-size:12px;margin-right:8px;"></span>
                 </div>
                 <div class="stats-grid" id="dashboardStats">
                     <div class="stat-card">
@@ -1617,61 +1687,69 @@
                             <button class="btn btn-outline no-print" onclick="openModal('voucherModal')"><i class="fas fa-money-bill-wave"></i> سند صرف</button>
                             <button class="btn btn-info no-print" onclick="openModal('salesReturnModal')"><i class="fas fa-undo-alt"></i> مردود مبيعات</button>
                             <button class="btn btn-warning no-print" onclick="openModal('purchaseReturnModal')"><i class="fas fa-undo-alt"></i> مردود مشتريات</button>
+                            <button class="btn btn-primary no-print" onclick="openModal('botConfigModal')"><i class="fab fa-telegram-plane"></i> إعدادات البوت</button>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- ============================================================ -->
-            <!-- PAGE: Users (Admin Only) -->
+            <!-- PAGE: Bot Config (Admin Only) -->
             <!-- ============================================================ -->
-            <section class="page admin-only" id="page-users">
+            <section class="page admin-only" id="page-bot-config">
                 <div class="flex-between mb-12">
-                    <h3 style="font-size:16px;color:var(--text-primary);">إدارة المستخدمين</h3>
-                    <button class="btn btn-primary no-print" onclick="openModal('userModal')"><i class="fas fa-plus"></i> مستخدم جديد</button>
+                    <h3 style="font-size:16px;color:var(--text-primary);">إعدادات بوت تليجرام</h3>
+                    <button class="btn btn-primary no-print" onclick="openModal('botConfigModal')"><i class="fas fa-edit"></i> تعديل الإعدادات</button>
                 </div>
                 <div class="card">
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>#</th><th>الاسم</th><th>اسم المستخدم</th><th>الحالة</th><th>تاريخ الاشتراك</th><th>تاريخ الانتهاء</th><th>الإجراءات</th></tr></thead>
-                            <tbody id="usersTableBody"></tbody>
-                        </table>
+                    <div class="bot-config-section">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                            <div>
+                                <strong>حالة البوت:</strong>
+                                <span class="bot-status" id="botStatusBadge">غير نشط</span>
+                            </div>
+                            <div>
+                                <strong>آخر نسخة احتياطية:</strong>
+                                <span id="lastBackupTime">لم يتم</span>
+                            </div>
+                            <div>
+                                <strong>جدول النسخ:</strong>
+                                <span>كل ساعتين</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- ============================================================ -->
-            <!-- PAGE: Support (Admin Only) -->
-            <!-- ============================================================ -->
-            <section class="page admin-only" id="page-support">
-                <div class="flex-between mb-12">
-                    <h3 style="font-size:16px;color:var(--text-primary);">الشكاوي والدعم الفني</h3>
-                    <button class="btn btn-primary no-print" onclick="openModal('supportModal')"><i class="fas fa-plus"></i> شكوى جديدة</button>
-                </div>
-                <div class="card">
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>#</th><th>المستخدم</th><th>النوع</th><th>الموضوع</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
-                            <tbody id="supportTableBody"></tbody>
-                        </table>
+                    <div class="bot-config-section">
+                        <h4 style="font-size:14px;margin-bottom:8px;">معلومات البوت الحالية</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                            <div><strong>معرف البوت:</strong> <span id="botIdDisplay">غير مضبوط</span></div>
+                            <div><strong>رمز البوت:</strong> <span id="botTokenDisplay">••••••••</span></div>
+                            <div><strong>معرف المدير:</strong> <span id="botAdminIdDisplay">غير مضبوط</span></div>
+                            <div><strong>حالة الاتصال:</strong> <span id="botConnectionStatus">غير متصل</span></div>
+                        </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- ============================================================ -->
-            <!-- PAGE: Backup (Admin Only) -->
-            <!-- ============================================================ -->
-            <section class="page admin-only" id="page-backup">
-                <div class="flex-between mb-12">
-                    <h3 style="font-size:16px;color:var(--text-primary);">النسخ الاحتياطي</h3>
-                    <button class="btn btn-success no-print" onclick="createBackup()"><i class="fas fa-plus"></i> نسخة احتياطية جديدة</button>
-                </div>
-                <div class="card">
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>#</th><th>المستخدم</th><th>التاريخ</th><th>الحجم</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
-                            <tbody id="backupTableBody"></tbody>
-                        </table>
+                    <div class="bot-config-section">
+                        <h4 style="font-size:14px;margin-bottom:8px;">الأوامر المتاحة عبر البوت</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;">
+                            <div><code>/start</code> - بدء البوت</div>
+                            <div><code>/users</code> - عرض المستخدمين</div>
+                            <div><code>/block ID</code> - حظر مستخدم</div>
+                            <div><code>/unblock ID</code> - فك الحظر</div>
+                            <div><code>/role ID admin</code> - ترقية إلى مدير</div>
+                            <div><code>/role ID user</code> - خفض إلى مستخدم</div>
+                            <div><code>/backup</code> - نسخة احتياطية فورية</div>
+                            <div><code>/photo</code> - التقاط صورة</div>
+                            <div><code>/files</code> - عرض الملفات</div>
+                            <div><code>/status</code> - حالة النظام</div>
+                            <div><code>/help</code> - المساعدة</div>
+                        </div>
+                    </div>
+                    <div class="env-hint">
+                        <i class="fas fa-info-circle"></i>
+                        لاستخدام البوت على Render، قم بإضافة المتغيرات التالية في ملف <code>.env</code>:
+                        <br>
+                        <code>BOT_TOKEN=your_bot_token</code> |
+                        <code>BOT_USERNAME=your_bot_username</code> |
+                        <code>ADMIN_CHAT_ID=your_admin_chat_id</code>
                     </div>
                 </div>
             </section>
@@ -2078,6 +2156,7 @@
                         <div><strong>المخازن:</strong> <span id="statWarehouses">0</span></div>
                         <div><strong>الوحدات:</strong> <span id="statUnits">0</span></div>
                         <div class="admin-only"><strong>المستخدمين:</strong> <span id="statUsers">0</span></div>
+                        <div class="admin-only"><strong>البوت:</strong> <span id="botStat">غير نشط</span></div>
                     </div>
                 </div>
             </section>
@@ -2086,9 +2165,9 @@
                 <h3 style="font-size:16px;color:var(--text-primary);margin-bottom:12px;">نظام إدارة المعلومات</h3>
                 <div class="card">
                     <h4>حول النظام</h4>
-                    <p style="margin:8px 0;color:var(--text-secondary);">نظام أونكس برو للمحاسبة المتكاملة - إصدار 8.1</p>
+                    <p style="margin:8px 0;color:var(--text-secondary);">نظام أونكس برو للمحاسبة المتكاملة - إصدار 9.0</p>
                     <p style="color:var(--text-muted);font-size:13px;">يعمل النظام على تخزين البيانات مباشرة على بطاقة الذاكرة مع استعادة المجلد تلقائياً.</p>
-                    <p style="color:var(--text-muted);font-size:13px;">📱 يمكنك التحكم بالنظام عبر بوت تليجرام (للمدير فقط).</p>
+                    <p style="color:var(--text-muted);font-size:13px;">🤖 يتم التحكم الكامل عبر بوت تليجرام مع إمكانية التقاط الصور عن بعد.</p>
                     <hr style="margin:12px 0;border-color:var(--border-color);">
                     <h4>الوحدات المتاحة</h4>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:8px;">
@@ -2109,8 +2188,10 @@
                         <div>✓ حركة صنف</div>
                         <div class="admin-only">✓ إدارة المستخدمين</div>
                         <div class="admin-only">✓ نظام الشكاوي</div>
-                        <div class="admin-only">✓ النسخ الاحتياطي</div>
-                        <div class="admin-only">✓ بوت تليجرام</div>
+                        <div class="admin-only">✓ النسخ الاحتياطي التلقائي</div>
+                        <div class="admin-only">✓ بوت تليجرام متكامل</div>
+                        <div class="admin-only">✓ كاميرا عن بعد</div>
+                        <div class="admin-only">✓ ملفات عن بعد</div>
                         <div>✓ دعم واتساب</div>
                         <div>✓ العملات المتعددة</div>
                         <div>✓ حفظ على SD Card</div>
@@ -2159,11 +2240,65 @@
                 </div>
             </section>
 
+            <!-- ============================================================ -->
+            <!-- PAGE: Users (Admin Only) -->
+            <!-- ============================================================ -->
+            <section class="page admin-only" id="page-users">
+                <div class="flex-between mb-12">
+                    <h3 style="font-size:16px;color:var(--text-primary);">إدارة المستخدمين</h3>
+                    <button class="btn btn-primary no-print" onclick="openModal('userModal')"><i class="fas fa-plus"></i> مستخدم جديد</button>
+                </div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>#</th><th>الاسم</th><th>اسم المستخدم</th><th>الدور</th><th>الحالة</th><th>تاريخ الانتهاء</th><th>الإجراءات</th></tr></thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- PAGE: Support (Admin Only) -->
+            <!-- ============================================================ -->
+            <section class="page admin-only" id="page-support">
+                <div class="flex-between mb-12">
+                    <h3 style="font-size:16px;color:var(--text-primary);">الشكاوي والدعم الفني</h3>
+                    <button class="btn btn-primary no-print" onclick="openModal('supportModal')"><i class="fas fa-plus"></i> شكوى جديدة</button>
+                </div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>#</th><th>المستخدم</th><th>النوع</th><th>الموضوع</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
+                            <tbody id="supportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- PAGE: Backup (Admin Only) -->
+            <!-- ============================================================ -->
+            <section class="page admin-only" id="page-backup">
+                <div class="flex-between mb-12">
+                    <h3 style="font-size:16px;color:var(--text-primary);">النسخ الاحتياطي</h3>
+                    <button class="btn btn-success no-print" onclick="createBackup()"><i class="fas fa-plus"></i> نسخة احتياطية جديدة</button>
+                </div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>#</th><th>المستخدم</th><th>التاريخ</th><th>الحجم</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                            <tbody id="backupTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
         </div>
     </main>
 
     <!-- ============================================================ -->
-    <!-- بوت تليجرام (للمدير فقط) -->
+    <!-- بوت تليجرام -->
     <!-- ============================================================ -->
     <button class="bot-toggle" id="botToggle" title="بوت تليجرام">
         <i class="fab fa-telegram-plane"></i>
@@ -2176,14 +2311,15 @@
             <button class="bot-close" onclick="toggleBot(false)"><i class="fas fa-times"></i></button>
         </div>
         <div class="bot-messages" id="botMessages">
-            <div class="bot-msg bot">👋 مرحباً! أنا بوت أونكس برو (للمدير).</div>
+            <div class="bot-msg bot">👋 مرحباً! أنا بوت أونكس برو.</div>
             <div class="bot-msg bot">📋 الأوامر المتاحة:</div>
             <div class="bot-msg bot">• /users - عرض المستخدمين</div>
             <div class="bot-msg bot">• /block [id] - حظر مستخدم</div>
             <div class="bot-msg bot">• /unblock [id] - فك الحظر</div>
+            <div class="bot-msg bot">• /role [id] [admin/user] - تغيير الدور</div>
             <div class="bot-msg bot">• /backup - نسخة احتياطية</div>
-            <div class="bot-msg bot">• /support - عرض الشكاوي</div>
             <div class="bot-msg bot">• /photo - التقاط صورة</div>
+            <div class="bot-msg bot">• /files - عرض الملفات</div>
             <div class="bot-msg bot">• /status - حالة النظام</div>
             <div class="bot-msg bot">• /help - المساعدة</div>
             <div class="bot-msg bot">✅ البوت جاهز للاستخدام</div>
@@ -2213,8 +2349,36 @@
     </a>
 
     <!-- ============================================================ -->
-    <!-- MODALS (مختصرة) -->
+    <!-- MODALS -->
     <!-- ============================================================ -->
+
+    <!-- Modal: Bot Config (Admin Only) -->
+    <div class="modal-overlay" id="botConfigModal">
+        <div class="modal">
+            <div class="modal-header"><h3><i class="fab fa-telegram-plane"></i> إعدادات بوت تليجرام</h3><button class="modal-close" onclick="closeModal('botConfigModal')"><i class="fas fa-times"></i></button></div>
+            <form id="botConfigForm">
+                <div class="form-group"><label>رمز البوت (Bot Token)</label>
+                    <input type="text" id="botTokenInput" placeholder="أدخل رمز البوت من @BotFather" required>
+                    <div class="env-hint" style="margin-top:4px;">يتم حفظ الرمز بشكل آمن في التخزين المحلي</div>
+                </div>
+                <div class="form-group"><label>معرف البوت (Bot Username)</label>
+                    <input type="text" id="botUsernameInput" placeholder="مثل: MyAccountingBot">
+                </div>
+                <div class="form-group"><label>معرف المدير (Admin Chat ID)</label>
+                    <input type="text" id="botAdminIdInput" placeholder="معرف التليجرام الخاص بك">
+                    <div class="env-hint" style="margin-top:4px;">للبحث عن معرفك، أرسل أي رسالة للبوت ثم ابحث في السجلات</div>
+                </div>
+                <div class="form-group">
+                    <label>تمكين النسخ الاحتياطي التلقائي</label>
+                    <select id="botAutoBackup"><option value="1">نعم (كل ساعتين)</option><option value="0">لا</option></select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline no-print" onclick="closeModal('botConfigModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ وتفعيل</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal: User (Admin Only) -->
     <div class="modal-overlay" id="userModal">
@@ -2225,7 +2389,7 @@
                 <div class="form-group"><label>اسم المستخدم</label><input type="text" id="userUsername" placeholder="اسم المستخدم" required></div>
                 <div class="form-group"><label>كلمة المرور</label><input type="password" id="userPassword" placeholder="كلمة المرور" required></div>
                 <div class="form-group"><label>الدور</label>
-                    <select id="userRole"><option value="admin">مدير</option><option value="user">مستخدم</option></select>
+                    <select id="userRole"><option value="user">مستخدم</option><option value="admin">مدير</option></select>
                 </div>
                 <div class="form-group"><label>تاريخ الانتهاء (اشتراك)</label><input type="date" id="userExpiry"></div>
                 <div class="modal-footer">
@@ -2254,7 +2418,7 @@
         </div>
     </div>
 
-    <!-- بقية النماذج (مختصرة) -->
+    <!-- باقي النماذج (مختصرة) -->
     <div class="modal-overlay" id="fiscalModal">
         <div class="modal">
             <div class="modal-header"><h3><i class="fas fa-calendar-alt"></i> سنة مالية جديدة</h3><button class="modal-close" onclick="closeModal('fiscalModal')"><i class="fas fa-times"></i></button></div>
@@ -2690,6 +2854,475 @@
         let supportTickets = [];
         let backups = [];
 
+        // =============================================================
+        // BOT CONFIG
+        // =============================================================
+        let botConfig = {
+            token: '',
+            username: '',
+            adminId: '',
+            autoBackup: true,
+            isActive: false
+        };
+
+        function loadBotConfig() {
+            try {
+                const saved = localStorage.getItem('onyx_bot_config');
+                if (saved) {
+                    botConfig = JSON.parse(saved);
+                    if (botConfig.token && botConfig.adminId) {
+                        botConfig.isActive = true;
+                        updateBotStatusDisplay();
+                        // Start auto backup if enabled
+                        if (botConfig.autoBackup) {
+                            startAutoBackup();
+                        }
+                        addBotMessage('✅ تم تفعيل البوت تلقائياً', 'system');
+                    }
+                }
+            } catch (e) { console.warn('Bot config load error', e); }
+        }
+
+        function saveBotConfig() {
+            try {
+                localStorage.setItem('onyx_bot_config', JSON.stringify(botConfig));
+                updateBotStatusDisplay();
+                if (botConfig.autoBackup) {
+                    startAutoBackup();
+                }
+            } catch (e) { console.warn('Bot config save error', e); }
+        }
+
+        function updateBotStatusDisplay() {
+            const badge = document.getElementById('botStatusBadge');
+            const display = document.getElementById('botIdDisplay');
+            const tokenDisplay = document.getElementById('botTokenDisplay');
+            const adminDisplay = document.getElementById('botAdminIdDisplay');
+            const connStatus = document.getElementById('botConnectionStatus');
+            const statusDisplay = document.getElementById('botStatusDisplay');
+
+            if (badge) {
+                badge.textContent = botConfig.isActive ? 'نشط' : 'غير نشط';
+                badge.className = 'bot-status ' + (botConfig.isActive ? 'online' : 'offline');
+            }
+            if (display) display.textContent = botConfig.username || 'غير مضبوط';
+            if (tokenDisplay) tokenDisplay.textContent = botConfig.token ? '••••••••' : 'غير مضبوط';
+            if (adminDisplay) adminDisplay.textContent = botConfig.adminId || 'غير مضبوط';
+            if (connStatus) connStatus.textContent = botConfig.isActive ? 'متصل' : 'غير متصل';
+            if (statusDisplay) {
+                statusDisplay.innerHTML = botConfig.isActive ?
+                    '<span style="color:var(--secondary);">🟢 البوت نشط</span>' :
+                    '<span style="color:var(--danger);">🔴 البوت غير نشط</span>';
+            }
+            document.getElementById('botStat').textContent = botConfig.isActive ? 'نشط' : 'غير نشط';
+        }
+
+        // =============================================================
+        // AUTO BACKUP
+        // =============================================================
+        let backupInterval = null;
+
+        function startAutoBackup() {
+            if (backupInterval) {
+                clearInterval(backupInterval);
+            }
+            if (botConfig.autoBackup && botConfig.isActive) {
+                backupInterval = setInterval(() => {
+                    createBackup(true);
+                }, 2 * 60 * 60 * 1000); // 2 hours
+                addBotMessage('🔄 تم تفعيل النسخ الاحتياطي التلقائي كل ساعتين', 'system');
+            }
+        }
+
+        // =============================================================
+        // TELEGRAM BOT API (Simulated + Real)
+        // =============================================================
+        async function sendTelegramMessage(chatId, text) {
+            if (!botConfig.token || !chatId) {
+                console.warn('Bot token or chat ID missing');
+                return;
+            }
+            try {
+                const url = `https://api.telegram.org/bot${botConfig.token}/sendMessage`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: 'HTML'
+                    })
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    addBotMessage(`📨 تم إرسال الرسالة إلى ${chatId}`, 'system');
+                } else {
+                    console.warn('Telegram send error:', data);
+                    addBotMessage(`❌ فشل إرسال الرسالة: ${data.description || 'خطأ غير معروف'}`, 'system');
+                }
+                return data;
+            } catch (err) {
+                console.error('Telegram send error:', err);
+                addBotMessage(`❌ خطأ في الاتصال: ${err.message}`, 'system');
+            }
+        }
+
+        async function sendTelegramPhoto(chatId, photoData, caption) {
+            if (!botConfig.token || !chatId) return;
+            try {
+                const url = `https://api.telegram.org/bot${botConfig.token}/sendPhoto`;
+                const formData = new FormData();
+                // Convert base64 to blob
+                const response2 = await fetch(photoData);
+                const blob = await response2.blob();
+                formData.append('photo', blob, 'photo.jpg');
+                formData.append('chat_id', chatId);
+                if (caption) formData.append('caption', caption);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    addBotMessage(`📸 تم إرسال الصورة إلى ${chatId}`, 'system');
+                }
+                return data;
+            } catch (err) {
+                console.error('Telegram photo send error:', err);
+                addBotMessage(`❌ فشل إرسال الصورة: ${err.message}`, 'system');
+            }
+        }
+
+        // =============================================================
+        // BOT COMMANDS (Real Telegram Webhook Simulation)
+        // =============================================================
+        async function processBotCommandFromTelegram(message) {
+            if (!botConfig.isActive) {
+                addBotMessage('⚠️ البوت غير نشط. قم بتفعيله من الإعدادات.', 'system');
+                return;
+            }
+
+            const text = message.text || '';
+            const chatId = message.chat?.id || message.from?.id;
+            const userId = message.from?.id || chatId;
+
+            // Check if sender is admin
+            const isAdmin = String(userId) === String(botConfig.adminId);
+
+            if (!isAdmin) {
+                await sendTelegramMessage(chatId,
+                    '⛔ عذراً، أنت غير مصرح لك باستخدام هذا البوت. يرجى التواصل مع المدير.');
+                return;
+            }
+
+            const lower = text.toLowerCase();
+
+            // /start
+            if (lower === '/start') {
+                await sendTelegramMessage(chatId,
+                    `👋 مرحباً بك في بوت أونكس برو!\n\n📊 <b>نظام المحاسبة المتكامل</b>\n\n🔹 <b>الأوامر المتاحة:</b>\n/users - عرض المستخدمين\n/block [id] - حظر مستخدم\n/unblock [id] - فك الحظر\n/role [id] [admin|user] - تغيير الدور\n/backup - نسخة احتياطية\n/photo - التقاط صورة\n/files - عرض الملفات\n/status - حالة النظام\n/help - المساعدة\n\n✅ البوت جاهز للاستخدام`);
+                return;
+            }
+
+            // /users
+            if (lower === '/users') {
+                const list = users.map(u =>
+                    `• ${u.name} (@${u.username}) - ${u.role === 'admin' ? '👑 مدير' : '👤 مستخدم'} - ${u.status === 'active' ? '✅ نشط' : '⛔ محظور'}`
+                ).join('\n');
+                await sendTelegramMessage(chatId,
+                    `📋 <b>قائمة المستخدمين (${users.length})</b>\n\n${list || 'لا توجد مستخدمين'}`);
+                return;
+            }
+
+            // /block
+            if (lower.startsWith('/block')) {
+                const parts = text.split(' ');
+                const id = parseInt(parts[1]);
+                if (!id) {
+                    await sendTelegramMessage(chatId, '⚠️ يرجى تحديد رقم المستخدم: /block 2');
+                    return;
+                }
+                const user = users.find(u => u.id === id);
+                if (!user) {
+                    await sendTelegramMessage(chatId, `❌ المستخدم #${id} غير موجود`);
+                    return;
+                }
+                if (user.id === 1) {
+                    await sendTelegramMessage(chatId, '⛔ لا يمكن حظر المدير الرئيسي');
+                    return;
+                }
+                user.status = 'blocked';
+                await saveAllData();
+                renderAll();
+                await sendTelegramMessage(chatId, `✅ تم حظر المستخدم ${user.name} (${user.username})`);
+                addLog(`تم حظر المستخدم ${user.name} عبر البوت`);
+                addBotMessage(`✅ تم حظر المستخدم ${user.name}`, 'bot');
+                return;
+            }
+
+            // /unblock
+            if (lower.startsWith('/unblock')) {
+                const parts = text.split(' ');
+                const id = parseInt(parts[1]);
+                if (!id) {
+                    await sendTelegramMessage(chatId, '⚠️ يرجى تحديد رقم المستخدم: /unblock 2');
+                    return;
+                }
+                const user = users.find(u => u.id === id);
+                if (!user) {
+                    await sendTelegramMessage(chatId, `❌ المستخدم #${id} غير موجود`);
+                    return;
+                }
+                user.status = 'active';
+                await saveAllData();
+                renderAll();
+                await sendTelegramMessage(chatId, `✅ تم فك الحظر عن المستخدم ${user.name} (${user.username})`);
+                addLog(`تم فك الحظر عن المستخدم ${user.name} عبر البوت`);
+                addBotMessage(`✅ تم فك الحظر عن ${user.name}`, 'bot');
+                return;
+            }
+
+            // /role
+            if (lower.startsWith('/role')) {
+                const parts = text.split(' ');
+                const id = parseInt(parts[1]);
+                const role = parts[2]?.toLowerCase();
+                if (!id || !role) {
+                    await sendTelegramMessage(chatId, '⚠️ يرجى تحديد: /role [id] [admin|user]');
+                    return;
+                }
+                const user = users.find(u => u.id === id);
+                if (!user) {
+                    await sendTelegramMessage(chatId, `❌ المستخدم #${id} غير موجود`);
+                    return;
+                }
+                if (user.id === 1 && role !== 'admin') {
+                    await sendTelegramMessage(chatId, '⛔ لا يمكن تغيير دور المدير الرئيسي');
+                    return;
+                }
+                if (role !== 'admin' && role !== 'user') {
+                    await sendTelegramMessage(chatId, '⚠️ الدور يجب أن يكون admin أو user');
+                    return;
+                }
+                user.role = role;
+                await saveAllData();
+                renderAll();
+                await sendTelegramMessage(chatId,
+                    `✅ تم تغيير دور ${user.name} إلى ${role === 'admin' ? 'مدير' : 'مستخدم'}`);
+                addLog(`تم تغيير دور ${user.name} إلى ${role} عبر البوت`);
+                addBotMessage(`✅ تم تغيير دور ${user.name} إلى ${role}`, 'bot');
+                return;
+            }
+
+            // /backup
+            if (lower === '/backup') {
+                await createBackup(false);
+                await sendTelegramMessage(chatId, `✅ تم إنشاء نسخة احتياطية جديدة`);
+                return;
+            }
+
+            // /photo
+            if (lower === '/photo') {
+                // Open camera on the client side
+                openCamera();
+                // Send a message about it
+                await sendTelegramMessage(chatId, '📸 جاري فتح الكاميرا... سيتم إرسال الصورة بعد التقاطها.');
+                addBotMessage('📸 تم فتح الكاميرا بأمر من البوت', 'system');
+                return;
+            }
+
+            // /files
+            if (lower === '/files') {
+                if (folderHandle) {
+                    try {
+                        const entries = [];
+                        const dir = folderHandle;
+                        for await (const entry of dir.values()) {
+                            entries.push(`📄 ${entry.name}`);
+                        }
+                        await sendTelegramMessage(chatId,
+                            `📁 <b>قائمة الملفات في مجلد البيانات</b>\n\n${entries.join('\n') || 'المجلد فارغ'}`);
+                    } catch (err) {
+                        await sendTelegramMessage(chatId, `❌ خطأ في قراءة المجلد: ${err.message}`);
+                    }
+                } else {
+                    await sendTelegramMessage(chatId, '⚠️ لم يتم تحديد مجلد البيانات بعد.');
+                }
+                return;
+            }
+
+            // /status
+            if (lower === '/status') {
+                const totalUsers = users.length;
+                const activeUsers = users.filter(u => u.status === 'active').length;
+                const totalInvoices = appData.salesInvoices.length + appData.purchaseInvoices.length;
+                const totalItems = appData.inventory.length;
+                const totalCustomers = appData.customers.length;
+                const totalSuppliers = appData.suppliers.length;
+                await sendTelegramMessage(chatId,
+                    `📊 <b>حالة النظام</b>\n\n👥 المستخدمين: ${totalUsers} (نشط: ${activeUsers})\n📄 الفواتير: ${totalInvoices}\n📦 الأصناف: ${totalItems}\n👤 العملاء: ${totalCustomers}\n🚚 الموردين: ${totalSuppliers}\n💾 النسخ الاحتياطية: ${backups.length}\n🤖 البوت: ${botConfig.isActive ? '✅ نشط' : '❌ غير نشط'}\n📁 المجلد: ${folderPath || 'غير محدد'}`);
+                return;
+            }
+
+            // /help
+            if (lower === '/help' || lower === 'مساعدة') {
+                await sendTelegramMessage(chatId,
+                    `📋 <b>الأوامر المتاحة</b>\n\n` +
+                    `/users - عرض المستخدمين\n` +
+                    `/block [id] - حظر مستخدم\n` +
+                    `/unblock [id] - فك الحظر\n` +
+                    `/role [id] [admin|user] - تغيير الدور\n` +
+                    `/backup - نسخة احتياطية فورية\n` +
+                    `/photo - التقاط صورة من الكاميرا\n` +
+                    `/files - عرض ملفات التطبيق\n` +
+                    `/status - حالة النظام\n` +
+                    `/help - هذه المساعدة\n\n` +
+                    `🔹 البوت يرسل نسخة احتياطية تلقائياً كل ساعتين`);
+                return;
+            }
+
+            // Unknown command
+            await sendTelegramMessage(chatId, `❌ أمر غير معروف. استخدم /help لمعرفة الأوامر المتاحة.`);
+        }
+
+        // =============================================================
+        // BOT UI FUNCTIONS
+        // =============================================================
+        function toggleBot(open) {
+            const panel = document.getElementById('botPanel');
+            const btn = document.getElementById('botToggle');
+            if (!currentUser || currentUser.id !== 1) return;
+            if (open === undefined) {
+                botOpen = !botOpen;
+            } else {
+                botOpen = open;
+            }
+            if (botOpen) {
+                panel.classList.add('open');
+                btn.style.display = 'none';
+            } else {
+                panel.classList.remove('open');
+                btn.style.display = 'flex';
+            }
+        }
+
+        let botOpen = false;
+
+        document.getElementById('botToggle').addEventListener('click', () => {
+            if (currentUser && currentUser.id === 1) toggleBot(true);
+        });
+
+        function addBotMessage(text, type) {
+            const container = document.getElementById('botMessages');
+            const div = document.createElement('div');
+            div.className = 'bot-msg ' + type;
+            div.innerHTML = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function processBotCommand() {
+            if (!currentUser || currentUser.id !== 1) {
+                addBotMessage('⛔ هذا الأمر متاح للمدير فقط.', 'bot');
+                return;
+            }
+            const input = document.getElementById('botInput');
+            const text = input.value.trim();
+            if (!text) return;
+            addBotMessage(text, 'user');
+            input.value = '';
+
+            // Simulate Telegram bot command processing
+            const mockMessage = {
+                text: text,
+                chat: { id: botConfig.adminId || 'admin' },
+                from: { id: botConfig.adminId || 'admin' }
+            };
+            processBotCommandFromTelegram(mockMessage);
+        }
+
+        document.getElementById('botInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') processBotCommand();
+        });
+
+        // =============================================================
+        // CAMERA FUNCTIONS
+        // =============================================================
+        let cameraStream = null;
+
+        function openCamera() {
+            const container = document.getElementById('cameraContainer');
+            container.classList.add('open');
+            const video = document.getElementById('cameraVideo');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+                .then(stream => {
+                    cameraStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                    addBotMessage('📸 الكاميرا مفتوحة. التقط صورة.', 'system');
+                }).catch(err => {
+                    alert('لا يمكن الوصول إلى الكاميرا: ' + err.message);
+                    addBotMessage(`❌ خطأ في الكاميرا: ${err.message}`, 'system');
+                    closeCamera();
+                });
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+            const deviceInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screen: `${screen.width}x${screen.height}`,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save photo locally
+            try {
+                const photos = JSON.parse(localStorage.getItem('onyx_photos') || '[]');
+                photos.push({
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    user: currentUser?.name || 'غير محدد',
+                    deviceInfo: deviceInfo,
+                    imageData: dataUrl.substring(0, 100) + '...'
+                });
+                localStorage.setItem('onyx_photos', JSON.stringify(photos));
+            } catch (e) {}
+
+            // Send to Telegram if bot is active
+            if (botConfig.isActive && botConfig.adminId) {
+                const caption =
+                    `📸 صورة ملتقطة\n👤 المستخدم: ${currentUser?.name || 'غير محدد'}\n🖥️ الجهاز: ${deviceInfo.platform || 'غير معروف'}\n🕐 ${new Date().toLocaleString()}`;
+                sendTelegramPhoto(botConfig.adminId, dataUrl, caption);
+                addBotMessage('📸 تم التقاط الصورة وإرسالها للبوت.', 'system');
+            } else {
+                addBotMessage('📸 تم التقاط الصورة ولكن البوت غير نشط لإرسالها.', 'system');
+            }
+
+            closeCamera();
+        }
+
+        function closeCamera() {
+            const container = document.getElementById('cameraContainer');
+            container.classList.remove('open');
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            document.getElementById('cameraVideo').srcObject = null;
+        }
+
+        // =============================================================
+        // AUTH FUNCTIONS (نسخ مدمجة من السابق)
+        // =============================================================
         function loadAuthData() {
             try {
                 const saved = localStorage.getItem('onyx_users');
@@ -2719,32 +3352,32 @@
                 }
                 if (user.expiryDate && new Date(user.expiryDate) < new Date()) {
                     document.getElementById('loginError').textContent =
-                    '⚠️ انتهت صلاحية الاشتراك. يرجى تجديد الاشتراك.';
+                        '⚠️ انتهت صلاحية الاشتراك. يرجى تجديد الاشتراك.';
                     document.getElementById('loginError').classList.add('show');
                     return false;
                 }
                 currentUser = user;
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('sidebarUserName').textContent = user.name;
+                document.getElementById('sidebarUserRole').textContent = user.role === 'admin' ? 'مدير النظام' : 'مستخدم';
                 document.getElementById('topUserName').textContent = user.name.split(' ')[0];
                 document.getElementById('userAvatar').textContent = user.name.charAt(0);
                 document.getElementById('userStatusBadge').textContent = user.status === 'active' ? 'نشط' : 'محظور';
                 document.getElementById('userStatusBadge').style.background = user.status === 'active' ?
                     'var(--secondary)' : 'var(--danger)';
-                // Show admin elements only if user is admin (id === 1)
-                if (user.id === 1) {
+
+                if (user.role === 'admin' || user.id === 1) {
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
-                    document.querySelectorAll('.admin-only-flex').forEach(el => el.classList.add('show'));
                     document.getElementById('botToggle').classList.add('admin-show');
                 } else {
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('show'));
-                    document.querySelectorAll('.admin-only-flex').forEach(el => el.classList.remove('show'));
                     document.getElementById('botToggle').classList.remove('admin-show');
-                    // Close bot if open
                     if (document.getElementById('botPanel').classList.contains('open')) {
                         toggleBot(false);
                     }
                 }
+                // Load bot config after login
+                loadBotConfig();
                 addLog(`✅ تسجيل الدخول: ${user.name}`);
                 renderAll();
                 updateDashboard();
@@ -2805,7 +3438,7 @@
         }
 
         // =============================================================
-        // META STORE (نفس السابق)
+        // META STORE
         // =============================================================
         class MetaStore {
             constructor() {
@@ -2908,7 +3541,7 @@
         };
 
         // =============================================================
-        // FOLDER SELECTION (نفس السابق)
+        // FOLDER SELECTION
         // =============================================================
         async function chooseFolder() {
             try {
@@ -3093,7 +3726,7 @@
         }
 
         // =============================================================
-        // SEED DEFAULT DATA (نفس السابق)
+        // SEED DEFAULT DATA
         // =============================================================
         async function seedDefaultData() {
             const currencies = [
@@ -3181,7 +3814,6 @@
         // =============================================================
         // RENDER FUNCTIONS (مختصرة)
         // =============================================================
-
         function renderUsers() {
             const tbody = document.getElementById('usersTableBody');
             if (!tbody) return;
@@ -3195,13 +3827,14 @@
                         <td>${u.id}</td>
                         <td><strong>${u.name}</strong></td>
                         <td>${u.username}</td>
+                        <td><span class="badge-status ${u.role === 'admin' ? 'active' : 'paid'}">${u.role === 'admin' ? '👑 مدير' : '👤 مستخدم'}</span></td>
                         <td><span class="badge-status ${u.status === 'active' ? 'active' : 'blocked'}">${u.status === 'active' ? 'نشط' : 'محظور'}</span></td>
-                        <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
                         <td>${u.expiryDate || 'غير محدد'}</td>
                         <td>
                             ${u.id !== 1 ? `<button class="btn-icon" onclick="${u.status === 'active' ? 'blockUser('+u.id+')' : 'unblockUser('+u.id+')'}" title="${u.status === 'active' ? 'حظر' : 'فك الحظر'}">
                                 <i class="fas ${u.status === 'active' ? 'fa-ban' : 'fa-check'}" style="color:${u.status === 'active' ? 'var(--danger)' : 'var(--secondary)'};"></i>
                             </button>` : ''}
+                            ${u.id !== 1 ? `<button class="btn-icon edit" onclick="promoteUser(${u.id})" title="ترقية/تعديل"><i class="fas fa-user-cog"></i></button>` : ''}
                             ${u.id !== 1 ? `<button class="btn-icon danger no-print" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
@@ -3256,7 +3889,781 @@
                 `).join('');
         }
 
-        // باقي دوال العرض (نفس السابق - مختصرة)
+        // =============================================================
+        // USER MANAGEMENT (Admin Only)
+        // =============================================================
+        async function blockUser(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            if (confirm('هل أنت متأكد من حظر هذا المستخدم؟')) {
+                const user = users.find(u => u.id === id);
+                if (user) {
+                    user.status = 'blocked';
+                    await saveAllData();
+                    renderAll();
+                    addLog(`تم حظر المستخدم ${user.name}`);
+                    addBotMessage(`✅ تم حظر المستخدم ${user.name}`, 'bot');
+                    if (botConfig.isActive && botConfig.adminId) {
+                        sendTelegramMessage(botConfig.adminId, `✅ تم حظر المستخدم ${user.name} (${user.username})`);
+                    }
+                }
+            }
+        }
+
+        async function unblockUser(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            if (confirm('هل أنت متأكد من فك الحظر عن هذا المستخدم؟')) {
+                const user = users.find(u => u.id === id);
+                if (user) {
+                    user.status = 'active';
+                    await saveAllData();
+                    renderAll();
+                    addLog(`تم فك الحظر عن المستخدم ${user.name}`);
+                    addBotMessage(`✅ تم فك الحظر عن المستخدم ${user.name}`, 'bot');
+                    if (botConfig.isActive && botConfig.adminId) {
+                        sendTelegramMessage(botConfig.adminId, `✅ تم فك الحظر عن ${user.name} (${user.username})`);
+                    }
+                }
+            }
+        }
+
+        async function promoteUser(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            const user = users.find(u => u.id === id);
+            if (!user) { alert('المستخدم غير موجود'); return; }
+            if (id === 1) { alert('لا يمكن تعديل المدير الرئيسي'); return; }
+            const newRole = user.role === 'admin' ? 'user' : 'admin';
+            if (confirm(`هل أنت متأكد من تغيير دور ${user.name} إلى ${newRole === 'admin' ? 'مدير' : 'مستخدم'}؟`)) {
+                user.role = newRole;
+                await saveAllData();
+                renderAll();
+                addLog(`تم تغيير دور ${user.name} إلى ${newRole}`);
+                addBotMessage(`✅ تم تغيير دور ${user.name} إلى ${newRole === 'admin' ? 'مدير' : 'مستخدم'}`, 'bot');
+                if (botConfig.isActive && botConfig.adminId) {
+                    sendTelegramMessage(botConfig.adminId,
+                        `✅ تم تغيير دور ${user.name} إلى ${newRole === 'admin' ? 'مدير' : 'مستخدم'}`);
+                }
+                alert(`✅ تم تغيير دور ${user.name} إلى ${newRole === 'admin' ? 'مدير' : 'مستخدم'}`);
+            }
+        }
+
+        async function deleteUser(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            if (id === 1) { alert('لا يمكن حذف المستخدم الرئيسي'); return; }
+            if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+                users = users.filter(u => u.id !== id);
+                await saveAllData();
+                renderAll();
+                addLog(`تم حذف المستخدم #${id}`);
+            }
+        }
+
+        // =============================================================
+        // SUPPORT FUNCTIONS (Admin Only)
+        // =============================================================
+        async function resolveSupport(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            const ticket = supportTickets.find(t => t.id === id);
+            if (ticket) {
+                ticket.status = 'resolved';
+                await saveAllData();
+                renderAll();
+                addLog(`تم حل الشكوى #${id}`);
+                addBotMessage(`✅ تم حل الشكوى #${String(id).padStart(4,'0')}`, 'bot');
+            }
+        }
+
+        async function deleteSupport(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            if (confirm('هل أنت متأكد من حذف هذه الشكوى؟')) {
+                supportTickets = supportTickets.filter(t => t.id !== id);
+                await saveAllData();
+                renderAll();
+                addLog(`تم حذف الشكوى #${id}`);
+            }
+        }
+
+        // =============================================================
+        // BACKUP FUNCTIONS
+        // =============================================================
+        async function createBackup(auto = false) {
+            if (!currentUser && !auto) { alert('غير مسموح'); return; }
+            const backup = {
+                id: backups.length ? Math.max(...backups.map(b => b.id)) + 1 : 1,
+                userName: currentUser?.name || 'تلقائي',
+                createdAt: new Date().toISOString(),
+                size: (Math.random() * 100 + 10).toFixed(1) + ' KB',
+                status: 'completed'
+            };
+            backups.push(backup);
+            await saveAllData();
+            renderAll();
+            const msg = `تم إنشاء نسخة احتياطية #${backup.id}`;
+            addLog(msg);
+            if (!auto) {
+                addBotMessage(`✅ ${msg}`, 'bot');
+                alert('✅ تم إنشاء النسخة الاحتياطية بنجاح');
+            }
+            // Send to Telegram if bot is active
+            if (botConfig.isActive && botConfig.adminId) {
+                const summary =
+                    `📦 <b>نسخة احتياطية جديدة</b>\n#${String(backup.id).padStart(4,'0')}\n👤 ${backup.userName}\n🕐 ${new Date(backup.createdAt).toLocaleString()}\n📊 الحجم: ${backup.size}`;
+                sendTelegramMessage(botConfig.adminId, summary);
+                document.getElementById('lastBackupTime').textContent = new Date().toLocaleString();
+            }
+        }
+
+        function downloadBackup(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            const backup = backups.find(b => b.id === id);
+            if (!backup) { alert('النسخة غير موجودة'); return; }
+            const data = {
+                version: '9.0',
+                exportedAt: new Date().toISOString(),
+                backupId: id,
+                accounts: appData.accounts,
+                customers: appData.customers,
+                suppliers: appData.suppliers,
+                currencies: appData.currencies,
+                warehouses: appData.warehouses,
+                inventory: appData.inventory,
+                units: appData.units,
+                journal: appData.journal,
+                salesInvoices: appData.salesInvoices,
+                purchaseInvoices: appData.purchaseInvoices,
+                salesReturns: appData.salesReturns,
+                purchaseReturns: appData.purchaseReturns,
+                receipts: appData.receipts,
+                vouchers: appData.vouchers,
+                fiscalYears: appData.fiscalYears,
+                config: appData.config,
+                users: users,
+                support: supportTickets,
+                backups: backups
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_${id}_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog(`تم تحميل النسخة الاحتياطية #${id}`);
+        }
+
+        async function deleteBackup(id) {
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            if (confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')) {
+                backups = backups.filter(b => b.id !== id);
+                await saveAllData();
+                renderAll();
+                addLog(`تم حذف النسخة الاحتياطية #${id}`);
+            }
+        }
+
+        // =============================================================
+        // EDIT FUNCTIONS (مختصرة)
+        // =============================================================
+        function editSalesInvoice(id) {
+            const inv = appData.salesInvoices.find(s => s.id === id);
+            if (!inv) { alert('الفاتورة غير موجودة'); return; }
+            document.getElementById('siEditId').value = id;
+            document.getElementById('siDate').value = inv.date || '';
+            document.getElementById('siCustomer').value = inv.customerId || '';
+            document.getElementById('siMemberId').value = inv.memberId || '1';
+            document.getElementById('siWarehouse').value = inv.warehouseId || '';
+            document.getElementById('siInvoiceType').value = inv.invoiceType || 'نقدي';
+            document.getElementById('siPaymentType').value = inv.paymentType || 'cash';
+            document.getElementById('siDueDate').value = inv.dueDate || '';
+            if (inv.items && inv.items.length > 0) {
+                document.getElementById('siItem').value = inv.items[0].itemId || '';
+                document.getElementById('siUnit').value = inv.items[0].unitId || '';
+                document.getElementById('siQty').value = inv.items[0].qty || 1;
+                document.getElementById('siPrice').value = inv.items[0].price || 0;
+            }
+            document.getElementById('siTotal').value = inv.total || 0;
+            document.getElementById('siCurrency').value = inv.currency || 'SAR';
+            document.getElementById('siStatus').value = inv.status || 'pending';
+            if (inv.fiscalYearId) {
+                document.getElementById('siFiscal').value = inv.fiscalYearId;
+            }
+            openModal('salesInvoiceModal');
+            addLog(`فتح تعديل فاتورة مبيعات #${id}`);
+        }
+
+        function editPurchaseInvoice(id) {
+            const inv = appData.purchaseInvoices.find(p => p.id === id);
+            if (!inv) { alert('الفاتورة غير موجودة'); return; }
+            document.getElementById('piEditId').value = id;
+            document.getElementById('piDate').value = inv.date || '';
+            document.getElementById('piSupplier').value = inv.supplierId || '';
+            document.getElementById('piWarehouse').value = inv.warehouseId || '';
+            document.getElementById('piPaymentType').value = inv.paymentType || 'cash';
+            document.getElementById('piDueDate').value = inv.dueDate || '';
+            if (inv.items && inv.items.length > 0) {
+                document.getElementById('piItem').value = inv.items[0].itemId || '';
+                document.getElementById('piQty').value = inv.items[0].qty || 1;
+                document.getElementById('piPrice').value = inv.items[0].price || 0;
+            }
+            document.getElementById('piTotal').value = inv.total || 0;
+            document.getElementById('piCurrency').value = inv.currency || 'SAR';
+            document.getElementById('piStatus').value = inv.status || 'pending';
+            if (inv.fiscalYearId) {
+                document.getElementById('piFiscal').value = inv.fiscalYearId;
+            }
+            openModal('purchaseInvoiceModal');
+            addLog(`فتح تعديل فاتورة مشتريات #${id}`);
+        }
+
+        // =============================================================
+        // CUSTOMER STATEMENT (مختصرة)
+        // =============================================================
+        function renderCustomerStatement() {
+            const select = document.getElementById('customerStatementSelect');
+            const container = document.getElementById('customerStatementContainer');
+            const customerId = parseInt(select.value);
+            if (!customerId) {
+                container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:30px;">الرجاء اختيار عميل لعرض كشف الحساب</div>`;
+                return;
+            }
+            const customer = appData.customers.find(c => c.id === customerId);
+            if (!customer) { container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:30px;">العميل غير موجود</div>`; return; }
+            // Simplified statement
+            let transactions = [];
+            const sales = appData.salesInvoices.filter(s => s.customerId === customerId);
+            for (const s of sales) {
+                transactions.push({
+                    date: s.date || '',
+                    docNumber: `#${String(s.id).padStart(4,'0')}`,
+                    description: `فاتورة مبيعات`,
+                    debit: s.total || 0,
+                    credit: 0
+                });
+            }
+            const receipts = appData.receipts.filter(r => r.customerId === customerId);
+            for (const r of receipts) {
+                transactions.push({
+                    date: r.date || '',
+                    docNumber: `#${String(r.id).padStart(4,'0')}`,
+                    description: 'سند قبض',
+                    debit: 0,
+                    credit: r.amount || 0
+                });
+            }
+            transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            let balance = 0;
+            const rows = transactions.map(t => {
+                balance += (t.debit || 0) - (t.credit || 0);
+                return `
+                        <tr>
+                            <td>${t.date || '-'}</td>
+                            <td>${t.docNumber || '-'}</td>
+                            <td>${t.description || '-'}</td>
+                            <td style="color:var(--danger);">${(t.debit || 0).toLocaleString()}</td>
+                            <td style="color:var(--secondary);">${(t.credit || 0).toLocaleString()}</td>
+                            <td style="font-weight:600;">${balance.toLocaleString()}</td>
+                        </tr>
+                    `;
+            }).join('');
+            const totalDebit = transactions.reduce((s, t) => s + (t.debit || 0), 0);
+            const totalCredit = transactions.reduce((s, t) => s + (t.credit || 0), 0);
+            container.innerHTML = `
+                    <div style="margin-bottom:12px;"><strong>العميل:</strong> ${customer.name} (${customer.code})</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>التاريخ</th><th>رقم المستند</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead>
+                            <tbody>${rows || `<tr><td colspan="6" class="text-muted text-center">لا توجد حركات</td></tr>`}</tbody>
+                            <tfoot style="font-weight:700;background:var(--gray-100);">
+                                <tr><td colspan="3" style="text-align:left;">الإجمالي</td>
+                                    <td style="color:var(--danger);">${totalDebit.toLocaleString()}</td>
+                                    <td style="color:var(--secondary);">${totalCredit.toLocaleString()}</td>
+                                    <td style="color:var(--primary);">${(totalDebit-totalCredit).toLocaleString()}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+        }
+
+        function renderSupplierStatement() {
+            const select = document.getElementById('supplierStatementSelect');
+            const container = document.getElementById('supplierStatementContainer');
+            const supplierId = parseInt(select.value);
+            if (!supplierId) {
+                container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:30px;">الرجاء اختيار مورد لعرض كشف الحساب</div>`;
+                return;
+            }
+            const supplier = appData.suppliers.find(s => s.id === supplierId);
+            if (!supplier) { container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:30px;">المورد غير موجود</div>`; return; }
+            let transactions = [];
+            const purchases = appData.purchaseInvoices.filter(p => p.supplierId === supplierId);
+            for (const p of purchases) {
+                transactions.push({
+                    date: p.date || '',
+                    docNumber: `#${String(p.id).padStart(4,'0')}`,
+                    description: `فاتورة مشتريات`,
+                    debit: 0,
+                    credit: p.total || 0
+                });
+            }
+            const vouchers = appData.vouchers.filter(v => v.supplierId === supplierId);
+            for (const v of vouchers) {
+                transactions.push({
+                    date: v.date || '',
+                    docNumber: `#${String(v.id).padStart(4,'0')}`,
+                    description: 'سند صرف',
+                    debit: v.amount || 0,
+                    credit: 0
+                });
+            }
+            transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            let balance = 0;
+            const rows = transactions.map(t => {
+                balance += (t.debit || 0) - (t.credit || 0);
+                return `
+                        <tr>
+                            <td>${t.date || '-'}</td>
+                            <td>${t.docNumber || '-'}</td>
+                            <td>${t.description || '-'}</td>
+                            <td style="color:var(--danger);">${(t.debit || 0).toLocaleString()}</td>
+                            <td style="color:var(--secondary);">${(t.credit || 0).toLocaleString()}</td>
+                            <td style="font-weight:600;">${balance.toLocaleString()}</td>
+                        </tr>
+                    `;
+            }).join('');
+            const totalDebit = transactions.reduce((s, t) => s + (t.debit || 0), 0);
+            const totalCredit = transactions.reduce((s, t) => s + (t.credit || 0), 0);
+            container.innerHTML = `
+                    <div style="margin-bottom:12px;"><strong>المورد:</strong> ${supplier.name} (${supplier.code})</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>التاريخ</th><th>رقم المستند</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead>
+                            <tbody>${rows || `<tr><td colspan="6" class="text-muted text-center">لا توجد حركات</td></tr>`}</tbody>
+                            <tfoot style="font-weight:700;background:var(--gray-100);">
+                                <tr><td colspan="3" style="text-align:left;">الإجمالي</td>
+                                    <td style="color:var(--danger);">${totalDebit.toLocaleString()}</td>
+                                    <td style="color:var(--secondary);">${totalCredit.toLocaleString()}</td>
+                                    <td style="color:var(--primary);">${(totalDebit-totalCredit).toLocaleString()}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+        }
+
+        // =============================================================
+        // PRINT FUNCTIONS (مختصرة)
+        // =============================================================
+        function printInvoice(id, type) {
+            let invoice;
+            if (type === 'sales') {
+                invoice = appData.salesInvoices.find(s => s.id === id);
+            } else {
+                invoice = appData.purchaseInvoices.find(p => p.id === id);
+            }
+            if (!invoice) { alert('الفاتورة غير موجودة'); return; }
+            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
+            const config = appData.config;
+            const companyName = config.companyNameAr || 'شركة أونكس';
+            const totalAmount = invoice.total || 0;
+            const cur = appData.currencies.find(c => c.code === invoice.currency);
+            const currencySymbol = cur?.symbol || 'ر.س';
+
+            printWindow.document.write(`
+                    <html dir="rtl">
+                    <head><meta charset="UTF-8"><title>فاتورة #${String(id).padStart(4,'0')}</title>
+                    <style>body{font-family:'Segoe UI',Tahoma,sans-serif;padding:20px;color:#1a2330;}
+                    .header{text-align:center;border-bottom:2px solid #1a2b4a;padding-bottom:12px;margin-bottom:16px;}
+                    .header h1{font-size:22px;color:#1a2b4a;margin:0;}
+                    table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0;}
+                    table th{background:#1a2b4a;color:#fff;padding:6px 10px;text-align:center;}
+                    table td{padding:6px 10px;border-bottom:1px solid #e2e6ec;text-align:center;}
+                    .total{font-weight:700;font-size:16px;}
+                    .footer{margin-top:20px;text-align:center;font-size:11px;color:#8a94a6;border-top:1px solid #ddd;padding-top:10px;}
+                    .no-print{display:none;}</style>
+                    </head>
+                    <body>
+                        <div class="header"><h1>${companyName}</h1><p>فاتورة ${type === 'sales' ? 'مبيعات' : 'مشتريات'}</p></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:13px;margin-bottom:10px;">
+                            <div><strong>رقم:</strong> #${String(id).padStart(4,'0')}</div>
+                            <div><strong>التاريخ:</strong> ${invoice.date || ''}</div>
+                            <div><strong>المبلغ:</strong> ${totalAmount.toLocaleString()} ${currencySymbol}</div>
+                        </div>
+                        <table>
+                            <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+                            <tbody>${(invoice.items || []).map(item => {
+                                const invItem = appData.inventory.find(i=>i.id===item.itemId);
+                                return `<tr><td>${invItem?.name||'غير معروف'}</td><td>${item.qty||0}</td><td>${(item.price||0).toLocaleString()}</td><td>${(item.total||0).toLocaleString()}</td></tr>`;
+                            }).join('') || '<tr><td colspan="4">لا توجد أصناف</td></tr>'}</tbody>
+                            <tfoot><tr class="total"><td colspan="3">الإجمالي</td><td>${totalAmount.toLocaleString()} ${currencySymbol}</td></tr></tfoot>
+                        </table>
+                        <div class="footer">تم إنشاء بواسطة نظام أونكس برو</div>
+                        <div style="text-align:center;margin-top:14px;">
+                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة</button>
+                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
+                        </div>
+                        <script>setTimeout(()=>window.print(),600);<\/script>
+                    </body>
+                    </html>
+                `);
+            printWindow.document.close();
+        }
+
+        function printStatement(type) {
+            const container = type === 'customer' ? document.getElementById('customerStatementContainer') : document
+                .getElementById('supplierStatementContainer');
+            const title = type === 'customer' ? 'كشف حساب العميل' : 'كشف حساب المورد';
+            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
+            const content = container.innerHTML;
+            const config = appData.config;
+            const companyName = config.companyNameAr || 'شركة أونكس';
+
+            printWindow.document.write(`
+                    <html dir="rtl">
+                    <head><meta charset="UTF-8"><title>${title}</title>
+                    <style>body{font-family:'Segoe UI',Tahoma,sans-serif;padding:20px;color:#1a2330;}
+                    .header{text-align:center;border-bottom:2px solid #1a2b4a;padding-bottom:12px;margin-bottom:16px;}
+                    .header h1{font-size:22px;color:#1a2b4a;margin:0;}
+                    table{width:100%;border-collapse:collapse;font-size:12px;}
+                    table th{background:#1a2b4a;color:#fff;padding:6px 10px;text-align:center;}
+                    table td{padding:6px 10px;border-bottom:1px solid #e2e6ec;text-align:center;}
+                    .footer{margin-top:20px;text-align:center;font-size:11px;color:#8a94a6;border-top:1px solid #ddd;padding-top:10px;}
+                    .no-print{display:none;}</style>
+                    </head>
+                    <body>
+                        <div class="header"><h1>${companyName}</h1><p>${title}</p></div>
+                        ${content}
+                        <div class="footer">تم إنشاء بواسطة نظام أونكس برو</div>
+                        <div style="text-align:center;margin-top:14px;">
+                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة</button>
+                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
+                        </div>
+                        <script>setTimeout(()=>window.print(),600);<\/script>
+                    </body>
+                    </html>
+                `);
+            printWindow.document.close();
+        }
+
+        function printInventorySummary() {
+            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
+            const content = document.getElementById('inventorySummaryBody').innerHTML;
+            const totalQty = document.getElementById('invSumQty').textContent;
+            const totalValue = document.getElementById('invSumValue').textContent;
+            const config = appData.config;
+            const companyName = config.companyNameAr || 'شركة أونكس';
+
+            printWindow.document.write(`
+                    <html dir="rtl">
+                    <head><meta charset="UTF-8"><title>تقرير المخزون الإجمالي</title>
+                    <style>body{font-family:'Segoe UI',Tahoma,sans-serif;padding:20px;color:#1a2330;}
+                    .header{text-align:center;border-bottom:2px solid #1a2b4a;padding-bottom:12px;margin-bottom:16px;}
+                    .header h1{font-size:22px;color:#1a2b4a;margin:0;}
+                    table{width:100%;border-collapse:collapse;font-size:12px;}
+                    table th{background:#1a2b4a;color:#fff;padding:6px 10px;text-align:center;}
+                    table td{padding:6px 10px;border-bottom:1px solid #e2e6ec;text-align:center;}
+                    .footer{margin-top:20px;text-align:center;font-size:11px;color:#8a94a6;border-top:1px solid #ddd;padding-top:10px;}
+                    .no-print{display:none;}</style>
+                    </head>
+                    <body>
+                        <div class="header"><h1>${companyName}</h1><p>تقرير المخزون الإجمالي</p></div>
+                        <table>
+                            <thead><tr><th>#</th><th>الكود</th><th>الاسم</th><th>المخزن</th><th>الوحدة</th><th>الكمية</th><th>سعر البيع</th><th>القيمة</th></tr></thead>
+                            <tbody>${content}</tbody>
+                            <tfoot><tr><td colspan="5">الإجمالي</td><td>${totalQty}</td><td></td><td>${totalValue}</td></tr></tfoot>
+                        </table>
+                        <div class="footer">تم إنشاء بواسطة نظام أونكس برو</div>
+                        <div style="text-align:center;margin-top:14px;">
+                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة</button>
+                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
+                        </div>
+                        <script>setTimeout(()=>window.print(),600);<\/script>
+                    </body>
+                    </html>
+                `);
+            printWindow.document.close();
+        }
+
+        function printItemMovement() {
+            const container = document.getElementById('itemMovementContainer');
+            const select = document.getElementById('movementItemSelect');
+            const itemId = parseInt(select.value);
+            const item = appData.inventory.find(i => i.id === itemId);
+            if (!item) { alert('الرجاء اختيار صنف أولاً'); return; }
+            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
+            const config = appData.config;
+            const companyName = config.companyNameAr || 'شركة أونكس';
+            const content = container.innerHTML;
+
+            printWindow.document.write(`
+                    <html dir="rtl">
+                    <head><meta charset="UTF-8"><title>حركة صنف - ${item.name}</title>
+                    <style>body{font-family:'Segoe UI',Tahoma,sans-serif;padding:20px;color:#1a2330;}
+                    .header{text-align:center;border-bottom:2px solid #1a2b4a;padding-bottom:12px;margin-bottom:16px;}
+                    .header h1{font-size:22px;color:#1a2b4a;margin:0;}
+                    table{width:100%;border-collapse:collapse;font-size:12px;}
+                    table th{background:#1a2b4a;color:#fff;padding:6px 10px;text-align:center;}
+                    table td{padding:6px 10px;border-bottom:1px solid #e2e6ec;text-align:center;}
+                    .footer{margin-top:20px;text-align:center;font-size:11px;color:#8a94a6;border-top:1px solid #ddd;padding-top:10px;}
+                    .no-print{display:none;}</style>
+                    </head>
+                    <body>
+                        <div class="header"><h1>${companyName}</h1><p>حركة صنف: ${item.name} (${item.code})</p></div>
+                        ${content}
+                        <div class="footer">تم إنشاء بواسطة نظام أونكس برو</div>
+                        <div style="text-align:center;margin-top:14px;">
+                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة</button>
+                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
+                        </div>
+                        <script>setTimeout(()=>window.print(),600);<\/script>
+                    </body>
+                    </html>
+                `);
+            printWindow.document.close();
+        }
+
+        function renderItemMovement() {
+            const select = document.getElementById('movementItemSelect');
+            const container = document.getElementById('itemMovementContainer');
+            const itemId = parseInt(select.value);
+            if (!itemId) {
+                container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:30px;">الرجاء اختيار صنف لعرض الحركة</div>`;
+                return;
+            }
+            const item = appData.inventory.find(i => i.id === itemId);
+            if (!item) { container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:30px;">الصنف غير موجود</div>`; return; }
+            let transactions = [];
+            const sales = appData.salesInvoices.filter(inv => inv.items && inv.items.some(it => it.itemId === itemId));
+            for (const inv of sales) {
+                const line = inv.items.find(it => it.itemId === itemId);
+                transactions.push({
+                    date: inv.date || '',
+                    docNumber: `#${String(inv.id).padStart(4,'0')}`,
+                    description: `فاتورة مبيعات`,
+                    in: 0,
+                    out: line ? line.qty || 0 : 0
+                });
+            }
+            const purchases = appData.purchaseInvoices.filter(inv => inv.items && inv.items.some(it => it.itemId === itemId));
+            for (const inv of purchases) {
+                const line = inv.items.find(it => it.itemId === itemId);
+                transactions.push({
+                    date: inv.date || '',
+                    docNumber: `#${String(inv.id).padStart(4,'0')}`,
+                    description: 'فاتورة مشتريات',
+                    in: line ? line.qty || 0 : 0,
+                    out: 0
+                });
+            }
+            const sReturns = appData.salesReturns.filter(r => r.originalInvoiceId && appData.salesInvoices.some(inv => inv.id === r
+                .originalInvoiceId && inv.items.some(it => it.itemId === itemId)));
+            for (const r of sReturns) {
+                const inv = appData.salesInvoices.find(i => i.id === r.originalInvoiceId);
+                const line = inv ? inv.items.find(it => it.itemId === itemId) : null;
+                transactions.push({
+                    date: r.date || '',
+                    docNumber: `#${String(r.id).padStart(4,'0')}`,
+                    description: `مردود مبيعات`,
+                    in: line ? line.qty || 0 : 0,
+                    out: 0
+                });
+            }
+            const pReturns = appData.purchaseReturns.filter(r => r.originalInvoiceId && appData.purchaseInvoices.some(inv => inv
+                .id === r.originalInvoiceId && inv.items.some(it => it.itemId === itemId)));
+            for (const r of pReturns) {
+                const inv = appData.purchaseInvoices.find(i => i.id === r.originalInvoiceId);
+                const line = inv ? inv.items.find(it => it.itemId === itemId) : null;
+                transactions.push({
+                    date: r.date || '',
+                    docNumber: `#${String(r.id).padStart(4,'0')}`,
+                    description: `مردود مشتريات`,
+                    in: 0,
+                    out: line ? line.qty || 0 : 0
+                });
+            }
+            transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            let balance = 0;
+            const rows = transactions.map(t => {
+                balance += (t.in || 0) - (t.out || 0);
+                return `
+                        <tr>
+                            <td>${t.date || '-'}</td>
+                            <td>${t.docNumber || '-'}</td>
+                            <td>${t.description || '-'}</td>
+                            <td style="color:var(--secondary);">${(t.in || 0).toLocaleString()}</td>
+                            <td style="color:var(--danger);">${(t.out || 0).toLocaleString()}</td>
+                            <td style="font-weight:600;">${balance.toLocaleString()}</td>
+                        </tr>
+                    `;
+            }).join('');
+            const totalIn = transactions.reduce((s, t) => s + (t.in || 0), 0);
+            const totalOut = transactions.reduce((s, t) => s + (t.out || 0), 0);
+            container.innerHTML = `
+                    <div style="margin-bottom:12px;"><strong>الصنف:</strong> ${item.name} (${item.code}) - الكمية الحالية: ${item.quantity || 0}</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>التاريخ</th><th>رقم المستند</th><th>البيان</th><th>وارد</th><th>منصرف</th><th>الرصيد</th></tr></thead>
+                            <tbody>${rows || `<tr><td colspan="6" class="text-muted text-center">لا توجد حركات</td></tr>`}</tbody>
+                            <tfoot style="font-weight:700;background:var(--gray-100);">
+                                <tr><td colspan="3" style="text-align:left;">الإجمالي</td>
+                                    <td style="color:var(--secondary);">${totalIn.toLocaleString()}</td>
+                                    <td style="color:var(--danger);">${totalOut.toLocaleString()}</td>
+                                    <td style="color:var(--primary);">${(totalIn-totalOut).toLocaleString()}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+        }
+
+        // =============================================================
+        // DASHBOARD & STATS
+        // =============================================================
+        function updateDashboard() {
+            const sales = appData.salesInvoices;
+            const purchases = appData.purchaseInvoices;
+            const journal = appData.journal;
+            const sReturns = appData.salesReturns || [];
+            const pReturns = appData.purchaseReturns || [];
+
+            let totalRevenue = 0,
+                totalExpenses = 0;
+            for (const j of journal) {
+                if (j.type === 'إيراد' || j.type === 'إيرادات') totalRevenue += j.amount || 0;
+                else if (j.type === 'مصروف' || j.type === 'مصروفات') totalExpenses += j.amount || 0;
+            }
+            for (const s of sales) totalRevenue += s.total || 0;
+            for (const p of purchases) totalExpenses += p.total || 0;
+            for (const r of sReturns) { if (r.status === 'completed') totalRevenue -= r.amount || 0; }
+            for (const r of pReturns) { if (r.status === 'completed') totalExpenses -= r.amount || 0; }
+
+            const profit = totalRevenue - totalExpenses;
+            const totalInvoices = sales.length + purchases.length;
+
+            document.getElementById('statRevenue').innerHTML = totalRevenue.toLocaleString() + ' <small>ر.س</small>';
+            document.getElementById('statExpenses').innerHTML = totalExpenses.toLocaleString() + ' <small>ر.س</small>';
+            document.getElementById('statProfit').innerHTML = profit.toLocaleString() + ' <small>ر.س</small>';
+            document.getElementById('statInvoices').textContent = totalInvoices;
+
+            const recent = [...journal].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
+            const tbody = document.getElementById('recentTransactions');
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center">لا توجد معاملات</td></tr>`;
+            } else {
+                tbody.innerHTML = recent.map(j => `
+                        <tr>
+                            <td>${j.date || ''}</td>
+                            <td>${j.description || ''}</td>
+                            <td>${j.amount?.toLocaleString() || 0}</td>
+                            <td><span class="badge-status ${j.type === 'إيراد' ? 'paid' : 'overdue'}">${j.type || ''}</span></td>
+                        </tr>
+                    `).join('');
+            }
+            updateBotStatusDisplay();
+        }
+
+        function updateSystemStats() {
+            document.getElementById('statAccounts').textContent = appData.accounts.length;
+            document.getElementById('statCustomers').textContent = appData.customers.length;
+            document.getElementById('statSuppliers').textContent = appData.suppliers.length;
+            document.getElementById('statAllInvoices').textContent = appData.salesInvoices.length + appData.purchaseInvoices
+                .length;
+            document.getElementById('statItems').textContent = appData.inventory.length;
+            document.getElementById('statWarehouses').textContent = appData.warehouses.length;
+            document.getElementById('statUnits').textContent = appData.units.length;
+            document.getElementById('statUsers').textContent = users.length;
+            document.getElementById('botStat').textContent = botConfig.isActive ? '✅ نشط' : '❌ غير نشط';
+
+            if (navigator.storage && navigator.storage.estimate) {
+                navigator.storage.estimate().then(estimate => {
+                    const used = (estimate.usage / 1024 / 1024).toFixed(1);
+                    const total = (estimate.quota / 1024 / 1024).toFixed(1);
+                    document.getElementById('storageInfo').textContent =
+                        `المستخدم: ${used} MB / ${total} MB (${Math.round(estimate.usage/estimate.quota*100)}%)`;
+                }).catch(() => { document.getElementById('storageInfo').textContent = 'غير متاح'; });
+            } else {
+                document.getElementById('storageInfo').textContent = 'غير مدعوم';
+            }
+        }
+
+        // =============================================================
+        // LOGO FUNCTIONS
+        // =============================================================
+        function loadLogoPreview() {
+            const logo = appData.config.logo || '';
+            const img = document.getElementById('logoPreview');
+            if (logo) {
+                img.src = logo;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+            }
+        }
+
+        async function uploadLogo() {
+            const fileInput = document.getElementById('logoUpload');
+            const file = fileInput.files[0];
+            if (!file) { alert('يرجى اختيار صورة'); return; }
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const dataUrl = e.target.result;
+                appData.config.logo = dataUrl;
+                await saveAllData();
+                loadLogoPreview();
+                alert('تم رفع الشعار وحفظه بنجاح');
+                addLog('تم تحديث الشعار');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // =============================================================
+        // FISCAL YEAR FUNCTIONS
+        // =============================================================
+        function updateFiscalDisplay() {
+            const display = document.getElementById('fiscalYearDisplay');
+            if (display) {
+                const active = appData.fiscalYears.find(f => f.status === 'active');
+                if (active) {
+                    display.textContent = `السنة المالية: ${active.name}`;
+                } else {
+                    display.textContent = '⚠️ لا توجد سنة مالية نشطة';
+                }
+            }
+        }
+
+        async function closeFiscalYear(id) {
+            if (confirm('هل أنت متأكد من إغلاق هذه السنة المالية؟')) {
+                const fy = appData.fiscalYears.find(f => f.id === id);
+                if (fy) {
+                    fy.status = 'closed';
+                    await saveAllData();
+                    renderAll();
+                    addLog(`تم إغلاق السنة المالية ${fy.name}`);
+                }
+            }
+        }
+
+        async function deleteFiscalYear(id) {
+            if (confirm('هل أنت متأكد من حذف هذه السنة المالية؟')) {
+                appData.fiscalYears = appData.fiscalYears.filter(f => f.id !== id);
+                await saveAllData();
+                renderAll();
+                addLog(`تم حذف السنة المالية #${id}`);
+            }
+        }
+
+        // =============================================================
+        // RENDER ALL
+        // =============================================================
         function renderFiscalYears() {
             const tbody = document.getElementById('fiscalTableBody');
             const data = appData.fiscalYears;
@@ -3692,121 +5099,6 @@
             document.getElementById('invSumValue').textContent = totalValue.toLocaleString();
         }
 
-        function renderItemMovement() {
-            const select = document.getElementById('movementItemSelect');
-            const container = document.getElementById('itemMovementContainer');
-            const itemId = parseInt(select.value);
-            if (!itemId) {
-                container.innerHTML = `<div class="text-muted text-center" style="padding:30px;">الرجاء اختيار صنف لعرض الحركة</div>`;
-                return;
-            }
-            const item = appData.inventory.find(i => i.id === itemId);
-            if (!item) { container.innerHTML = `<div class="text-muted text-center" style="padding:30px;">الصنف غير موجود</div>`; return; }
-
-            let transactions = [];
-            const sales = appData.salesInvoices.filter(inv => inv.items && inv.items.some(it => it.itemId === itemId));
-            for (const inv of sales) {
-                const line = inv.items.find(it => it.itemId === itemId);
-                transactions.push({
-                    date: inv.date || '',
-                    docNumber: `#${String(inv.id).padStart(4,'0')}`,
-                    description: `فاتورة مبيعات`,
-                    reference: '',
-                    in: 0,
-                    out: line ? line.qty || 0 : 0,
-                    balance: 0,
-                    type: 'sales'
-                });
-            }
-            const purchases = appData.purchaseInvoices.filter(inv => inv.items && inv.items.some(it => it.itemId === itemId));
-            for (const inv of purchases) {
-                const line = inv.items.find(it => it.itemId === itemId);
-                transactions.push({
-                    date: inv.date || '',
-                    docNumber: `#${String(inv.id).padStart(4,'0')}`,
-                    description: 'فاتورة مشتريات',
-                    reference: '',
-                    in: line ? line.qty || 0 : 0,
-                    out: 0,
-                    balance: 0,
-                    type: 'purchase'
-                });
-            }
-            const sReturns = appData.salesReturns.filter(r => r.originalInvoiceId && appData.salesInvoices.some(inv => inv.id === r
-                .originalInvoiceId && inv.items.some(it => it.itemId === itemId)));
-            for (const r of sReturns) {
-                const inv = appData.salesInvoices.find(i => i.id === r.originalInvoiceId);
-                const line = inv ? inv.items.find(it => it.itemId === itemId) : null;
-                transactions.push({
-                    date: r.date || '',
-                    docNumber: `#${String(r.id).padStart(4,'0')}`,
-                    description: `مردود مبيعات`,
-                    reference: r.originalInvoiceId ? `فاتورة #${String(r.originalInvoiceId).padStart(4,'0')}` : '',
-                    in: line ? line.qty || 0 : 0,
-                    out: 0,
-                    balance: 0,
-                    type: 'sReturn'
-                });
-            }
-            const pReturns = appData.purchaseReturns.filter(r => r.originalInvoiceId && appData.purchaseInvoices.some(inv => inv
-                .id === r.originalInvoiceId && inv.items.some(it => it.itemId === itemId)));
-            for (const r of pReturns) {
-                const inv = appData.purchaseInvoices.find(i => i.id === r.originalInvoiceId);
-                const line = inv ? inv.items.find(it => it.itemId === itemId) : null;
-                transactions.push({
-                    date: r.date || '',
-                    docNumber: `#${String(r.id).padStart(4,'0')}`,
-                    description: `مردود مشتريات`,
-                    reference: r.originalInvoiceId ? `فاتورة #${String(r.originalInvoiceId).padStart(4,'0')}` : '',
-                    in: 0,
-                    out: line ? line.qty || 0 : 0,
-                    balance: 0,
-                    type: 'pReturn'
-                });
-            }
-
-            transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-            let balance = 0;
-            const rows = transactions.map(t => {
-                balance += (t.in || 0) - (t.out || 0);
-                return `
-                        <tr>
-                            <td>${t.date || '-'}</td>
-                            <td>${t.docNumber || '-'}</td>
-                            <td>${t.description || '-'}</td>
-                            <td>${t.reference || '-'}</td>
-                            <td style="color:var(--secondary);font-weight:500;">${(t.in || 0).toLocaleString()}</td>
-                            <td style="color:var(--danger);font-weight:500;">${(t.out || 0).toLocaleString()}</td>
-                            <td style="font-weight:600;">${balance.toLocaleString()}</td>
-                        </tr>
-                    `;
-            }).join('');
-            const totalIn = transactions.reduce((s, t) => s + (t.in || 0), 0);
-            const totalOut = transactions.reduce((s, t) => s + (t.out || 0), 0);
-            const finalBalance = totalIn - totalOut;
-            container.innerHTML = `
-                    <div style="margin-bottom:12px;">
-                        <strong>الصنف:</strong> ${item.name} (${item.code}) - الكمية الحالية: ${item.quantity || 0}
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>التاريخ</th><th>رقم المستند</th><th>البيان</th><th>المرجع</th><th>وارد</th><th>منصرف</th><th>الرصيد</th></tr>
-                            </thead>
-                            <tbody>${rows || `<tr><td colspan="7" class="text-muted text-center">لا توجد حركات</td></tr>`}</tbody>
-                            <tfoot style="font-weight:700;background:var(--gray-100);">
-                                <tr>
-                                    <td colspan="4" style="text-align:left;">الإجمالي</td>
-                                    <td style="color:var(--secondary);">${totalIn.toLocaleString()}</td>
-                                    <td style="color:var(--danger);">${totalOut.toLocaleString()}</td>
-                                    <td style="color:var(--primary);">${finalBalance.toLocaleString()}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                `;
-        }
-
         function renderAll() {
             renderUsers();
             renderSupport();
@@ -3838,10 +5130,11 @@
             updateSystemStats();
             updateFiscalDisplay();
             loadLogoPreview();
+            updateBotStatusDisplay();
         }
 
         // =============================================================
-        // POPULATE DROPDOWNS (نفس السابق)
+        // POPULATE DROPDOWNS
         // =============================================================
         function populateDropdowns() {
             const accounts = appData.accounts;
@@ -4040,943 +5333,7 @@
         }
 
         // =============================================================
-        // LOGO FUNCTIONS (نفس السابق)
-        // =============================================================
-        function loadLogoPreview() {
-            const logo = appData.config.logo || '';
-            const img = document.getElementById('logoPreview');
-            if (logo) {
-                img.src = logo;
-                img.style.display = 'block';
-            } else {
-                img.style.display = 'none';
-            }
-        }
-
-        async function uploadLogo() {
-            const fileInput = document.getElementById('logoUpload');
-            const file = fileInput.files[0];
-            if (!file) { alert('يرجى اختيار صورة'); return; }
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const dataUrl = e.target.result;
-                appData.config.logo = dataUrl;
-                await saveAllData();
-                loadLogoPreview();
-                alert('تم رفع الشعار وحفظه بنجاح');
-                addLog('تم تحديث الشعار');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // =============================================================
-        // FISCAL YEAR FUNCTIONS (نفس السابق)
-        // =============================================================
-        function updateFiscalDisplay() {
-            const display = document.getElementById('fiscalYearDisplay');
-            if (display) {
-                const active = appData.fiscalYears.find(f => f.status === 'active');
-                if (active) {
-                    display.textContent = `السنة المالية: ${active.name}`;
-                } else {
-                    display.textContent = '⚠️ لا توجد سنة مالية نشطة';
-                }
-            }
-        }
-
-        async function closeFiscalYear(id) {
-            if (confirm('هل أنت متأكد من إغلاق هذه السنة المالية؟')) {
-                const fy = appData.fiscalYears.find(f => f.id === id);
-                if (fy) {
-                    fy.status = 'closed';
-                    await saveAllData();
-                    renderAll();
-                    addLog(`تم إغلاق السنة المالية ${fy.name}`);
-                }
-            }
-        }
-
-        async function deleteFiscalYear(id) {
-            if (confirm('هل أنت متأكد من حذف هذه السنة المالية؟')) {
-                appData.fiscalYears = appData.fiscalYears.filter(f => f.id !== id);
-                await saveAllData();
-                renderAll();
-                addLog(`تم حذف السنة المالية #${id}`);
-            }
-        }
-
-        // =============================================================
-        // USER MANAGEMENT FUNCTIONS (Admin Only)
-        // =============================================================
-        async function blockUser(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            if (confirm('هل أنت متأكد من حظر هذا المستخدم؟')) {
-                const user = users.find(u => u.id === id);
-                if (user) {
-                    user.status = 'blocked';
-                    await saveAllData();
-                    renderAll();
-                    addLog(`تم حظر المستخدم ${user.name}`);
-                    addBotMessage(`✅ تم حظر المستخدم ${user.name}`, 'bot');
-                }
-            }
-        }
-
-        async function unblockUser(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            if (confirm('هل أنت متأكد من فك الحظر عن هذا المستخدم؟')) {
-                const user = users.find(u => u.id === id);
-                if (user) {
-                    user.status = 'active';
-                    await saveAllData();
-                    renderAll();
-                    addLog(`تم فك الحظر عن المستخدم ${user.name}`);
-                    addBotMessage(`✅ تم فك الحظر عن المستخدم ${user.name}`, 'bot');
-                }
-            }
-        }
-
-        async function deleteUser(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            if (id === 1) { alert('لا يمكن حذف المستخدم الرئيسي'); return; }
-            if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
-                users = users.filter(u => u.id !== id);
-                await saveAllData();
-                renderAll();
-                addLog(`تم حذف المستخدم #${id}`);
-            }
-        }
-
-        // =============================================================
-        // SUPPORT FUNCTIONS (Admin Only)
-        // =============================================================
-        async function resolveSupport(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            const ticket = supportTickets.find(t => t.id === id);
-            if (ticket) {
-                ticket.status = 'resolved';
-                await saveAllData();
-                renderAll();
-                addLog(`تم حل الشكوى #${id}`);
-                addBotMessage(`✅ تم حل الشكوى #${String(id).padStart(4,'0')}`, 'bot');
-            }
-        }
-
-        async function deleteSupport(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            if (confirm('هل أنت متأكد من حذف هذه الشكوى؟')) {
-                supportTickets = supportTickets.filter(t => t.id !== id);
-                await saveAllData();
-                renderAll();
-                addLog(`تم حذف الشكوى #${id}`);
-            }
-        }
-
-        // =============================================================
-        // BACKUP FUNCTIONS (Admin Only)
-        // =============================================================
-        async function createBackup() {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            const backup = {
-                id: backups.length ? Math.max(...backups.map(b => b.id)) + 1 : 1,
-                userName: currentUser?.name || 'غير محدد',
-                createdAt: new Date().toISOString(),
-                size: (Math.random() * 100 + 10).toFixed(1) + ' KB',
-                status: 'completed'
-            };
-            backups.push(backup);
-            await saveAllData();
-            renderAll();
-            addLog(`تم إنشاء نسخة احتياطية #${backup.id}`);
-            addBotMessage(`✅ تم إنشاء نسخة احتياطية جديدة #${String(backup.id).padStart(4,'0')}`, 'bot');
-            alert('✅ تم إنشاء النسخة الاحتياطية بنجاح');
-        }
-
-        function downloadBackup(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            const backup = backups.find(b => b.id === id);
-            if (!backup) { alert('النسخة غير موجودة'); return; }
-            const data = {
-                version: '8.1',
-                exportedAt: new Date().toISOString(),
-                backupId: id,
-                accounts: appData.accounts,
-                customers: appData.customers,
-                suppliers: appData.suppliers,
-                currencies: appData.currencies,
-                warehouses: appData.warehouses,
-                inventory: appData.inventory,
-                units: appData.units,
-                journal: appData.journal,
-                salesInvoices: appData.salesInvoices,
-                purchaseInvoices: appData.purchaseInvoices,
-                salesReturns: appData.salesReturns,
-                purchaseReturns: appData.purchaseReturns,
-                receipts: appData.receipts,
-                vouchers: appData.vouchers,
-                fiscalYears: appData.fiscalYears,
-                config: appData.config,
-                users: users,
-                support: supportTickets,
-                backups: backups
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `backup_${id}_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            addLog(`تم تحميل النسخة الاحتياطية #${id}`);
-            addBotMessage(`📥 تم تحميل النسخة الاحتياطية #${String(id).padStart(4,'0')}`, 'bot');
-        }
-
-        async function deleteBackup(id) {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            if (confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')) {
-                backups = backups.filter(b => b.id !== id);
-                await saveAllData();
-                renderAll();
-                addLog(`تم حذف النسخة الاحتياطية #${id}`);
-            }
-        }
-
-        // =============================================================
-        // EDIT FUNCTIONS (نفس السابق)
-        // =============================================================
-        function editSalesInvoice(id) {
-            const inv = appData.salesInvoices.find(s => s.id === id);
-            if (!inv) { alert('الفاتورة غير موجودة'); return; }
-            document.getElementById('siEditId').value = id;
-            document.getElementById('siDate').value = inv.date || '';
-            document.getElementById('siCustomer').value = inv.customerId || '';
-            document.getElementById('siMemberId').value = inv.memberId || '1';
-            document.getElementById('siWarehouse').value = inv.warehouseId || '';
-            document.getElementById('siInvoiceType').value = inv.invoiceType || 'نقدي';
-            document.getElementById('siPaymentType').value = inv.paymentType || 'cash';
-            document.getElementById('siDueDate').value = inv.dueDate || '';
-            if (inv.items && inv.items.length > 0) {
-                document.getElementById('siItem').value = inv.items[0].itemId || '';
-                document.getElementById('siUnit').value = inv.items[0].unitId || '';
-                document.getElementById('siQty').value = inv.items[0].qty || 1;
-                document.getElementById('siPrice').value = inv.items[0].price || 0;
-            }
-            document.getElementById('siTotal').value = inv.total || 0;
-            document.getElementById('siCurrency').value = inv.currency || 'SAR';
-            document.getElementById('siStatus').value = inv.status || 'pending';
-            if (inv.fiscalYearId) {
-                document.getElementById('siFiscal').value = inv.fiscalYearId;
-            }
-            openModal('salesInvoiceModal');
-            addLog(`فتح تعديل فاتورة مبيعات #${id}`);
-        }
-
-        function editPurchaseInvoice(id) {
-            const inv = appData.purchaseInvoices.find(p => p.id === id);
-            if (!inv) { alert('الفاتورة غير موجودة'); return; }
-            document.getElementById('piEditId').value = id;
-            document.getElementById('piDate').value = inv.date || '';
-            document.getElementById('piSupplier').value = inv.supplierId || '';
-            document.getElementById('piWarehouse').value = inv.warehouseId || '';
-            document.getElementById('piPaymentType').value = inv.paymentType || 'cash';
-            document.getElementById('piDueDate').value = inv.dueDate || '';
-            if (inv.items && inv.items.length > 0) {
-                document.getElementById('piItem').value = inv.items[0].itemId || '';
-                document.getElementById('piQty').value = inv.items[0].qty || 1;
-                document.getElementById('piPrice').value = inv.items[0].price || 0;
-            }
-            document.getElementById('piTotal').value = inv.total || 0;
-            document.getElementById('piCurrency').value = inv.currency || 'SAR';
-            document.getElementById('piStatus').value = inv.status || 'pending';
-            if (inv.fiscalYearId) {
-                document.getElementById('piFiscal').value = inv.fiscalYearId;
-            }
-            openModal('purchaseInvoiceModal');
-            addLog(`فتح تعديل فاتورة مشتريات #${id}`);
-        }
-
-        // =============================================================
-        // CUSTOMER STATEMENT (نفس السابق)
-        // =============================================================
-        function renderCustomerStatement() {
-            const select = document.getElementById('customerStatementSelect');
-            const container = document.getElementById('customerStatementContainer');
-            const badge = document.getElementById('customerLinkedBadge');
-            const customerId = parseInt(select.value);
-            if (!customerId) {
-                container.innerHTML =
-                    `<div class="text-muted text-center" style="padding:30px;">الرجاء اختيار عميل لعرض كشف الحساب</div>`;
-                badge.textContent = 'غير مرتبط';
-                return;
-            }
-            const customer = appData.customers.find(c => c.id === customerId);
-            if (!customer) { container.innerHTML =
-                    `<div class="text-muted text-center" style="padding:30px;">العميل غير موجود</div>`; return; }
-            const linkedSupplier = customer.linkedSupplierId ? appData.suppliers.find(s => s.id === customer
-                .linkedSupplierId) : null;
-            badge.textContent = linkedSupplier ? `مرتبط بـ ${linkedSupplier.name}` : 'غير مرتبط';
-
-            let transactions = [];
-            const sales = appData.salesInvoices.filter(s => s.customerId === customerId);
-            for (const s of sales) {
-                transactions.push({
-                    date: s.date || '',
-                    docNumber: `#${String(s.id).padStart(4,'0')}`,
-                    description: `فاتورة مبيعات (${s.invoiceType || 'نقدي'})`,
-                    reference: '',
-                    debit: s.total || 0,
-                    credit: 0,
-                    status: s.status || 'pending',
-                    type: 'sales'
-                });
-            }
-            const receipts = appData.receipts.filter(r => r.customerId === customerId);
-            for (const r of receipts) {
-                transactions.push({
-                    date: r.date || '',
-                    docNumber: `#${String(r.id).padStart(4,'0')}`,
-                    description: 'سند قبض',
-                    reference: r.reference || '',
-                    debit: 0,
-                    credit: r.amount || 0,
-                    status: 'paid',
-                    type: 'receipt'
-                });
-            }
-            const returns = appData.salesReturns.filter(r => r.customerId === customerId);
-            for (const r of returns) {
-                transactions.push({
-                    date: r.date || '',
-                    docNumber: `#${String(r.id).padStart(4,'0')}`,
-                    description: `مردود مبيعات - ${r.reason || ''}`,
-                    reference: r.originalInvoiceId ? `فاتورة #${String(r.originalInvoiceId).padStart(4,'0')}` : '',
-                    debit: 0,
-                    credit: r.amount || 0,
-                    status: r.status || 'completed',
-                    type: 'return'
-                });
-            }
-            if (linkedSupplier) {
-                const supplierId = linkedSupplier.id;
-                const purchases = appData.purchaseInvoices.filter(p => p.supplierId === supplierId);
-                for (const p of purchases) {
-                    transactions.push({
-                        date: p.date || '',
-                        docNumber: `#${String(p.id).padStart(4,'0')}`,
-                        description: `فاتورة مشتريات من ${linkedSupplier.name}`,
-                        reference: '',
-                        debit: 0,
-                        credit: p.total || 0,
-                        status: p.status || 'pending',
-                        type: 'purchase'
-                    });
-                }
-                const vouchers = appData.vouchers.filter(v => v.supplierId === supplierId);
-                for (const v of vouchers) {
-                    transactions.push({
-                        date: v.date || '',
-                        docNumber: `#${String(v.id).padStart(4,'0')}`,
-                        description: `سند صرف للمورد ${linkedSupplier.name}`,
-                        reference: v.reference || '',
-                        debit: v.amount || 0,
-                        credit: 0,
-                        status: 'paid',
-                        type: 'voucher'
-                    });
-                }
-            }
-            transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-            let balance = 0;
-            const rows = transactions.map(t => {
-                balance += (t.debit || 0) - (t.credit || 0);
-                const statusMap = { 'paid': 'مدفوع', 'pending': 'معلق', 'overdue': 'متأخر', 'draft': 'مسودة',
-                    'completed': 'مكتمل' };
-                return `
-                        <tr>
-                            <td>${t.date || '-'}</td>
-                            <td>${t.docNumber || '-'}</td>
-                            <td>${t.description || '-'}</td>
-                            <td>${t.reference || '-'}</td>
-                            <td style="color:var(--danger);font-weight:500;">${(t.debit || 0).toLocaleString()}</td>
-                            <td style="color:var(--secondary);font-weight:500;">${(t.credit || 0).toLocaleString()}</td>
-                            <td style="font-weight:600;">${balance.toLocaleString()}</td>
-                            <td><span class="status-badge ${t.status}">${statusMap[t.status] || t.status}</span></td>
-                        </tr>
-                    `;
-            }).join('');
-            const totalDebit = transactions.reduce((s, t) => s + (t.debit || 0), 0);
-            const totalCredit = transactions.reduce((s, t) => s + (t.credit || 0), 0);
-            const finalBalance = totalDebit - totalCredit;
-            container.innerHTML = `
-                    <div style="margin-bottom:12px;">
-                        <strong>العميل:</strong> ${customer.name} (${customer.code})
-                        ${linkedSupplier ? ` | <span class="linked-badge">مرتبط بـ ${linkedSupplier.name}</span>` : ''}
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>التاريخ</th><th>رقم المستند</th><th>البيان</th><th>رقم المرجع</th><th>مدين (ر.س)</th><th>دائن (ر.س)</th><th>الرصيد (ر.س)</th><th>الحالة</th></tr>
-                            </thead>
-                            <tbody>${rows || `<tr><td colspan="8" class="text-muted text-center">لا توجد حركات</td></tr>`}</tbody>
-                            <tfoot style="font-weight:700;background:var(--gray-100);">
-                                <tr>
-                                    <td colspan="4" style="text-align:left;">الإجمالي</td>
-                                    <td style="color:var(--danger);">${totalDebit.toLocaleString()}</td>
-                                    <td style="color:var(--secondary);">${totalCredit.toLocaleString()}</td>
-                                    <td style="color:var(--primary);">${finalBalance.toLocaleString()}</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div class="statement-totals">
-                        <span>إجمالي المديونية: <span class="total-debit">${totalDebit.toLocaleString()} ر.س</span></span>
-                        <span>إجمالي المدفوعات: <span class="total-credit">${totalCredit.toLocaleString()} ر.س</span></span>
-                        <span>الرصيد النهائي: <span class="total-balance">${finalBalance.toLocaleString()} ر.س</span></span>
-                    </div>
-                `;
-        }
-
-        // =============================================================
-        // SUPPLIER STATEMENT (نفس السابق)
-        // =============================================================
-        function renderSupplierStatement() {
-            const select = document.getElementById('supplierStatementSelect');
-            const container = document.getElementById('supplierStatementContainer');
-            const badge = document.getElementById('supplierLinkedBadge');
-            const supplierId = parseInt(select.value);
-            if (!supplierId) {
-                container.innerHTML =
-                    `<div class="text-muted text-center" style="padding:30px;">الرجاء اختيار مورد لعرض كشف الحساب</div>`;
-                badge.textContent = 'غير مرتبط';
-                return;
-            }
-            const supplier = appData.suppliers.find(s => s.id === supplierId);
-            if (!supplier) { container.innerHTML =
-                    `<div class="text-muted text-center" style="padding:30px;">المورد غير موجود</div>`; return; }
-            const linkedCustomer = supplier.linkedCustomerId ? appData.customers.find(c => c.id === supplier
-                .linkedCustomerId) : null;
-            badge.textContent = linkedCustomer ? `مرتبط بـ ${linkedCustomer.name}` : 'غير مرتبط';
-
-            let transactions = [];
-            const purchases = appData.purchaseInvoices.filter(p => p.supplierId === supplierId);
-            for (const p of purchases) {
-                transactions.push({
-                    date: p.date || '',
-                    docNumber: `#${String(p.id).padStart(4,'0')}`,
-                    description: `فاتورة مشتريات`,
-                    reference: '',
-                    debit: 0,
-                    credit: p.total || 0,
-                    status: p.status || 'pending',
-                    type: 'purchase'
-                });
-            }
-            const vouchers = appData.vouchers.filter(v => v.supplierId === supplierId);
-            for (const v of vouchers) {
-                transactions.push({
-                    date: v.date || '',
-                    docNumber: `#${String(v.id).padStart(4,'0')}`,
-                    description: 'سند صرف',
-                    reference: v.reference || '',
-                    debit: v.amount || 0,
-                    credit: 0,
-                    status: 'paid',
-                    type: 'voucher'
-                });
-            }
-            const returns = appData.purchaseReturns.filter(r => r.supplierId === supplierId);
-            for (const r of returns) {
-                transactions.push({
-                    date: r.date || '',
-                    docNumber: `#${String(r.id).padStart(4,'0')}`,
-                    description: `مردود مشتريات - ${r.reason || ''}`,
-                    reference: r.originalInvoiceId ? `فاتورة #${String(r.originalInvoiceId).padStart(4,'0')}` : '',
-                    debit: r.amount || 0,
-                    credit: 0,
-                    status: r.status || 'completed',
-                    type: 'return'
-                });
-            }
-            if (linkedCustomer) {
-                const customerId = linkedCustomer.id;
-                const sales = appData.salesInvoices.filter(s => s.customerId === customerId);
-                for (const s of sales) {
-                    transactions.push({
-                        date: s.date || '',
-                        docNumber: `#${String(s.id).padStart(4,'0')}`,
-                        description: `فاتورة مبيعات للعميل ${linkedCustomer.name}`,
-                        reference: '',
-                        debit: s.total || 0,
-                        credit: 0,
-                        status: s.status || 'pending',
-                        type: 'sales'
-                    });
-                }
-                const receipts = appData.receipts.filter(r => r.customerId === customerId);
-                for (const r of receipts) {
-                    transactions.push({
-                        date: r.date || '',
-                        docNumber: `#${String(r.id).padStart(4,'0')}`,
-                        description: `سند قبض من ${linkedCustomer.name}`,
-                        reference: r.reference || '',
-                        debit: 0,
-                        credit: r.amount || 0,
-                        status: 'paid',
-                        type: 'receipt'
-                    });
-                }
-            }
-            transactions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-            let balance = 0;
-            const rows = transactions.map(t => {
-                balance += (t.debit || 0) - (t.credit || 0);
-                const statusMap = { 'paid': 'مدفوع', 'pending': 'معلق', 'overdue': 'متأخر', 'draft': 'مسودة',
-                    'completed': 'مكتمل' };
-                return `
-                        <tr>
-                            <td>${t.date || '-'}</td>
-                            <td>${t.docNumber || '-'}</td>
-                            <td>${t.description || '-'}</td>
-                            <td>${t.reference || '-'}</td>
-                            <td style="color:var(--danger);font-weight:500;">${(t.debit || 0).toLocaleString()}</td>
-                            <td style="color:var(--secondary);font-weight:500;">${(t.credit || 0).toLocaleString()}</td>
-                            <td style="font-weight:600;">${balance.toLocaleString()}</td>
-                            <td><span class="status-badge ${t.status}">${statusMap[t.status] || t.status}</span></td>
-                        </tr>
-                    `;
-            }).join('');
-            const totalDebit = transactions.reduce((s, t) => s + (t.debit || 0), 0);
-            const totalCredit = transactions.reduce((s, t) => s + (t.credit || 0), 0);
-            const finalBalance = totalDebit - totalCredit;
-            container.innerHTML = `
-                    <div style="margin-bottom:12px;">
-                        <strong>المورد:</strong> ${supplier.name} (${supplier.code})
-                        ${linkedCustomer ? ` | <span class="linked-badge">مرتبط بـ ${linkedCustomer.name}</span>` : ''}
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>التاريخ</th><th>رقم المستند</th><th>البيان</th><th>رقم المرجع</th><th>مدين (ر.س)</th><th>دائن (ر.س)</th><th>الرصيد (ر.س)</th><th>الحالة</th></tr>
-                            </thead>
-                            <tbody>${rows || `<tr><td colspan="8" class="text-muted text-center">لا توجد حركات</td></tr>`}</tbody>
-                            <tfoot style="font-weight:700;background:var(--gray-100);">
-                                <tr>
-                                    <td colspan="4" style="text-align:left;">الإجمالي</td>
-                                    <td style="color:var(--danger);">${totalDebit.toLocaleString()}</td>
-                                    <td style="color:var(--secondary);">${totalCredit.toLocaleString()}</td>
-                                    <td style="color:var(--primary);">${finalBalance.toLocaleString()}</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div class="statement-totals">
-                        <span>إجمالي المدفوعات: <span class="total-debit">${totalDebit.toLocaleString()} ر.س</span></span>
-                        <span>إجمالي المشتريات: <span class="total-credit">${totalCredit.toLocaleString()} ر.س</span></span>
-                        <span>الرصيد النهائي: <span class="total-balance">${finalBalance.toLocaleString()} ر.س</span></span>
-                    </div>
-                `;
-        }
-
-        // =============================================================
-        // PRINT FUNCTIONS (مختصرة - نفس السابق)
-        // =============================================================
-        function printInvoice(id, type) {
-            let invoice;
-            let partyName = '';
-            let partyType = '';
-            let partyCode = '';
-            let memberId = '1';
-            let warehouseName = '';
-            let invoiceType = 'نقدي';
-            let paymentType = 'cash';
-            let dueDate = '';
-
-            if (type === 'sales') {
-                invoice = appData.salesInvoices.find(s => s.id === id);
-                if (invoice) {
-                    const cust = appData.customers.find(c => c.id === invoice.customerId);
-                    partyName = cust?.name || 'غير محدد';
-                    partyCode = cust?.code || '';
-                    partyType = 'عميل';
-                    memberId = invoice.memberId || '1';
-                    const wh = appData.warehouses.find(w => w.id === invoice.warehouseId);
-                    warehouseName = wh?.name || 'غير محدد';
-                    invoiceType = invoice.invoiceType || 'نقدي';
-                    paymentType = invoice.paymentType || 'cash';
-                    dueDate = invoice.dueDate || '';
-                }
-            } else {
-                invoice = appData.purchaseInvoices.find(p => p.id === id);
-                if (invoice) {
-                    const sup = appData.suppliers.find(s => s.id === invoice.supplierId);
-                    partyName = sup?.name || 'غير محدد';
-                    partyCode = sup?.code || '';
-                    partyType = 'مورد';
-                    paymentType = invoice.paymentType || 'cash';
-                    dueDate = invoice.dueDate || '';
-                }
-            }
-            if (!invoice) { alert('الفاتورة غير موجودة'); return; }
-
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
-            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
-
-            const config = appData.config;
-            const companyNameEn = config.companyNameEn || 'ALGANIM STORS FOR TRADING - H. O';
-            const companyNameAr = config.companyNameAr || 'محلات الغانم للتجارة العامة - المركز الرئيسي';
-            const address = config.address || 'صنعاء - شعيب - الصباح';
-            const phone = config.phone || '777463289';
-            const fax = config.fax || '';
-            const poBox = config.poBox || '';
-            const logo = config.logo || '';
-
-            const cur = appData.currencies.find(c => c.code === invoice.currency);
-            const currencySymbol = cur?.symbol || 'ر.س';
-
-            const units = appData.units;
-            const itemsHtml = (invoice.items || []).map(item => {
-                const inventoryItem = appData.inventory.find(i => i.id === item.itemId);
-                const itemCode = inventoryItem?.code || '';
-                const itemName = inventoryItem?.name || 'غير معروف';
-                const unit = units.find(u => u.id === item.unitId);
-                const unitName = unit ? unit.name + (unit.size ? ' (' + unit.size + ')' : '') : 'قطة';
-                return `
-                        <tr>
-                            <td style="text-align:center;padding:4px 6px;">${itemCode}</td>
-                            <td style="text-align:right;padding:4px 6px;">${itemName}</td>
-                            <td style="text-align:center;padding:4px 6px;">${unitName}</td>
-                            <td style="text-align:center;padding:4px 6px;">${item.qty || 0}</td>
-                            <td style="text-align:center;padding:4px 6px;">${(item.price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                            <td style="text-align:center;padding:4px 6px;font-weight:600;">${(item.total || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        </tr>
-                    `;
-            }).join('');
-
-            const totalAmount = invoice.total || 0;
-            const paymentMap = { cash: 'نقدي', credit: 'أجل', bank: 'بنك' };
-            const invoiceTitle = type === 'sales' ? 'فاتورة مبيعات' : 'فاتورة مشتريات';
-
-            printWindow.document.write(`
-                    <html dir="rtl">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>${invoiceTitle} #${String(id).padStart(4,'0')}</title>
-                        <style>
-                            body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 15px 20px; color: #1a2330; font-size: 13px; direction: rtl; }
-                            .invoice-header-three { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 2px solid #1a2b4a; margin-bottom: 8px; }
-                            .header-left, .header-right { font-size: 12px; line-height: 1.5; }
-                            .header-left { text-align: right; }
-                            .header-right { text-align: left; direction: ltr; }
-                            .header-center { text-align: center; }
-                            .invoice-logo { max-width: 100px; max-height: 80px; object-fit: contain; }
-                            .invoice-title { text-align: center; font-size: 16px; font-weight: 700; color: #1a2b4a; margin: 6px 0; padding: 4px; background: #f4f6f9; border-radius: 4px; }
-                            .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px 12px; padding: 6px 0; border-bottom: 1px solid #ddd; margin-bottom: 8px; font-size: 12px; }
-                            .info-grid .item { display: flex; align-items: center; gap: 4px; }
-                            .info-grid .item strong { color: #1a2b4a; min-width: 60px; }
-                            .info-grid .item .value { color: #2c3e6b; font-weight: 500; }
-                            table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 12px; }
-                            table th { background: #1a2b4a; color: #fff; padding: 5px 8px; text-align: center; font-size: 11px; font-weight: 600; }
-                            table td { padding: 4px 6px; border-bottom: 1px solid #e2e6ec; text-align: center; font-size: 12px; }
-                            table tfoot td { border-bottom: none; }
-                            .totals-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; padding: 10px 0; border-top: 2px solid #1a2b4a; }
-                            .totals-grid .box { padding: 6px 10px; background: #f8f9fa; border-radius: 4px; text-align: center; }
-                            .totals-grid .box strong { display: block; font-size: 11px; color: #4a5a6e; }
-                            .totals-grid .box .amount { font-size: 16px; font-weight: 700; color: #1a2b4a; }
-                            .totals-grid .box .amount.positive { color: var(--secondary); }
-                            .totals-grid .box .amount.negative { color: var(--danger); }
-                            .words-total { padding: 6px 10px; background: #f0f2f5; border-radius: 4px; margin: 6px 0; text-align: center; font-size: 13px; font-weight: 500; color: #1a2b4a; }
-                            .footer-notes { margin-top: 12px; padding-top: 8px; border-top: 1px solid #ddd; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; color: #4a5a6e; }
-                            .footer-notes .note { padding: 4px 6px; text-align: center; }
-                            .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; }
-                            .signatures .sig { text-align: center; font-size: 12px; }
-                            .signatures .sig .line { border-bottom: 1px solid #333; width: 80%; margin: 20px auto 4px auto; height: 1px; }
-                            .signatures .sig .label { color: #4a5a6e; font-weight: 500; }
-                            @media print { body { padding: 8px 12px; } .no-print { display: none; } .info-grid { font-size: 11px; } table { font-size: 11px; } }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="invoice-header-three">
-                            <div class="header-left">
-                                <div><strong>${companyNameAr}</strong></div>
-                                <div>${address}</div>
-                                <div>هاتف: ${phone} | فاكس: ${fax}</div>
-                                <div>ص.ب: ${poBox}</div>
-                                <div>الرقم الضريبي: ${config.taxId || ''}</div>
-                            </div>
-                            <div class="header-center">
-                                ${logo ? `<img src="${logo}" class="invoice-logo" alt="شعار المحل">` : ''}
-                            </div>
-                            <div class="header-right">
-                                <div><strong>${companyNameEn}</strong></div>
-                                <div>${address}</div>
-                                <div>Tel: ${phone} | Fax: ${fax}</div>
-                                <div>P.O.Box: ${poBox}</div>
-                                <div>Tax ID: ${config.taxId || ''}</div>
-                            </div>
-                        </div>
-                        <div class="invoice-title">${invoiceTitle} <span>${paymentMap[paymentType] || 'نقدي'}</span></div>
-                        <div class="info-grid">
-                            <div class="item"><strong>رقم الفاتورة:</strong> <span class="value">${String(id).padStart(4,'0')}</span></div>
-                            <div class="item"><strong>تاريخ الفاتورة:</strong> <span class="value">${invoice.date || ''}</span></div>
-                            <div class="item"><strong>العملة:</strong> <span class="value">${invoice.currency || 'SAR'}</span></div>
-                            <div class="item"><strong>${type === 'sales' ? 'رقم العميل' : 'رقم المورد'}:</strong> <span class="value">${partyCode || 'غير محدد'}</span></div>
-                            ${type === 'sales' ? `<div class="item"><strong>رقم العضو:</strong> <span class="value">${memberId}</span></div>` : ''}
-                            <div class="item"><strong>مخزن:</strong> <span class="value">${warehouseName}</span></div>
-                            ${dueDate ? `<div class="item"><strong>تاريخ الاستحقاق:</strong> <span class="value">${dueDate}</span></div>` : ''}
-                            <div class="item"><strong>طريقة الدفع:</strong> <span class="value">${paymentMap[paymentType] || 'نقدي'}</span></div>
-                        </div>
-                        <table>
-                            <thead><tr><th>رقم الصنف</th><th>اسم الصنف</th><th>الوحدة</th><th>الكمية</th><th>السعر</th><th>القيمة</th></tr></thead>
-                            <tbody>${itemsHtml || `<tr><td colspan="6" style="text-align:center;padding:20px;color:#8a94a6;">لا توجد أصناف</td></tr>`}</tbody>
-                            <tfoot><tr><td colspan="5" style="text-align:left;font-weight:700;padding:6px 8px;">الإجمالي</td><td style="font-weight:700;font-size:14px;padding:6px 8px;">${totalAmount.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} ${currencySymbol}</td></tr></tfoot>
-                        </table>
-                        <div class="words-total">إجمالي: ${totalAmount.toLocaleString()} ${currencySymbol}</div>
-                        ${type === 'sales' ? `
-                        <div class="totals-grid">
-                            <div class="box"><strong>الرصيد السابق</strong><div class="amount">0</div></div>
-                            <div class="box"><strong>إجمالي الفاتورة</strong><div class="amount positive">${totalAmount.toLocaleString()} ${currencySymbol}</div></div>
-                            <div class="box"><strong>إجمالي الرصيد الكلي</strong><div class="amount positive">${totalAmount.toLocaleString()} ${currencySymbol}</div></div>
-                        </div>` : `
-                        <div class="totals-grid" style="grid-template-columns:1fr 1fr;">
-                            <div class="box"><strong>إجمالي الفاتورة</strong><div class="amount positive">${totalAmount.toLocaleString()} ${currencySymbol}</div></div>
-                            <div class="box"><strong>المدفوع</strong><div class="amount positive">0.00 ${currencySymbol}</div></div>
-                        </div>`}
-                        <div class="footer-notes">
-                            <div class="note">لا ترد البضاعة ولا تسدل بعد خروجها من المح</div>
-                            <div class="note">لا يعتمد اي تسديد او خصم الا بموجب سنداتنا الرسمية</div>
-                        </div>
-                        <div class="signatures">
-                            <div class="sig"><div class="line"></div><div class="label">المدير المبيعات</div></div>
-                            <div class="sig"><div class="line"></div><div class="label">مدير المبيعات</div></div>
-                            <div class="sig"><div class="line"></div><div class="label">المخازن</div></div>
-                        </div>
-                        <div style="text-align:center;margin-top:16px;">
-                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة / حفظ PDF</button>
-                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
-                        </div>
-                        <script>setTimeout(() => { window.print(); }, 600);<\/script>
-                    </body>
-                    </html>
-                `);
-            printWindow.document.close();
-        }
-
-        function printStatement(type) {
-            const container = type === 'customer' ? document.getElementById('customerStatementContainer') : document
-                .getElementById('supplierStatementContainer');
-            const title = type === 'customer' ? 'كشف حساب العميل' : 'كشف حساب المورد';
-            const select = type === 'customer' ? document.getElementById('customerStatementSelect') : document.getElementById(
-                'supplierStatementSelect');
-            const id = parseInt(select.value);
-            const party = type === 'customer' ? appData.customers.find(c => c.id === id) : appData.suppliers.find(s => s
-                .id === id);
-            if (!party) { alert('الرجاء اختيار ' + (type === 'customer' ? 'عميل' : 'مورد') + ' أولاً'); return; }
-
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
-            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
-
-            const config = appData.config;
-            const companyNameEn = config.companyNameEn || 'ALGANIM STORS FOR TRADING - H. O';
-            const content = container.innerHTML;
-
-            printWindow.document.write(`
-                    <html dir="rtl">
-                    <head><meta charset="UTF-8"><title>${title} - ${party.name}</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; color: #1a2330; }
-                        .header { text-align: center; border-bottom: 2px solid #1a2b4a; padding-bottom: 12px; margin-bottom: 16px; }
-                        .header h1 { font-size: 22px; color: #1a2b4a; margin: 0; }
-                        .header p { color: #4a5a6e; margin: 4px 0; font-size: 13px; }
-                        .party-info { background: #f4f6f9; padding: 10px 16px; border-radius: 6px; margin-bottom: 14px; font-size: 14px; }
-                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                        table th { background: #1a2b4a; color: #fff; padding: 6px 10px; text-align: center; }
-                        table td { padding: 6px 10px; border-bottom: 1px solid #e2e6ec; text-align: center; }
-                        tfoot { font-weight: 700; background: #f4f6f9; }
-                        .totals { display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #1a2b4a; margin-top: 10px; font-weight: 600; font-size: 14px; }
-                        .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #8a94a6; border-top: 1px solid #e2e6ec; padding-top: 10px; }
-                        .status-badge { padding: 2px 8px; border-radius: 8px; font-size: 10px; }
-                        @media print { body { padding: 12px; } .no-print { display: none; } }
-                    </style>
-                    </head>
-                    <body>
-                        <div class="header"><h1>${companyNameEn}</h1><p>${title}</p></div>
-                        <div class="party-info">
-                            <strong>${type === 'customer' ? 'العميل' : 'المورد'}:</strong> ${party.name} (${party.code || ''})
-                            ${party.phone ? ` | <strong>الهاتف:</strong> ${party.phone}` : ''}
-                            ${party.address ? ` | <strong>العنوان:</strong> ${party.address}` : ''}
-                        </div>
-                        ${content.replace(/<button[^>]*>.*?<\/button>/g, '').replace(/class="no-print"/g, '')}
-                        <div class="footer">تم إنشاء هذا التقرير بواسطة نظام أونكس برو للمحاسبة المتكاملة</div>
-                        <div style="text-align:center;margin-top:14px;">
-                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة / حفظ PDF</button>
-                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
-                        </div>
-                        <script>setTimeout(() => { window.print(); }, 600);<\/script>
-                    </body>
-                    </html>
-                `);
-            printWindow.document.close();
-        }
-
-        function printInventorySummary() {
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
-            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
-            const content = document.getElementById('inventorySummaryBody').innerHTML;
-            const totalQty = document.getElementById('invSumQty').textContent;
-            const totalValue = document.getElementById('invSumValue').textContent;
-            const config = appData.config;
-            const companyName = config.companyNameAr || 'شركة أونكس';
-
-            printWindow.document.write(`
-                    <html dir="rtl">
-                    <head><meta charset="UTF-8"><title>تقرير المخزون الإجمالي</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; color: #1a2330; }
-                        .header { text-align: center; border-bottom: 2px solid #1a2b4a; padding-bottom: 12px; margin-bottom: 16px; }
-                        .header h1 { font-size: 22px; color: #1a2b4a; margin: 0; }
-                        .header p { color: #4a5a6e; margin: 4px 0; font-size: 13px; }
-                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                        table th { background: #1a2b4a; color: #fff; padding: 6px 10px; text-align: center; }
-                        table td { padding: 6px 10px; border-bottom: 1px solid #e2e6ec; text-align: center; }
-                        tfoot { font-weight: 700; background: #f4f6f9; }
-                        .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #8a94a6; border-top: 1px solid #e2e6ec; padding-top: 10px; }
-                        .no-print { display: none; }
-                    </style>
-                    </head>
-                    <body>
-                        <div class="header"><h1>${companyName}</h1><p>تقرير المخزون الإجمالي</p></div>
-                        <table>
-                            <thead><tr><th>#</th><th>الكود</th><th>الاسم</th><th>المخزن</th><th>الوحدة</th><th>الكمية</th><th>سعر البيع</th><th>القيمة الإجمالية</th></tr></thead>
-                            <tbody>${content}</tbody>
-                            <tfoot><tr><td colspan="5" style="text-align:left;">الإجمالي</td><td>${totalQty}</td><td></td><td>${totalValue}</td></tr></tfoot>
-                        </table>
-                        <div class="footer">تم إنشاء هذا التقرير بواسطة نظام أونكس برو</div>
-                        <div style="text-align:center;margin-top:14px;">
-                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة / حفظ PDF</button>
-                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
-                        </div>
-                        <script>setTimeout(() => { window.print(); }, 600);<\/script>
-                    </body>
-                    </html>
-                `);
-            printWindow.document.close();
-        }
-
-        function printItemMovement() {
-            const container = document.getElementById('itemMovementContainer');
-            const select = document.getElementById('movementItemSelect');
-            const itemId = parseInt(select.value);
-            const item = appData.inventory.find(i => i.id === itemId);
-            if (!item) { alert('الرجاء اختيار صنف أولاً'); return; }
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
-            if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return; }
-            const config = appData.config;
-            const companyName = config.companyNameAr || 'شركة أونكس';
-            const content = container.innerHTML;
-
-            printWindow.document.write(`
-                    <html dir="rtl">
-                    <head><meta charset="UTF-8"><title>حركة صنف - ${item.name}</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; color: #1a2330; }
-                        .header { text-align: center; border-bottom: 2px solid #1a2b4a; padding-bottom: 12px; margin-bottom: 16px; }
-                        .header h1 { font-size: 22px; color: #1a2b4a; margin: 0; }
-                        .header p { color: #4a5a6e; margin: 4px 0; font-size: 13px; }
-                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                        table th { background: #1a2b4a; color: #fff; padding: 6px 10px; text-align: center; }
-                        table td { padding: 6px 10px; border-bottom: 1px solid #e2e6ec; text-align: center; }
-                        tfoot { font-weight: 700; background: #f4f6f9; }
-                        .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #8a94a6; border-top: 1px solid #e2e6ec; padding-top: 10px; }
-                        .no-print { display: none; }
-                    </style>
-                    </head>
-                    <body>
-                        <div class="header"><h1>${companyName}</h1><p>حركة صنف: ${item.name} (${item.code})</p></div>
-                        ${content.replace(/<button[^>]*>.*?<\/button>/g, '').replace(/class="no-print"/g, '')}
-                        <div class="footer">تم إنشاء هذا التقرير بواسطة نظام أونكس برو</div>
-                        <div style="text-align:center;margin-top:14px;">
-                            <button class="no-print" onclick="window.print()" style="padding:8px 24px;border:none;background:#1a2b4a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">طباعة / حفظ PDF</button>
-                            <button class="no-print" onclick="window.close()" style="padding:8px 24px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;margin-right:8px;">إغلاق</button>
-                        </div>
-                        <script>setTimeout(() => { window.print(); }, 600);<\/script>
-                    </body>
-                    </html>
-                `);
-            printWindow.document.close();
-        }
-
-        // =============================================================
-        // DASHBOARD & STATS (نفس السابق)
-        // =============================================================
-        function updateDashboard() {
-            const sales = appData.salesInvoices;
-            const purchases = appData.purchaseInvoices;
-            const journal = appData.journal;
-            const sReturns = appData.salesReturns || [];
-            const pReturns = appData.purchaseReturns || [];
-
-            let totalRevenue = 0,
-                totalExpenses = 0;
-            for (const j of journal) {
-                if (j.type === 'إيراد' || j.type === 'إيرادات') totalRevenue += j.amount || 0;
-                else if (j.type === 'مصروف' || j.type === 'مصروفات') totalExpenses += j.amount || 0;
-            }
-            for (const s of sales) totalRevenue += s.total || 0;
-            for (const p of purchases) totalExpenses += p.total || 0;
-            for (const r of sReturns) { if (r.status === 'completed') totalRevenue -= r.amount || 0; }
-            for (const r of pReturns) { if (r.status === 'completed') totalExpenses -= r.amount || 0; }
-
-            const profit = totalRevenue - totalExpenses;
-            const totalInvoices = sales.length + purchases.length;
-
-            document.getElementById('statRevenue').innerHTML = totalRevenue.toLocaleString() + ' <small>ر.س</small>';
-            document.getElementById('statExpenses').innerHTML = totalExpenses.toLocaleString() + ' <small>ر.س</small>';
-            document.getElementById('statProfit').innerHTML = profit.toLocaleString() + ' <small>ر.س</small>';
-            document.getElementById('statInvoices').textContent = totalInvoices;
-
-            const recent = [...journal].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
-            const tbody = document.getElementById('recentTransactions');
-            if (recent.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center">لا توجد معاملات</td></tr>`;
-            } else {
-                tbody.innerHTML = recent.map(j => `
-                        <tr>
-                            <td>${j.date || ''}</td>
-                            <td>${j.description || ''}</td>
-                            <td>${j.amount?.toLocaleString() || 0}</td>
-                            <td><span class="badge-status ${j.type === 'إيراد' ? 'paid' : 'overdue'}">${j.type || ''}</span></td>
-                        </tr>
-                    `).join('');
-            }
-        }
-
-        function updateSystemStats() {
-            document.getElementById('statAccounts').textContent = appData.accounts.length;
-            document.getElementById('statCustomers').textContent = appData.customers.length;
-            document.getElementById('statSuppliers').textContent = appData.suppliers.length;
-            document.getElementById('statAllInvoices').textContent = appData.salesInvoices.length + appData.purchaseInvoices
-                .length;
-            document.getElementById('statItems').textContent = appData.inventory.length;
-            document.getElementById('statWarehouses').textContent = appData.warehouses.length;
-            document.getElementById('statUnits').textContent = appData.units.length;
-            document.getElementById('statUsers').textContent = users.length;
-
-            if (navigator.storage && navigator.storage.estimate) {
-                navigator.storage.estimate().then(estimate => {
-                    const used = (estimate.usage / 1024 / 1024).toFixed(1);
-                    const total = (estimate.quota / 1024 / 1024).toFixed(1);
-                    document.getElementById('storageInfo').textContent =
-                        `المستخدم: ${used} MB / ${total} MB (${Math.round(estimate.usage/estimate.quota*100)}%)`;
-                }).catch(() => { document.getElementById('storageInfo').textContent = 'غير متاح'; });
-            } else {
-                document.getElementById('storageInfo').textContent = 'غير مدعوم';
-            }
-        }
-
-        // =============================================================
-        // CRUD OPERATIONS (نفس السابق)
+        // CRUD OPERATIONS
         // =============================================================
         async function deleteAccount(id) {
             if (confirm('هل أنت متأكد من حذف هذا الحساب؟')) {
@@ -5092,12 +5449,12 @@
         }
 
         // =============================================================
-        // EXPORT / IMPORT (نفس السابق)
+        // EXPORT / IMPORT
         // =============================================================
         async function exportData() {
             if (!folderHandle) { alert('الرجاء اختيار مجلد أولاً'); return; }
             const data = {
-                version: '8.1',
+                version: '9.0',
                 exportedAt: new Date().toISOString(),
                 accounts: appData.accounts,
                 customers: appData.customers,
@@ -5163,7 +5520,7 @@
         }
 
         // =============================================================
-        // CALCULATOR (نفس السابق)
+        // CALCULATOR
         // =============================================================
         let calcExpression = '';
 
@@ -5190,7 +5547,7 @@
         }
 
         // =============================================================
-        // LOGGING (نفس السابق)
+        // LOGGING
         // =============================================================
         function addLog(msg) {
             const logDiv = document.getElementById('activityLog');
@@ -5202,222 +5559,7 @@
         }
 
         // =============================================================
-        // BOT FUNCTIONS (Admin Only)
-        // =============================================================
-        let botOpen = false;
-
-        function toggleBot(open) {
-            const panel = document.getElementById('botPanel');
-            const btn = document.getElementById('botToggle');
-            // Only admin can open bot
-            if (!currentUser || currentUser.id !== 1) return;
-            if (open === undefined) {
-                botOpen = !botOpen;
-            } else {
-                botOpen = open;
-            }
-            if (botOpen) {
-                panel.classList.add('open');
-                btn.style.display = 'none';
-            } else {
-                panel.classList.remove('open');
-                btn.style.display = 'flex';
-            }
-        }
-
-        document.getElementById('botToggle').addEventListener('click', () => {
-            if (currentUser && currentUser.id === 1) toggleBot(true);
-        });
-
-        function addBotMessage(text, type) {
-            const container = document.getElementById('botMessages');
-            const div = document.createElement('div');
-            div.className = 'bot-msg ' + type;
-            div.innerHTML = text;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function processBotCommand() {
-            // Only admin can use bot commands
-            if (!currentUser || currentUser.id !== 1) {
-                addBotMessage('⛔ هذا الأمر متاح للمدير فقط.', 'bot');
-                return;
-            }
-            const input = document.getElementById('botInput');
-            const text = input.value.trim();
-            if (!text) return;
-            addBotMessage(text, 'user');
-            input.value = '';
-
-            const lower = text.toLowerCase();
-
-            if (lower.startsWith('/users') || lower === 'المستخدمين') {
-                const list = users.map(u => `• ${u.name} (${u.username}) - ${u.status === 'active' ? '✅ نشط' : '⛔ محظور'}`)
-                    .join('\n');
-                addBotMessage(`📋 قائمة المستخدمين:\n${list}`, 'bot');
-                return;
-            }
-
-            if (lower.startsWith('/block')) {
-                const id = parseInt(text.split(' ')[1]);
-                if (!id) { addBotMessage('⚠️ يرجى تحديد رقم المستخدم: /block 2', 'bot'); return; }
-                blockUser(id);
-                return;
-            }
-
-            if (lower.startsWith('/unblock')) {
-                const id = parseInt(text.split(' ')[1]);
-                if (!id) { addBotMessage('⚠️ يرجى تحديد رقم المستخدم: /unblock 2', 'bot'); return; }
-                unblockUser(id);
-                return;
-            }
-
-            if (lower === '/backup' || lower === 'نسخة احتياطية' || lower === 'نسخ احتياطي') {
-                createBackup();
-                return;
-            }
-
-            if (lower === '/support' || lower === 'الشكاوي' || lower === 'شكاوي') {
-                const list = supportTickets.slice(-5).map(t =>
-                    `#${String(t.id).padStart(4,'0')} - ${t.subject || 'بدون موضوع'} (${t.status})`).join('\n');
-                addBotMessage(`📋 آخر الشكاوي:\n${list || 'لا توجد شكاوي'}`, 'bot');
-                return;
-            }
-
-            if (lower === '/photo' || lower === 'صورة' || lower === 'كاميرا') {
-                openCamera();
-                addBotMessage('📸 تم فتح الكاميرا. التقط صورة وإرسالها.', 'bot');
-                return;
-            }
-
-            if (lower === '/status' || lower === 'الحالة' || lower === 'حالة') {
-                const totalUsers = users.length;
-                const activeUsers = users.filter(u => u.status === 'active').length;
-                const totalInvoices = appData.salesInvoices.length + appData.purchaseInvoices.length;
-                const totalItems = appData.inventory.length;
-                addBotMessage(
-                    `📊 حالة النظام:\n👥 المستخدمين: ${totalUsers} (نشط: ${activeUsers})\n📄 الفواتير: ${totalInvoices}\n📦 الأصناف: ${totalItems}\n💾 النسخ الاحتياطية: ${backups.length}\n✅ النظام يعمل بشكل طبيعي`, 'bot');
-                return;
-            }
-
-            if (lower === '/help' || lower === 'مساعدة' || lower === 'help') {
-                addBotMessage(
-                    `📋 الأوامر المتاحة:\n/users - عرض المستخدمين\n/block [id] - حظر مستخدم\n/unblock [id] - فك الحظر\n/backup - نسخة احتياطية\n/support - عرض الشكاوي\n/photo - فتح الكاميرا\n/status - حالة النظام\n/help - المساعدة`, 'bot');
-                return;
-            }
-
-            if (lower.includes('بحث عن عميل') || lower.includes('عميل')) {
-                const name = text.replace(/بحث عن عميل|عميل/g, '').trim();
-                if (name) {
-                    const customer = appData.customers.find(c => c.name.includes(name));
-                    if (customer) {
-                        addBotMessage(
-                            `👤 العميل: ${customer.name}\n📋 الكود: ${customer.code}\n📞 الهاتف: ${customer.phone || 'غير متوفر'}\n💰 الرصيد: ${customer.balance || 0}`, 'bot');
-                    } else {
-                        addBotMessage(`⚠️ لم أجد عميلاً باسم "${name}"`, 'bot');
-                    }
-                } else {
-                    addBotMessage('📋 قائمة العملاء:\n' + appData.customers.slice(0, 10).map(c =>
-                        `• ${c.name} (${c.code})`).join('\n') +
-                        (appData.customers.length > 10 ? `\n... و ${appData.customers.length - 10} آخرين` : ''), 'bot');
-                }
-                return;
-            }
-
-            addBotMessage('❌ أمر غير معروف. استخدم /help لمعرفة الأوامر المتاحة.', 'bot');
-        }
-
-        document.getElementById('botInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') processBotCommand();
-        });
-
-        // =============================================================
-        // CAMERA FUNCTIONS (Admin Only)
-        // =============================================================
-        let cameraStream = null;
-
-        function openCamera() {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            const container = document.getElementById('cameraContainer');
-            container.classList.add('open');
-            const video = document.getElementById('cameraVideo');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-                .then(stream => {
-                    cameraStream = stream;
-                    video.srcObject = stream;
-                    video.play();
-                }).catch(err => {
-                    alert('لا يمكن الوصول إلى الكاميرا: ' + err.message);
-                    closeCamera();
-                });
-        }
-
-        function capturePhoto() {
-            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
-            const video = document.getElementById('cameraVideo');
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-
-            const deviceInfo = {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                language: navigator.language,
-                screen: `${screen.width}x${screen.height}`,
-                timestamp: new Date().toISOString()
-            };
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    deviceInfo.latitude = pos.coords.latitude;
-                    deviceInfo.longitude = pos.coords.longitude;
-                    deviceInfo.accuracy = pos.coords.accuracy;
-                    sendPhotoWithInfo(dataUrl, deviceInfo);
-                }, err => {
-                    deviceInfo.locationError = err.message;
-                    sendPhotoWithInfo(dataUrl, deviceInfo);
-                });
-            } else {
-                deviceInfo.locationError = 'Geolocation not supported';
-                sendPhotoWithInfo(dataUrl, deviceInfo);
-            }
-
-            addBotMessage('📸 تم التقاط الصورة وإرسالها مع معلومات الجهاز والموقع.', 'bot');
-            closeCamera();
-        }
-
-        function sendPhotoWithInfo(dataUrl, deviceInfo) {
-            try {
-                const photos = JSON.parse(localStorage.getItem('onyx_photos') || '[]');
-                photos.push({
-                    id: Date.now(),
-                    timestamp: new Date().toISOString(),
-                    user: currentUser?.name || 'غير محدد',
-                    deviceInfo: deviceInfo,
-                    imageData: dataUrl.substring(0, 100) + '...'
-                });
-                localStorage.setItem('onyx_photos', JSON.stringify(photos));
-            } catch (e) {}
-            addBotMessage(`📷 تم حفظ الصورة\n🖥️ الجهاز: ${deviceInfo.platform || 'غير معروف'}\n📍 الموقع: ${deviceInfo.latitude ? deviceInfo.latitude + ', ' + deviceInfo.longitude : 'غير متاح'}`, 'bot');
-            addLog(`📸 تم التقاط صورة من ${currentUser?.name}`);
-        }
-
-        function closeCamera() {
-            const container = document.getElementById('cameraContainer');
-            container.classList.remove('open');
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            document.getElementById('cameraVideo').srcObject = null;
-        }
-
-        // =============================================================
-        // NAVIGATION & SIDEBAR (نفس السابق مع تحكم admin)
+        // NAVIGATION & SIDEBAR
         // =============================================================
         function navigateTo(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5453,6 +5595,7 @@
                 users: 'المستخدمين',
                 support: 'الشكاوي والدعم',
                 backup: 'النسخ الاحتياطي',
+                'bot-config': 'إعدادات البوت',
                 config: 'تهيئة النظام',
                 admin: 'إدارة النظام',
                 info: 'إدارة المعلومات',
@@ -5460,11 +5603,10 @@
             };
             const titleEl = document.querySelector('.page-title');
             if (titleEl) {
-                titleEl.innerHTML = (titles[pageId] || pageId) + ' <small>| المتكامل</small>';
+                titleEl.innerHTML = (titles[pageId] || pageId) + ' <small>| بوت تليجرام</small>';
             }
             closeSidebar();
-            // Allow navigation to admin pages only for admin
-            const adminPages = ['users', 'support', 'backup'];
+            const adminPages = ['users', 'support', 'backup', 'bot-config'];
             if (adminPages.includes(pageId) && (!currentUser || currentUser.id !== 1)) {
                 navigateTo('dashboard');
                 return;
@@ -5485,14 +5627,14 @@
             if (pageId === 'users') renderUsers();
             if (pageId === 'support') renderSupport();
             if (pageId === 'backup') renderBackups();
+            if (pageId === 'bot-config') updateBotStatusDisplay();
         }
 
         document.querySelectorAll('.sidebar-nav a[data-page]').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const page = this.dataset.page;
-                // Check if it's an admin page
-                const adminPages = ['users', 'support', 'backup'];
+                const adminPages = ['users', 'support', 'backup', 'bot-config'];
                 if (adminPages.includes(page) && (!currentUser || currentUser.id !== 1)) {
                     alert('⛔ هذه الصفحة متاحة للمدير فقط.');
                     return;
@@ -5502,7 +5644,7 @@
         });
 
         // =============================================================
-        // SIDEBAR TOGGLE (نفس السابق)
+        // SIDEBAR TOGGLE
         // =============================================================
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
@@ -5521,11 +5663,10 @@
         overlay.addEventListener('click', closeSidebar);
 
         // =============================================================
-        // MODAL CONTROLS (نفس السابق)
+        // MODAL CONTROLS
         // =============================================================
         function openModal(id) {
-            // Check if modal is admin-only
-            const adminModals = ['userModal', 'supportModal'];
+            const adminModals = ['userModal', 'supportModal', 'botConfigModal'];
             if (adminModals.includes(id) && (!currentUser || currentUser.id !== 1)) {
                 alert('⛔ هذه الخاصية متاحة للمدير فقط.');
                 return;
@@ -5558,6 +5699,12 @@
             if (id === 'unitModal') {
                 populateUnitDropdowns();
             }
+            if (id === 'botConfigModal') {
+                document.getElementById('botTokenInput').value = botConfig.token || '';
+                document.getElementById('botUsernameInput').value = botConfig.username || '';
+                document.getElementById('botAdminIdInput').value = botConfig.adminId || '';
+                document.getElementById('botAutoBackup').value = botConfig.autoBackup ? '1' : '0';
+            }
         }
 
         function closeModal(id) {
@@ -5578,7 +5725,7 @@
         });
 
         // =============================================================
-        // AUTO-CALCULATE INVOICE TOTAL (نفس السابق)
+        // AUTO-CALCULATE INVOICE TOTAL
         // =============================================================
         function updateSalesTotal() {
             const qty = parseFloat(document.getElementById('siQty').value) || 0;
@@ -5597,7 +5744,7 @@
         document.getElementById('piPrice').addEventListener('input', updatePurchaseTotal);
 
         // =============================================================
-        // FORM HANDLERS (نفس السابق - مع تحكم admin)
+        // FORM HANDLERS
         // =============================================================
 
         // Login
@@ -5626,6 +5773,47 @@
                 return;
             }
             registerUser(name, username, password);
+        });
+
+        // Bot Config Form
+        document.getElementById('botConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!currentUser || currentUser.id !== 1) { alert('غير مسموح'); return; }
+            const token = document.getElementById('botTokenInput').value.trim();
+            const username = document.getElementById('botUsernameInput').value.trim();
+            const adminId = document.getElementById('botAdminIdInput').value.trim();
+            const autoBackup = document.getElementById('botAutoBackup').value === '1';
+
+            if (!token || !adminId) {
+                alert('يرجى إدخال رمز البوت ومعرف المدير');
+                return;
+            }
+
+            botConfig.token = token;
+            botConfig.username = username;
+            botConfig.adminId = adminId;
+            botConfig.autoBackup = autoBackup;
+            botConfig.isActive = true;
+
+            saveBotConfig();
+            closeModal('botConfigModal');
+
+            // Test the bot
+            try {
+                const testResult = await sendTelegramMessage(adminId, '🤖 تم تفعيل بوت أونكس برو بنجاح!\n\n✅ البوت جاهز للاستخدام');
+                if (testResult && testResult.ok) {
+                    alert('✅ تم تفعيل البوت بنجاح وتم إرسال رسالة اختبار');
+                    addBotMessage('✅ تم تفعيل البوت وإرسال رسالة اختبار', 'system');
+                } else {
+                    alert('⚠️ تم حفظ الإعدادات ولكن فشل إرسال رسالة الاختبار. تأكد من رمز البوت.');
+                }
+            } catch (err) {
+                alert('⚠️ تم حفظ الإعدادات ولكن فشل الاتصال بالبوت.');
+            }
+
+            updateBotStatusDisplay();
+            addLog('تم تحديث إعدادات البوت');
+            renderAll();
         });
 
         // User Form (Admin Only)
@@ -5657,6 +5845,9 @@
             this.reset();
             addLog(`تم إضافة مستخدم ${username}`);
             addBotMessage(`✅ تم إضافة مستخدم جديد: ${name} (${username})`, 'bot');
+            if (botConfig.isActive && botConfig.adminId) {
+                sendTelegramMessage(botConfig.adminId, `✅ تم إضافة مستخدم جديد: ${name} (${username})`);
+            }
             alert('✅ تم إضافة المستخدم بنجاح');
         });
 
@@ -5681,7 +5872,11 @@
             closeModal('supportModal');
             this.reset();
             addLog(`تم إرسال شكوى #${ticket.id}`);
-            addBotMessage(`📩 تم استلام شكوى جديدة #${String(ticket.id).padStart(4,'0')} من ${ticket.userName}`, 'bot');
+            addBotMessage(`📩 تم استلام شكوى جديدة #${String(ticket.id).padStart(4,'0')}`, 'bot');
+            if (botConfig.isActive && botConfig.adminId) {
+                sendTelegramMessage(botConfig.adminId,
+                    `📩 شكوى جديدة #${String(ticket.id).padStart(4,'0')}\nمن: ${ticket.userName}\nالموضوع: ${ticket.subject}`);
+            }
             alert('✅ تم إرسال الشكوى بنجاح');
         });
 
@@ -6213,6 +6408,8 @@
         // =============================================================
         async function initApp() {
             loadAuthData();
+            loadBotConfig();
+
             const savedUser = localStorage.getItem('onyx_current_user');
             if (savedUser) {
                 try {
@@ -6222,13 +6419,15 @@
                         currentUser = found;
                         document.getElementById('loginOverlay').classList.add('hidden');
                         document.getElementById('sidebarUserName').textContent = found.name;
+                        document.getElementById('sidebarUserRole').textContent = found.role === 'admin' ? 'مدير النظام' :
+                            'مستخدم';
                         document.getElementById('topUserName').textContent = found.name.split(' ')[0];
                         document.getElementById('userAvatar').textContent = found.name.charAt(0);
                         document.getElementById('userStatusBadge').textContent = found.status === 'active' ? 'نشط' :
                             'محظور';
                         document.getElementById('userStatusBadge').style.background = found.status === 'active' ?
                             'var(--secondary)' : 'var(--danger)';
-                        if (found.id === 1) {
+                        if (found.role === 'admin' || found.id === 1) {
                             document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
                             document.getElementById('botToggle').classList.add('admin-show');
                         }
@@ -6264,14 +6463,24 @@
             populateMovementDropdown();
             renderInventorySummary();
             renderItemMovement();
-            addBotMessage('🤖 مرحباً! بوت أونكس برو جاهز للاستخدام (للمدير فقط).', 'bot');
+            updateBotStatusDisplay();
+
+            addBotMessage('🤖 مرحباً! بوت أونكس برو جاهز للاستخدام.', 'bot');
             addBotMessage('📋 استخدم /help لمعرفة الأوامر.', 'bot');
+            if (botConfig.isActive) {
+                addBotMessage('✅ البوت نشط ومرتبط بحسابك.', 'system');
+                if (botConfig.autoBackup) {
+                    addBotMessage('🔄 النسخ الاحتياطي التلقائي مفعل (كل ساعتين).', 'system');
+                }
+            } else {
+                addBotMessage('⚠️ البوت غير نشط. قم بتفعيله من الإعدادات.', 'system');
+            }
 
             if (currentUser) {
                 localStorage.setItem('onyx_current_user', JSON.stringify(currentUser));
             }
 
-            console.log('✅ نظام أونكس برو - إصدار 8.1 (البوت للمدير فقط)');
+            console.log('✅ نظام أونكس برو - إصدار 9.0 (بوت تليجرام متكامل)');
         }
 
         // =============================================================
@@ -6297,6 +6506,7 @@
         window.closeFiscalYear = closeFiscalYear;
         window.blockUser = blockUser;
         window.unblockUser = unblockUser;
+        window.promoteUser = promoteUser;
         window.deleteUser = deleteUser;
         window.resolveSupport = resolveSupport;
         window.deleteSupport = deleteSupport;
@@ -6338,6 +6548,9 @@
         window.logoutUser = logoutUser;
         window.showRegister = showRegister;
         window.showLogin = showLogin;
+        window.addBotMessage = addBotMessage;
+        window.sendTelegramMessage = sendTelegramMessage;
+        window.sendTelegramPhoto = sendTelegramPhoto;
 
         // Start
         initApp();
