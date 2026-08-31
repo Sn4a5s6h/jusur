@@ -1,306 +1,96 @@
-# =========================================================
-# 🌉 JUSOOR ACCOUNTING SYSTEM
-# .gitignore
-# =========================================================
+# ============================================
+# .gitignore - أونكس برو
+# ⚠️ هذا الملف يمنع رفع الملفات الحساسة
+# ============================================
 
+# 🔴 الملفات الحساسة - لا ترفعها أبداً!
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
+*.env
+*.env.*
+secrets/
+keys/
+certificates/
+*.pem
+*.key
+*.crt
 
-# =========================================================
-# NODE.JS
-# =========================================================
-
+# ملفات Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+package-lock.json
+yarn.lock
 
-.npm/
-.eslintcache
-
-
-# =========================================================
-# ENVIRONMENT VARIABLES & SECRETS
-# =========================================================
-
-.env
-.env.local
-.env.development
-.env.development.local
-.env.test
-.env.test.local
-.env.production
-.env.production.local
-
-# Allow example environment file
-!.env.example
-
-
-# =========================================================
-# DATABASE
-# =========================================================
-
-*.db
-*.db-shm
-*.db-wal
-
-*.sqlite
-*.sqlite3
-*.sqlite-shm
-*.sqlite-wal
-
-data/*.db
-data/*.sqlite
-data/*.sqlite3
-
-
-# =========================================================
-# UPLOADS
-# =========================================================
-
-uploads/*
-!uploads/.gitkeep
-
-
-# =========================================================
-# GENERATED INVOICES
-# =========================================================
-
-invoices/*
-!invoices/.gitkeep
-
-
-# =========================================================
-# LOGS
-# =========================================================
-
-logs/
+# ملفات التطبيق
 *.log
-*.log.*
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-
-# =========================================================
-# TEMPORARY FILES
-# =========================================================
-
-tmp/
-temp/
-.cache/
-
 *.tmp
 *.temp
-*.bak
-*.backup
-*.old
-
-
-# =========================================================
-# OPERATING SYSTEM FILES
-# =========================================================
-
 .DS_Store
-.DS_Store?
-._*
-
 Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-
-Desktop.ini
-
-
-# =========================================================
-# WINDOWS
-# =========================================================
-
-$RECYCLE.BIN/
-*.lnk
-
-
-# =========================================================
-# LINUX
-# =========================================================
-
-*~
-.directory
-
-
-# =========================================================
-# EDITORS
-# =========================================================
-
-.vscode/
-.idea/
-
 *.swp
 *.swo
-*.swn
+*~
 
-.project
-.classpath
-.settings/
-
-
-# =========================================================
-# BUILD FILES
-# =========================================================
-
+# ملفات البناء
 dist/
 build/
+public/
 out/
+.vercel/
+.netlify/
 
-.cache/
-.parcel-cache/
-.next/
-.nuxt/
+# ملفات التخزين المحلي
+*.db
+*.sqlite
+*.sqlite3
+storage/
+uploads/
+temp/
 
+# ملفات البيئة المشفرة
+.env.encrypted
+.env.crypt
+*.encrypted
+*.crypt
+
+# ملفات النسخ الاحتياطي
+backup-*.json
+*.backup
+*.bak
+
+# ملفات السجلات
+logs/
+*.log
+
+# ملفات البث
+streams/
+recordings/
+snapshots/
+videos/
+audio/
+
+# ملفات IDE
+.vscode/
+.idea/
+*.iml
+
+# ملفات النظام
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ملفات الاختبار
 coverage/
 .nyc_output/
-
-
-# =========================================================
-# RUNTIME FILES
-# =========================================================
-
-*.pid
-*.pid.lock
-
-pids/
-run/
-
-
-# =========================================================
-# SECURITY / PRIVATE KEYS
-# =========================================================
-
-*.pem
-*.key
-*.crt
-*.cer
-*.p12
-*.pfx
-
-secrets/
-private/
-credentials/
-
-
-# =========================================================
-# GENERATED PDF / DOCUMENTS
-# =========================================================
-
-*.generated.pdf
-*.generated.docx
-*.generated.xlsx
-
-# Generated invoice files are ignored above
-# invoices/*
-
-
-# =========================================================
-# BACKUPS
-# =========================================================
-
-backup/
-backups/
-
-*.sql.bak
-*.db.bak
-*.sqlite.bak
-
-
-# =========================================================
-# TEST OUTPUT
-# =========================================================
-
 test-results/
-playwright-report/
-test-output/
 
-
-# =========================================================
-# MAC / APPLE
-# =========================================================
-
-.AppleDouble
-.LSOverride
-
-Icon
-._*
-
-
-# =========================================================
-# PYTHON / TOOLS (IF USED DURING DEVELOPMENT)
-# =========================================================
-
-__pycache__/
-*.py[cod]
-*$py.class
-
-.venv/
-venv/
-env/
-
-.pytest_cache/
-.mypy_cache/
-
-
-# =========================================================
-# TERMUX / ANDROID TEMPORARY FILES
-# =========================================================
-
-.termux/
-.android/
-
-
-# =========================================================
-# JUSOOR RUNTIME
-# =========================================================
-
-runtime/
-sessions/
-qr/
-qr-codes/
-
-whatsapp-session/
-whatsapp-sessions/
-
-# WhatsApp authentication/session data
-auth_info/
-baileys_auth_info/
-creds.json
-
-# Generated QR codes
-*.qr.png
-*.qr.jpg
-
-
-# =========================================================
-# AI / CACHE
-# =========================================================
-
-ai-cache/
-ai_cache/
-model-cache/
-models-cache/
-
-
-# =========================================================
-# API / WEBHOOK TEMP DATA
-# =========================================================
-
-webhook-temp/
-webhook_tmp/
-
-
-# =========================================================
-# KEEP REQUIRED EMPTY DIRECTORIES
-# =========================================================
-
-!uploads/.gitkeep
-!invoices/.gitkeep
-!data/.gitkeep
+# ملفات مؤقتة
+*.tmp
+*.temp
+*.cache
