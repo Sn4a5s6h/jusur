@@ -1,13 +1,93 @@
+# ============================================
+# Render Configuration - أونكس برو
+# ⚠️ هذا الملف يحدد المتغيرات التي ستظهر في لوحة تحكم Render
+# ============================================
+
 services:
   - type: web
-    name: jusoor-accounting
-    env: node
-    buildCommand: npm install && npm rebuild better-sqlite3 --force
-    startCommand: npm start
+    name: onyxpro
+    runtime: static
+    buildCommand: |
+      echo "🚀 Building Onyx Pro..."
+      mkdir -p public
+      cp index.html public/
+      cp -r assets public/ 2>/dev/null || true
+      echo "✅ Build completed!"
+    staticPublishPath: ./public
+    
+    # ===== متغيرات البيئة =====
+    # 🔴 هذه المتغيرات ستظهر في لوحة تحكم Render
+    # 🔴 أدخل القيم الحقيقية في لوحة التحكم
     envVars:
-      - key: NODE_VERSION
-        value: 20.18.0
+      # بيانات تسجيل الدخول
+      - key: ADMIN_USERNAME
+        value: admin
+        sync: false
+        
+      - key: ADMIN_PASSWORD
+        value: admin123
+        sync: false
+      
+      # إعدادات البوت
+      - key: BOT_TOKEN
+        sync: false
+        
+      - key: BOT_USERNAME
+        sync: false
+        
+      - key: ADMIN_CHAT_ID
+        sync: false
+      
+      # مفاتيح التشفير
+      - key: ENCRYPTION_KEY
+        sync: false
+        
+      - key: SESSION_SECRET
+        sync: false
+      
+      # إعدادات النظام (قيم ثابتة)
+      - key: DEFAULT_CURRENCY
+        value: SAR
+        
+      - key: DEFAULT_LANG
+        value: ar
+        
+      - key: TZ
+        value: Asia/Riyadh
+      
+      # إعدادات البث المباشر
+      - key: ENABLE_STREAM
+        value: true
+        
+      - key: STREAM_QUALITY
+        value: medium
+      
+      # إعدادات النسخ الاحتياطي
+      - key: AUTO_BACKUP
+        value: true
+        
+      - key: BACKUP_INTERVAL
+        value: "2"
+      
+      # إعدادات الأمان
+      - key: MAX_LOGIN_ATTEMPTS
+        value: "5"
+        
+      - key: BLOCK_DURATION
+        value: "15"
+        
+      - key: TWO_FACTOR_AUTH
+        value: false
+      
+      # إعدادات التطبيق
+      - key: APP_NAME
+        value: أونكس برو
+        
+      - key: APP_VERSION
+        value: "9.0"
+        
       - key: NODE_ENV
         value: production
-      - key: JWT_SECRET
-        generateValue: true
+        
+      - key: PORT
+        value: "3000"
